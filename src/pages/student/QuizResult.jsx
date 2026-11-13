@@ -1,6 +1,6 @@
 import { ArrowLeft, BookOpen, CheckCircle2, RotateCcw, Trophy, XCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, LinkButton, PageShell, ProgressBar, SectionHeading } from"../../components/student/ui";
 
@@ -11,7 +11,7 @@ function QuizResult() {
   const message = percentage >= 80 ? "Excellent work!" : percentage >= 60 ? "Good job – keep going!" : "Keep practising – you will get there!";
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[950px]">
         <StudentPageHeader title="Quiz Results" subtitle="Review your answers and the explanations." />
 
@@ -61,7 +61,7 @@ function QuizResult() {
           <LinkButton to={result.technologyId ? `/student/topics/${result.technologyId}` : "/student/topics"} icon={BookOpen}>Back to lessons</LinkButton>
         </div>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

@@ -1,4 +1,3 @@
-
 import {
   Routes,
   Route,
@@ -17,8 +16,14 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import TermsAndConditions from "./pages/auth/legal/TermsAndConditions";
 import PrivacyPolicy from "./pages/auth/legal/PrivacyPolicy";
 
+// Protected Route
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+
 // Student Routes
 import StudentRoutes from "./student/StudentRoutes";
+
+// Teacher Routes
+import TeacherRoutes from "./teacher/TeacherRoutes";
 
 function App() {
   return (
@@ -31,34 +36,12 @@ function App() {
       />
 
       {/* Authentication Routes */}
-      <Route
-        path="/login"
-        element={<Login />}
-      />
-      <Route
-        path="/signup"
-        element={<Signup />}
-      />
-
-      <Route
-        path="/email-sent"
-        element={<EmailSent />}
-      />
-    
-      <Route
-        path="/set-password"
-        element={<SetPassword />}
-      />
-
-      <Route
-        path="/forgot-password"
-        element={<ForgotPassword />}
-      />
-
-      <Route
-        path="/reset-password"
-        element={<ResetPassword />}
-      />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/email-sent" element={<EmailSent />} />
+      <Route path="/set-password" element={<SetPassword />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Legal Routes */}
       <Route
@@ -71,10 +54,24 @@ function App() {
         element={<PrivacyPolicy />}
       />
 
-      {/* Student Portal Routes */}
+      {/* Student Protected Routes */}
       <Route
         path="/student/*"
-        element={<StudentRoutes />}
+        element={
+          <ProtectedRoute allowedRole="student">
+            <StudentRoutes />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Teacher Protected Routes */}
+      <Route
+        path="/teacher/*"
+        element={
+          <ProtectedRoute allowedRole="teacher">
+            <TeacherRoutes />
+          </ProtectedRoute>
+        }
       />
 
       {/* Invalid Routes */}

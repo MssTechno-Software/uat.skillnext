@@ -1,5 +1,5 @@
 import { ArrowUpRight, Clock3, ClipboardCheck, ListChecks, Trophy } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, Hero, IconBadge, LinkButton, PageShell } from"../../components/student/ui";
 import { quizzes } from "../../data/quizData";
@@ -9,7 +9,7 @@ import { bestScore, useProgress } from "../../data/studentProgress";
 function Quizzes() {
   const progress = useProgress();
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1300px]">
         <StudentPageHeader title="Quizzes & Assessments" subtitle="Test your understanding after studying each technology." />
         <Hero
@@ -47,7 +47,7 @@ function Quizzes() {
           })}
         </div>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

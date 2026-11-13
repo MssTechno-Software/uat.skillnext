@@ -1,5 +1,5 @@
 import { ArrowUpRight, Brain, MessageSquareText, Mic2, Sparkles } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, Hero, IconBadge, LinkButton, Note, PageShell } from"../../components/student/ui";
 
@@ -7,7 +7,7 @@ const chip = "rounded-full bg-[#EAF3F2] px-3.5 py-1.5 text-xs font-semibold text
 
 function AIPractice() {
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1250px]">
         <StudentPageHeader title="AI Practice" subtitle="Practise with guided questions and review feedback on your answers." />
         <Hero icon={Sparkles} eyebrow="PRACTICE WITH PURPOSE" title="Strengthen your confidence with AI practice" text="Choose a self-introduction exercise or practise theory for a selected technology and subtopic. Coding questions open a dedicated code workspace." />
@@ -42,7 +42,7 @@ function AIPractice() {
           This is the frontend workflow. AI question generation, speech processing and evaluation need the Skill Next backend / API to be connected.
         </Note>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

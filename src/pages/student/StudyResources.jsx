@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { BookOpen, Download, ExternalLink, FileText, Presentation, Search } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Btn, Card, Hero, IconBadge, LinkButton, Note, PageShell } from"../../components/student/ui";
 import { sampleResources, technologies } from "../../data/studentLearningData";
@@ -33,7 +33,7 @@ function StudyResources() {
   );
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1300px]">
         <StudentPageHeader title="Study Resources" subtitle="Lessons, notes and presentations for your technologies." />
         <Hero icon={BookOpen} eyebrow="LEARN YOUR WAY" title="Everything you need to revise" text="Open the online lessons any time. Downloadable notes and slide decks appear here as soon as they are uploaded." />
@@ -82,7 +82,7 @@ function StudyResources() {
           PDF and PPT items are sample records. Upload the actual files and connect their secure URLs to enable opening and downloading.
         </Note>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

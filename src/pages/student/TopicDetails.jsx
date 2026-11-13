@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { BookOpen, CheckCircle2, ChevronRight, ClipboardCheck, ExternalLink, PlayCircle, Target } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { BackLink, Card, Hero, LinkButton, PageShell, ProgressBar, SectionHeading } from"../../components/student/ui";
 import { technologies } from "../../data/studentLearningData";
@@ -14,14 +14,14 @@ function TopicDetails() {
 
   if (!technology) {
     return (
-      <StudentSidebar>
+      <Sidebar>
         <PageShell>
           <Card className="p-8">
             <h1 className="text-xl font-bold text-[#06424B]">Technology not found</h1>
             <LinkButton to="/student/topics" className="mt-4">Back to Explore Topics</LinkButton>
           </Card>
         </PageShell>
-      </StudentSidebar>
+      </Sidebar>
     );
   }
 
@@ -31,7 +31,7 @@ function TopicDetails() {
   const firstTopic = technology.topics[0];
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1250px]">
         <StudentPageHeader title={technology.name} subtitle={technology.description} />
         <BackLink to="/student/topics">All technologies</BackLink>
@@ -100,7 +100,7 @@ function TopicDetails() {
           </aside>
         </div>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

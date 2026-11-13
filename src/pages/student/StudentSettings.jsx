@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Bell, LockKeyhole, Save, UserRound } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import {
   Btn,
@@ -22,7 +22,7 @@ function StudentSettings() {
   };
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1000px]">
         <StudentPageHeader title="Settings" subtitle="Manage your student profile and account preferences." />
         <form onSubmit={handleSave} className="space-y-5">
@@ -48,7 +48,7 @@ function StudentSettings() {
         </form>
         <Note icon={LockKeyhole} tone="teal" className="mt-6">Password updates and account security actions should use the secure authentication endpoints, not local-only form state.</Note>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

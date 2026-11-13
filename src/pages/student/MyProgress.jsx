@@ -1,5 +1,5 @@
 import { BarChart3, BookOpen, CheckCircle2, ClipboardCheck, Trophy } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, EmptyState, IconBadge, LinkButton, PageShell, ProgressBar, SectionHeading } from"../../components/student/ui";
 import { technologies } from "../../data/studentLearningData";
@@ -17,7 +17,7 @@ function MyProgress() {
   ];
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1300px]">
         <StudentPageHeader title="My Progress" subtitle="Track completed topics, quiz results and your learning activity." />
 
@@ -76,7 +76,7 @@ function MyProgress() {
         <LinkButton to="/student/topics" icon={BookOpen} className="mt-6">Continue learning</LinkButton>
         <p className="mt-4 text-xs text-[#6C8589]">Progress is stored in this browser until the Skill Next progress API is connected.</p>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

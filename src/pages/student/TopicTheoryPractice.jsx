@@ -1,47 +1,100 @@
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Brain, Code2, MessageSquareText, Mic, MicOff, SkipForward, Timer } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Brain,
+  BookOpen,
+  Check,
+  ChevronDown,
+  Code2,
+  GraduationCap,
+  Mic,
+  MicOff,
+  Play,
+  RotateCcw,
+  Send,
+  SkipForward,
+  Sparkles,
+  Timer,
+  Target,
+  Zap,
+} from "lucide-react";
+
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
-import { BackLink, Btn, Card, IconBadge, Note, PageShell } from"../../components/student/ui";
 import { technologies } from "../../data/studentLearningData";
 
 const QUESTION_SECONDS = 119;
 
+const difficultyOptions = [
+  {
+    name: "Easy",
+    subtitle: "Fundamentals",
+    icon: BookOpen,
+    bg: "bg-[#E4F1EC]",
+    color: "text-[#39765D]",
+  },
+  {
+    name: "Medium",
+    subtitle: "Intermediate",
+    icon: Target,
+    bg: "bg-[#FFF1D3]",
+    color: "text-[#A87512]",
+  },
+  {
+    name: "Hard",
+    subtitle: "Advanced",
+    icon: Zap,
+    bg: "bg-[#F5E6E2]",
+    color: "text-[#A9523E]",
+  },
+];
+
 function TopicTheoryPractice() {
   const navigate = useNavigate();
   const recognitionRef = useRef(null);
+
   const [technologyId, setTechnologyId] = useState("react");
   const [topicId, setTopicId] = useState("components");
   const [difficulty, setDifficulty] = useState("Easy");
+
   const [started, setStarted] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
   const [remaining, setRemaining] = useState(QUESTION_SECONDS);
   const [listening, setListening] = useState(false);
-  const [voiceMessage, setVoiceMessage] = useState("Type your answer or use speech input in a supported browser.");
+  const [voiceMessage, setVoiceMessage] = useState("");
   const [sessionMessage, setSessionMessage] = useState("");
 
-  const technology = technologies.find((item) => item.id === technologyId) || technologies[0];
+  const technology =
+    technologies.find((item) => item.id === technologyId) ||
+    technologies[0];
+
   const availableTopics = technology.topics;
+
   const topic = useMemo(
-    () => availableTopics.find((item) => item.id === topicId) || availableTopics[0],
+    () =>
+      availableTopics.find((item) => item.id === topicId) ||
+      availableTopics[0],
     [availableTopics, topicId]
   );
 
   const questions = useMemo(() => {
-    const codingFirst = technologyId === "react" && topicId === "components";
-    const firstQuestion = codingFirst
-      ? {
-          type: "coding",
-          text: "Create a reusable React component named ProfileCard that accepts a name prop and displays the name inside a heading.",
-        }
-      : {
-          type: "theory",
-          text: `Explain ${topic.title.toLowerCase()} in your own words and describe one practical situation where it is useful.`,
-        };
+    const codingFirst =
+      technologyId === "react" && topicId === "components";
+
     return [
-      firstQuestion,
+      codingFirst
+        ? {
+            type: "coding",
+            text: "Create a reusable React component named ProfileCard that accepts a name prop and displays the name inside a heading.",
+          }
+        : {
+            type: "theory",
+            text: `Explain ${topic.title.toLowerCase()} in your own words and describe one practical situation where it is useful.`,
+          },
       {
         type: "theory",
         text: `What is one important concept or best practice related to ${topic.title.toLowerCase()}? Explain why it matters.`,
@@ -51,76 +104,153 @@ function TopicTheoryPractice() {
 
   const currentQuestion = questions[questionIndex];
 
+  // Timer
   useEffect(() => {
-    if (!started || !currentQuestion || currentQuestion.type === "coding" || remaining <= 0) return undefined;
-    const timerId = window.setInterval(() => setRemaining((value) => Math.max(0, value - 1)), 1000);
-    return () => window.clearInterval(timerId);
-  }, [started, currentQuestion, remaining]);
+    if (
+      !started ||
+      currentQuestion?.type === "coding" ||
+      remaining <= 0
+    ) {
+      return undefined;
+    }
 
+    const timer = window.setInterval(() => {
+      setRemaining((value) => Math.max(0, value - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [started, questionIndex, currentQuestion?.type, remaining]);
+
+  // Stop microphone when time ends
   useEffect(() => {
     if (remaining === 0 && listening) {
       recognitionRef.current?.stop();
       setListening(false);
-      setVoiceMessage("The question timer has ended. Submit or skip this question.");
+      setVoiceMessage("Time is up. Submit or skip this question.");
     }
   }, [remaining, listening]);
 
-  useEffect(() => () => recognitionRef.current?.stop(), []);
+  // Cleanup
+  useEffect(() => {
+    return () => recognitionRef.current?.stop();
+  }, []);
 
-  const startPractice = () => {
-    setStarted(true);
+  const stopVoice = () => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setListening(false);
+  };
+
+  const resetPractice = () => {
+    stopVoice();
+    setStarted(false);
     setQuestionIndex(0);
     setAnswer("");
     setRemaining(QUESTION_SECONDS);
     setSessionMessage("");
+    setVoiceMessage("");
   };
 
+  const startPractice = () => {
+    stopVoice();
+    setQuestionIndex(0);
+    setAnswer("");
+    setRemaining(QUESTION_SECONDS);
+    setSessionMessage("");
+    setVoiceMessage("");
+    setStarted(true);
+  };
+
+  const handleTechnologyChange = (e) => {
+    const nextId = e.target.value;
+    const next = technologies.find((item) => item.id === nextId);
+
+    resetPractice();
+    setTechnologyId(nextId);
+    setTopicId(next?.topics[0]?.id || "");
+  };
+
+  const handleTopicChange = (e) => {
+    resetPractice();
+    setTopicId(e.target.value);
+  };
+
+  const handleDifficultyChange = (value) => {
+    resetPractice();
+    setDifficulty(value);
+  };
+
+  // Voice recognition
   const toggleVoice = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
-      setVoiceMessage("Speech recognition is not supported in this browser. Type your answer instead.");
+      setVoiceMessage("Speech recognition is not supported. Please type your answer.");
       return;
     }
+
     if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
+      stopVoice();
+      setVoiceMessage("Voice input stopped.");
       return;
     }
+
     if (remaining <= 0) return;
 
     const recognition = new SpeechRecognition();
+
     recognition.lang = "en-US";
     recognition.continuous = true;
     recognition.interimResults = true;
+
     recognition.onresult = (event) => {
       let transcript = "";
-      for (let i = 0; i < event.results.length; i += 1) transcript += `${event.results[i][0].transcript} `;
+
+      for (let i = 0; i < event.results.length; i += 1) {
+        transcript += `${event.results[i][0].transcript} `;
+      }
+
       setAnswer(transcript.trim());
     };
+
     recognition.onerror = () => {
       setListening(false);
-      setVoiceMessage("Voice capture stopped. You can continue typing.");
+      setVoiceMessage("Voice capture stopped. Continue typing your answer.");
     };
+
     recognition.onend = () => setListening(false);
+
     recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
-    setVoiceMessage("Listening in English (en-US). Select the microphone again to stop.");
+
+    try {
+      recognition.start();
+      setListening(true);
+      setVoiceMessage("Listening... Speak your answer.");
+    } catch {
+      setListening(false);
+      setVoiceMessage("Unable to start microphone. Try again.");
+    }
   };
 
-  const openCodingPanel = () => navigate("/student/ai-practice/coding", {
-    state: {
-      technology: technology.name,
-      topic: topic.title,
-      difficulty,
-      question: currentQuestion.text,
-      starterCode: "function ProfileCard({ name }) {\n  // Write your component here\n}\n\nexport default ProfileCard;",
-    },
-  });
+  // Coding workspace
+  const openCodingPanel = () => {
+    navigate("/student/ai-practice/coding", {
+      state: {
+        technology: technology.name,
+        topic: topic.title,
+        difficulty,
+        question: currentQuestion.text,
+        starterCode:
+          "function ProfileCard({ name }) {\n  // Write your component here\n}\n\nexport default ProfileCard;",
+      },
+    });
+  };
 
+  // Submit answer
   const submitAnswer = () => {
-    recognitionRef.current?.stop();
-    setListening(false);
+    stopVoice();
+
     navigate("/student/ai-practice/feedback", {
       state: {
         title: `${technology.name} · ${topic.title}`,
@@ -131,94 +261,534 @@ function TopicTheoryPractice() {
     });
   };
 
+  // Skip question
   const skipQuestion = () => {
-    recognitionRef.current?.stop();
-    setListening(false);
+    stopVoice();
+
     if (questionIndex < questions.length - 1) {
       setQuestionIndex((value) => value + 1);
       setAnswer("");
       setRemaining(QUESTION_SECONDS);
-      setVoiceMessage("Type your answer or use speech input in a supported browser.");
+      setVoiceMessage("");
     } else {
-      setSessionMessage("The preview question set is complete. In the live system, the backend records this skip and supplies the next available question or final feedback.");
+      setSessionMessage(
+        "You have completed all preview questions. The live system can retrieve your next question or final feedback from the backend."
+      );
     }
   };
 
   const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
   const seconds = String(remaining % 60).padStart(2, "0");
 
-  const select = "mt-2 h-12 w-full rounded-xl border-2 border-[#CFE2E0] bg-white px-3 text-sm font-medium text-[#2F4A4E] outline-none focus:border-[#06424B] focus:ring-4 focus:ring-[#FFAB0B]/25";
+  const progress = ((questionIndex + 1) / questions.length) * 100;
 
   return (
-    <StudentSidebar>
-      <PageShell max="max-w-[1050px]">
-        <StudentPageHeader title="Topic-Specific AI Practice" subtitle="Choose a technology, subtopic and difficulty before starting practice." />
-        <BackLink to="/student/ai-practice">AI Practice</BackLink>
+    <Sidebar>
+      <div className="min-h-screen bg-[#EEF3F3]">
 
-        <Card className="p-5 sm:p-8">
-          <div className="flex items-center gap-4">
-            <IconBadge icon={Brain} />
-            <div><h1 className="text-xl font-bold text-[#06424B]">Configure your practice</h1><p className="text-sm text-[#5A7478]">Select the area you want to practise.</p></div>
-          </div>
-          <div className="mt-6 grid gap-5 sm:grid-cols-3">
-            <label className="text-sm font-bold text-[#3F5C60]">Technology
-              <select value={technologyId} onChange={(e) => { const next = technologies.find((item) => item.id === e.target.value); setTechnologyId(e.target.value); setTopicId(next?.topics[0]?.id || ""); setStarted(false); }} className={select}>{technologies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
-            </label>
-            <label className="text-sm font-bold text-[#3F5C60]">Topic / subtopic
-              <select value={topicId} onChange={(e) => { setTopicId(e.target.value); setStarted(false); }} className={select}>{availableTopics.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select>
-            </label>
-            <label className="text-sm font-bold text-[#3F5C60]">Difficulty
-              <select value={difficulty} onChange={(e) => { setDifficulty(e.target.value); setStarted(false); }} className={select}><option>Easy</option><option>Medium</option><option>Hard</option></select>
-            </label>
-          </div>
-          <Btn variant="gold" iconRight={ArrowRight} onClick={startPractice} className="mt-6">Start practice</Btn>
-        </Card>
+        <div className="mx-auto w-full max-w-[1150px] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
 
-        {started && currentQuestion && (
-          <Card className="mt-5 p-5 sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold tracking-[1.3px] text-[#B07A06]">{technology.name.toUpperCase()} · {difficulty.toUpperCase()}</p>
-                <h2 className="mt-1 text-2xl font-extrabold text-[#06424B]">{topic.title}</h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-[#EAF3F2] px-4 py-2 text-xs font-bold text-[#3F5C60]">Question {questionIndex + 1} of {questions.length}</span>
-                {currentQuestion.type !== "coding" && <span className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-extrabold ${remaining <= 15 ? "bg-[#FFE8D9] text-[#B4501F]" : "bg-[#E1F2F0] text-[#06424B]"}`}><Timer size={15} /> {minutes}:{seconds}</span>}
-              </div>
-            </div>
+          <StudentPageHeader
+            title="Topic-Specific AI Practice"
+            subtitle="Build confidence through focused technical practice."
+          />
 
-            <div className={`mt-5 rounded-2xl p-5 ${currentQuestion.type === "coding" ? "border border-[#F3D78B] bg-[#FFF7DF]" : "bg-[#F0F7F6]"}`}>
-              <div className="flex items-center gap-2">
-                {currentQuestion.type === "coding" ? <Code2 size={18} className="text-[#B07A06]" /> : <MessageSquareText size={18} className="text-[#06424B]" />}
-                <p className="text-sm font-bold text-[#2F4A4E]">{currentQuestion.type === "coding" ? "Coding question" : "AI theory question"}</p>
-              </div>
-              <p className="mt-3 text-[17px] font-medium leading-8 text-[#2F4A4E]">{currentQuestion.text}</p>
-              {currentQuestion.type === "coding" && <Btn iconRight={ArrowRight} onClick={openCodingPanel} className="mt-4">Open coding workspace</Btn>}
-            </div>
+          {/* ================= CONFIGURATION SCREEN ================= */}
 
-            {currentQuestion.type === "theory" && (
-              <>
-                <label className="mt-5 block text-sm font-bold text-[#2F4A4E]">Your answer / voice transcript</label>
-                <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={6} placeholder="Write your explanation or dictate your answer…" className="mt-2 w-full rounded-2xl border-2 border-[#CFE2E0] p-4 text-[15px] leading-7 text-[#2F4A4E] outline-none placeholder:text-[#8AA0A3] focus:border-[#06424B] focus:ring-4 focus:ring-[#FFAB0B]/25" />
-                <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+          {!started && (
+            <div className="mt-5">
+
+              {/* Compact teal banner */}
+              <div className="relative mb-5 overflow-hidden rounded-[22px] bg-[#06424B] px-5 py-5 text-white sm:px-7 sm:py-6">
+
+                <div className="absolute -right-10 -top-16 h-48 w-48 rounded-full border-[28px] border-white/[0.05]" />
+
+                <div className="relative flex items-center justify-between gap-4">
                   <div>
-                    <Btn size="sm" variant={listening ? "soft" : "outline"} icon={listening ? MicOff : Mic} onClick={toggleVoice} disabled={remaining === 0}>{listening ? "Stop voice input" : "Use microphone"}</Btn>
-                    <p className="mt-2 text-xs text-[#6C8589]">{voiceMessage}</p>
+                    <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wider text-[#FFAB0B]">
+                      <Sparkles size={14} />
+                      SKILL NEXT · AI LEARNING
+                    </div>
+
+                    <h2 className="text-xl font-bold sm:text-2xl">
+                      Ready to test your skills?
+                    </h2>
+
+                    <p className="mt-2 max-w-lg text-xs leading-6 text-white/70 sm:text-sm">
+                      Select your technology, choose a topic and challenge yourself.
+                    </p>
                   </div>
-                  <div className="flex gap-3">
-                    <Btn variant="outline" icon={SkipForward} onClick={skipQuestion}>Skip</Btn>
-                    <Btn variant="gold" iconRight={ArrowRight} onClick={submitAnswer} disabled={!answer.trim()}>Submit answer</Btn>
+
+                  <div className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#FFAB0B] sm:flex">
+                    <Brain size={34} />
                   </div>
                 </div>
-              </>
-            )}
-            {currentQuestion.type === "coding" && <div className="mt-4 flex justify-end"><Btn variant="outline" icon={SkipForward} onClick={skipQuestion}>Skip question</Btn></div>}
-            {sessionMessage && <Note className="mt-4">{sessionMessage}</Note>}
-          </Card>
-        )}
-        <p className="mt-5 text-xs leading-5 text-[#6C8589]">Flow: technology → subtopic → difficulty (Easy / Medium / Hard) → question → answer or skip → feedback, with a 119-second answer timer. Real question retrieval, attempt status and evaluation need Skill Next API integration.</p>
-      </PageShell>
-    </StudentSidebar>
+              </div>
+
+              {/* Main configuration */}
+              <div className="overflow-hidden rounded-[22px] border border-[#DCE6E5] bg-white shadow-sm">
+
+                {/* Section title */}
+                <div className="flex items-center justify-between gap-3 border-b border-[#E6EEEE] bg-[#F7FAF9] px-5 py-4 sm:px-7">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#06424B] text-[#FFAB0B]">
+                      <GraduationCap size={21} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold text-[#06424B] sm:text-base">
+                        Practice configuration
+                      </h3>
+                      <p className="text-[11px] text-[#849797]">
+                        Personalize your learning session
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="rounded-lg bg-[#FFF1D0] px-3 py-1.5 text-[10px] font-bold text-[#936400]">
+                    STEP 01
+                  </span>
+                </div>
+
+                <div className="p-5 sm:p-7">
+
+                  {/* Technology and topic */}
+                  <div className="grid gap-5 sm:grid-cols-2">
+
+                    <div>
+                      <label
+                        htmlFor="technology"
+                        className="mb-2 block text-xs font-bold text-[#345257]"
+                      >
+                        SELECT TECHNOLOGY
+                      </label>
+
+                      <div className="relative">
+                        <select
+                          id="technology"
+                          value={technologyId}
+                          onChange={handleTechnologyChange}
+                          className="h-12 w-full appearance-none rounded-xl border border-[#C9DAD8] bg-[#F1F7F6] px-4 pr-10 text-sm font-semibold text-[#06424B] outline-none transition focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10"
+                        >
+                          {technologies.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        <ChevronDown
+                          size={17}
+                          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#527579]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="topic"
+                        className="mb-2 block text-xs font-bold text-[#345257]"
+                      >
+                        SELECT TOPIC / SUBTOPIC
+                      </label>
+
+                      <div className="relative">
+                        <select
+                          id="topic"
+                          value={topicId}
+                          onChange={handleTopicChange}
+                          className="h-12 w-full appearance-none rounded-xl border border-[#C9DAD8] bg-[#F1F7F6] px-4 pr-10 text-sm font-semibold text-[#06424B] outline-none transition focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10"
+                        >
+                          {availableTopics.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.title}
+                            </option>
+                          ))}
+                        </select>
+
+                        <ChevronDown
+                          size={17}
+                          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#527579]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Difficulty */}
+                  <div className="mt-7">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-[#345257]">
+                        SELECT DIFFICULTY
+                      </label>
+                      <span className="text-[10px] font-medium text-[#91A1A2]">
+                        Choose your challenge
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+                      {difficultyOptions.map((option) => {
+                        const Icon = option.icon;
+                        const active = difficulty === option.name;
+
+                        return (
+                          <button
+                            type="button"
+                            key={option.name}
+                            onClick={() => handleDifficultyChange(option.name)}
+                            aria-pressed={active}
+                            className={`relative flex min-h-[100px] flex-col items-start justify-center rounded-2xl border p-3 text-left transition-all sm:min-h-[112px] sm:p-4 ${
+                              active
+                                ? "border-[#06424B] bg-[#EAF3F1] shadow-[inset_0_0_0_1px_#06424B]"
+                                : "border-[#E5EBEA] bg-[#FAFBFA] hover:border-[#A9C4C0]"
+                            }`}
+                          >
+                            {active && (
+                              <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#06424B] text-white">
+                                <Check size={12} />
+                              </span>
+                            )}
+
+                            <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${option.bg} ${option.color}`}>
+                              <Icon size={17} />
+                            </div>
+
+                            <p className="text-sm font-bold text-[#06424B]">
+                              {option.name}
+                            </p>
+
+                            <p className="mt-0.5 text-[10px] text-[#829395]">
+                              {option.subtitle}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Summary strip */}
+                  <div className="mt-6 flex flex-wrap items-center gap-2 rounded-xl bg-[#06424B] px-4 py-3 text-white">
+                    <span className="text-[10px] font-bold tracking-wider text-[#FFAB0B]">
+                      SELECTED
+                    </span>
+                    <span className="text-xs font-semibold">
+                      {technology.name}
+                    </span>
+                    <span className="text-white/40">/</span>
+                    <span className="text-xs text-white/80">
+                      {topic.title}
+                    </span>
+                    <span className="ml-auto rounded-lg bg-[#FFAB0B] px-2.5 py-1 text-[10px] font-bold text-[#06424B]">
+                      {difficulty}
+                    </span>
+                  </div>
+
+                  {/* Yellow start button */}
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[11px] text-[#8B9A9B]">
+                      Your practice session is ready.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={startPractice}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-7 text-sm font-extrabold text-[#06424B] shadow-[0_4px_12px_rgba(255,171,11,0.2)] transition hover:-translate-y-0.5 hover:bg-[#FFC13C] active:translate-y-0"
+                    >
+                      <Play size={17} fill="currentColor" />
+                      Start Practice
+                      <ArrowRight size={17} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Small information strip */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-xl border border-[#DCE6E5] bg-[#E3EDEA] px-4 py-3">
+                <span className="flex items-center gap-2 text-[11px] font-semibold text-[#47696B]">
+                  <Timer size={14} />
+                  Timed questions
+                </span>
+                <span className="flex items-center gap-2 text-[11px] font-semibold text-[#47696B]">
+                  <Mic size={14} />
+                  Voice answers
+                </span>
+                <span className="flex items-center gap-2 text-[11px] font-semibold text-[#47696B]">
+                  <Code2 size={14} />
+                  Coding challenges
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* ================= PRACTICE SCREEN ================= */}
+
+          {started && currentQuestion && (
+            <div className="mt-5">
+
+              {/* Top navigation */}
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={resetPractice}
+                  className="inline-flex items-center gap-2 text-xs font-bold text-[#06424B] transition hover:text-[#B17A0A]"
+                >
+                  <ArrowLeft size={16} />
+                  Back to configuration
+                </button>
+
+                <div className="flex items-center gap-2 rounded-lg bg-[#06424B] px-3 py-2 text-[11px] font-bold text-white">
+                  <Sparkles size={13} className="text-[#FFAB0B]" />
+                  AI PRACTICE
+                </div>
+              </div>
+
+              {/* Compact practice header */}
+              <div className="overflow-hidden rounded-[20px] bg-[#06424B] text-white shadow-sm">
+
+                <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-7">
+                  <div>
+                    <div className="mb-1 text-[10px] font-bold tracking-widest text-[#FFAB0B]">
+                      {technology.name.toUpperCase()} · {difficulty.toUpperCase()}
+                    </div>
+
+                    <h2 className="text-lg font-bold sm:text-xl">
+                      {topic.title}
+                    </h2>
+
+                    <p className="mt-1 text-[11px] text-white/60">
+                      Focus on understanding. Give your best answer.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2">
+                      <p className="text-[9px] font-bold text-white/60">
+                        QUESTION
+                      </p>
+                      <p className="mt-1 text-sm font-bold">
+                        {questionIndex + 1}
+                        <span className="text-white/50">
+                          {" "}/ {questions.length}
+                        </span>
+                      </p>
+                    </div>
+
+                    {currentQuestion.type !== "coding" && (
+                      <div className={`min-w-[90px] rounded-xl px-3 py-2 ${
+                        remaining <= 15
+                          ? "bg-[#FFE1D8] text-[#A83C2A]"
+                          : "bg-[#FFAB0B] text-[#06424B]"
+                      }`}>
+                        <div className="flex items-center gap-1 text-[9px] font-bold">
+                          <Timer size={12} />
+                          TIME LEFT
+                        </div>
+                        <p className="mt-0.5 text-xl font-extrabold tabular-nums">
+                          {minutes}:{seconds}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress */}
+                <div className="h-1.5 bg-white/10">
+                  <div
+                    className="h-full bg-[#FFAB0B] transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Question panel */}
+              <div className="mt-4 overflow-hidden rounded-[20px] border border-[#D8E5E3] bg-white shadow-sm">
+
+                <div className="flex items-center justify-between border-b border-[#E6EEEE] bg-[#F1F7F5] px-5 py-3 sm:px-6">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#06424B] text-[#FFAB0B]">
+                      {currentQuestion.type === "coding" ? (
+                        <Code2 size={17} />
+                      ) : (
+                        <Brain size={17} />
+                      )}
+                    </div>
+
+                    <span className="text-xs font-bold text-[#06424B]">
+                      {currentQuestion.type === "coding"
+                        ? "Coding Challenge"
+                        : "Theory Question"}
+                    </span>
+                  </div>
+
+                  <span className="rounded-lg bg-[#FFF0CC] px-3 py-1.5 text-[10px] font-bold text-[#926500]">
+                    {difficulty}
+                  </span>
+                </div>
+
+                <div className="p-5 sm:p-6">
+
+                  {/* Question */}
+                  <div className="rounded-xl border-l-4 border-[#FFAB0B] bg-[#F0F5F4] px-5 py-4">
+                    <p className="mb-2 text-[9px] font-extrabold tracking-widest text-[#A17A22]">
+                      QUESTION {questionIndex + 1}
+                    </p>
+
+                    <h3 className="text-base font-semibold leading-7 text-[#06424B] sm:text-lg">
+                      {currentQuestion.text}
+                    </h3>
+                  </div>
+
+                  {/* Coding button */}
+                  {currentQuestion.type === "coding" && (
+                    <button
+                      type="button"
+                      onClick={openCodingPanel}
+                      className="mt-5 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-6 text-sm font-bold text-[#06424B] transition hover:bg-[#FFC13C]"
+                    >
+                      <Code2 size={17} />
+                      Open Coding Workspace
+                      <ArrowRight size={17} />
+                    </button>
+                  )}
+
+                  {/* Theory answer */}
+                  {currentQuestion.type === "theory" && (
+                    <>
+                      <div className="mb-2 mt-5 flex items-center justify-between gap-2">
+                        <label
+                          htmlFor="practice-answer"
+                          className="text-xs font-bold text-[#06424B]"
+                        >
+                          YOUR ANSWER
+                        </label>
+
+                        <span className="text-[10px] text-[#899B9C]">
+                          Write or speak your response
+                        </span>
+                      </div>
+
+                      <textarea
+                        id="practice-answer"
+                        rows={4}
+                        value={answer}
+                        disabled={remaining === 0}
+                        onChange={(e) => setAnswer(e.target.value)}
+                        placeholder="Start writing your answer here..."
+                        className="w-full resize-y rounded-xl border border-[#C9DAD8] bg-[#F7FAF9] p-4 text-sm leading-6 text-[#29494D] outline-none transition placeholder:text-[#9AA9AA] focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10 disabled:opacity-60"
+                      />
+
+                      {/* Voice section */}
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#DBE7E5] bg-[#EAF2F0] px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={toggleVoice}
+                            disabled={remaining === 0}
+                            className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
+                              listening
+                                ? "bg-[#A74C3B] text-white"
+                                : "bg-[#06424B] text-[#FFAB0B] hover:bg-[#0A515C]"
+                            } disabled:opacity-40`}
+                          >
+                            {listening ? (
+                              <MicOff size={18} />
+                            ) : (
+                              <Mic size={18} />
+                            )}
+                          </button>
+
+                          <div>
+                            <p className="text-xs font-bold text-[#06424B]">
+                              {listening ? "Listening..." : "Voice response"}
+                            </p>
+                            <p className="mt-0.5 text-[10px] text-[#718B8C]">
+                              {voiceMessage || "Tap microphone to speak"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {listening && (
+                          <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#A74C3B]">
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-[#A74C3B]" />
+                            RECORDING
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="mt-5 flex flex-col-reverse justify-between gap-3 border-t border-[#E8EEEE] pt-4 sm:flex-row sm:items-center">
+                        <button
+                          type="button"
+                          onClick={skipQuestion}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D8E4E2] px-5 text-xs font-bold text-[#527477] transition hover:bg-[#F0F5F4]"
+                        >
+                          <SkipForward size={15} />
+                          Skip Question
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={submitAnswer}
+                          disabled={!answer.trim() || remaining === 0}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-7 text-xs font-extrabold text-[#06424B] transition hover:bg-[#FFC13C] disabled:cursor-not-allowed disabled:bg-[#E1E6E5] disabled:text-[#9AA6A5]"
+                        >
+                          Submit Answer
+                          <Send size={15} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Coding actions */}
+                  {currentQuestion.type === "coding" && (
+                    <div className="mt-5 flex justify-end border-t border-[#E8EEEE] pt-4">
+                      <button
+                        type="button"
+                        onClick={skipQuestion}
+                        className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#D8E4E2] px-5 text-xs font-bold text-[#527477] hover:bg-[#F0F5F4]"
+                      >
+                        Skip Question
+                        <SkipForward size={15} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Completed */}
+                  {sessionMessage && (
+                    <div className="mt-5 rounded-xl border border-[#C9E2D4] bg-[#E9F5ED] p-4">
+                      <p className="text-sm font-bold text-[#286447]">
+                        Practice completed
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-[#557C65]">
+                        {sessionMessage}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={startPractice}
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#FFAB0B] px-4 py-2 text-xs font-bold text-[#06424B]"
+                      >
+                        <RotateCcw size={14} />
+                        Restart Practice
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Compact footer */}
+              <div className="mt-3 flex items-center justify-between gap-2 px-1">
+                <span className="text-[10px] font-medium text-[#829394]">
+                  Skill Next · AI Learning
+                </span>
+                <span className="text-[10px] font-semibold text-[#527477]">
+                  {questionIndex + 1} of {questions.length} questions
+                </span>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </Sidebar>
   );
 }
 

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { BookOpen, Compass, PlayCircle } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, EmptyState, IconBadge, LinkButton, PageShell, ProgressBar, SectionHeading } from"../../components/student/ui";
 import { technologies } from "../../data/studentLearningData";
@@ -14,7 +14,7 @@ function MyLearning() {
   });
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell>
         <StudentPageHeader title="My Learning" subtitle="Your learning paths, lessons and completion status." />
 
@@ -60,7 +60,7 @@ function MyLearning() {
           </>
         )}
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

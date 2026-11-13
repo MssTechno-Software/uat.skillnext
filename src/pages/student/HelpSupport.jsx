@@ -1,10 +1,10 @@
 import { LifeBuoy, Mail, MessageCircle } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, IconBadge, PageShell } from "../../components/student/ui";
 function HelpSupport() {
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1100px]">
         <StudentPageHeader title="Help & Support" subtitle="Get help with your learning account and course experience." />
         <div className="grid gap-5 md:grid-cols-2">
@@ -24,7 +24,7 @@ function HelpSupport() {
           <p className="mt-2 text-[15px] leading-7 text-[#4F6B6F]">Support ticket submission and response tracking can be enabled after the support workflow and backend endpoints are defined.</p>
         </Card>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

@@ -1,13 +1,13 @@
 import { Brain, CheckCircle2, MessageSquareText } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { BackLink, Card, IconBadge, LinkButton, Note, PageShell } from"../../components/student/ui";
 
 function AIFeedback() {
   const { state } = useLocation();
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[950px]">
         <StudentPageHeader title="Practice Feedback" subtitle="Review the submitted response and evaluation status." />
         <BackLink to="/student/ai-practice">AI Practice</BackLink>
@@ -29,7 +29,7 @@ function AIFeedback() {
           </div>
         </Card>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

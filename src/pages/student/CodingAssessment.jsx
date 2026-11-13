@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Code2, Play, Send, ShieldCheck, Terminal } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { BackLink, Btn, Card, IconBadge, Note, PageShell } from"../../components/student/ui";
 
@@ -24,7 +24,7 @@ function CodingAssessment() {
   };
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1500px]">
         <StudentPageHeader title="Coding Assessment" subtitle="Solve the coding question in the editor and review the execution results." />
         <BackLink to="/student/ai-practice/topic-theory">Back to AI practice</BackLink>
@@ -66,7 +66,7 @@ function CodingAssessment() {
           </section>
         </div>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

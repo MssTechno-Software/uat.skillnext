@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mic, MicOff, Send, CircleHelp, Timer, Play } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { BackLink, Btn, Card, IconBadge, Note, PageShell } from"../../components/student/ui";
 
@@ -83,7 +83,7 @@ function SelfIntroductionPractice() {
   const seconds = String(remaining % 60).padStart(2, "0");
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[1050px]">
         <StudentPageHeader title="Self-Introduction Evaluation" subtitle="Practise a clear and confident professional introduction." />
         <BackLink to="/student/ai-practice">AI Practice</BackLink>
@@ -127,7 +127,7 @@ function SelfIntroductionPractice() {
         )}
         <Note className="mt-5">The 119-second timer and browser speech-to-text are frontend behaviours. AI question delivery, transcript submission and scoring need Skill Next backend integration.</Note>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 

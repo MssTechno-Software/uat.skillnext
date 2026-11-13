@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, Send } from "lucide-react";
-import StudentSidebar from "../../components/student/StudentSidebar";
+import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { BackLink, Btn, Card, LinkButton, PageShell, ProgressBar } from"../../components/student/ui";
 import { getQuiz } from "../../data/quizData";
@@ -16,14 +16,14 @@ function QuizPage() {
 
   if (!quiz) {
     return (
-      <StudentSidebar>
+      <Sidebar>
         <PageShell max="max-w-[900px]">
           <Card className="p-8">
             <h1 className="text-xl font-bold text-[#06424B]">Quiz not found</h1>
             <LinkButton to="/student/quizzes" className="mt-4">Back to quizzes</LinkButton>
           </Card>
         </PageShell>
-      </StudentSidebar>
+      </Sidebar>
     );
   }
 
@@ -41,7 +41,7 @@ function QuizPage() {
   };
 
   return (
-    <StudentSidebar>
+    <Sidebar>
       <PageShell max="max-w-[900px]">
         <StudentPageHeader title="Technology Quiz" subtitle="Answer each question, then review your result." />
         <BackLink to="/student/quizzes">Back to quizzes</BackLink>
@@ -119,7 +119,7 @@ function QuizPage() {
           </div>
         </Card>
       </PageShell>
-    </StudentSidebar>
+    </Sidebar>
   );
 }
 
