@@ -779,7 +779,7 @@ function Signup() {
         !phoneDigits
             ? "Enter your phone number."
             : !NANP_PATTERN.test(phoneDigits)
-                ? "Enter a valid 10-digit US or Canada phone number."
+                ? "Enter a valid 10-digit."
                 : ""
     );
 
@@ -1216,7 +1216,6 @@ function Signup() {
                                             placeholder="(555) 123-4567"
                                             autoComplete="tel"
                                             error={showError("phone")}
-                                            hint="US or Canada number."
                                         />
                                     </div>
                                 </section>

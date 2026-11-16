@@ -16,6 +16,7 @@ import {
   FileText,
   Lightbulb,
   Play,
+  PlayCircle,
   RotateCcw,
   Code2,
   Eye,
@@ -23,24 +24,21 @@ import {
   Maximize2,
   Minimize2,
   Check,
+  LockKeyhole,
 } from "lucide-react";
 
 import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import {
-  Btn,
   Card,
   LinkButton,
   PageShell,
 } from "../../components/student/ui";
 
-import { technologies } from "../../data/studentLearningData";
-import { getQuizForTechnology } from "../../data/quizData";
-import {
-  rememberLastTopic,
-  toggleTopicComplete,
-  useProgress,
-} from "../../data/studentProgress";
+import { courseCategories, myLearningCoursePath, technologies } from "../../data/studentLearningData";
+import { useEnrolledCourses } from "../../data/studentCourseEnrollment";
+import { getQuizForCourseModule, getQuizForTopic } from "../../data/quizData";
+import { hasReadLesson, markLessonRead, rememberLastTopic, useProgress } from "../../data/studentProgress";
 
 /* ======================================================
    CODE EDITOR THEME
@@ -454,10 +452,64 @@ function CodeBlock({ code, language }) {
 }
 
 /* ======================================================
+   LOCKED TOPIC NOTICE
+====================================================== */
+
+function LockedTopicNotice({ courseName, topicName, step, total, backTo, previousTo }) {
+  return (
+    <Card className="overflow-hidden border-[#DCE7E5] p-0 shadow-[0_12px_34px_rgba(6,66,75,0.07)]">
+      <div className="relative overflow-hidden bg-[#06424B] px-6 py-7 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full border-[22px] border-white/[0.06]" />
+        <div className="relative flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]">
+            <LockKeyhole size={21} />
+          </span>
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFCF70]">Learning sequence</p>
+            <h1 className="mt-1 text-2xl font-extrabold text-white sm:text-[28px]">Complete the previous topic first</h1>
+          </div>
+        </div>
+        <p className="relative mt-4 max-w-3xl text-sm leading-7 text-white/75">
+          This topic is locked until the previous topic's 10-question quiz is submitted. There is no minimum score for these topic quizzes.
+        </p>
+      </div>
+
+      <div className="p-6 sm:p-8">
+        <div className="flex flex-col gap-4 rounded-2xl border border-[#E4ECEB] bg-[#F7F9F9] p-5 sm:flex-row sm:items-center">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-lg font-extrabold text-[#06424B] shadow-sm">
+            {String(step).padStart(2, "0")}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A9B9D]">{courseName} · Topic {step} of {total}</p>
+            <h2 className="mt-1 text-lg font-extrabold text-[#06424B]">{topicName}</h2>
+            <p className="mt-1 text-sm leading-6 text-[#5A7478]">Finish the previous topic's lesson and submit all 10 quiz questions. Your score will not block the next topic.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-2 self-start rounded-full bg-[#FFF1D1] px-3 py-2 text-[11px] font-extrabold text-[#94650C] sm:self-center">
+            <LockKeyhole size={13} /> Locked
+          </span>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <LinkButton to={backTo} variant="gold" icon={ArrowLeft}>
+            Back to {courseName} in My Learning
+          </LinkButton>
+          {previousTo && (
+            <LinkButton to={previousTo} variant="outline" icon={PlayCircle}>
+              Open Previous Topic
+            </LinkButton>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ======================================================
    MAIN LESSON PAGE
 ====================================================== */
 
-function LessonContent() {
+function TechnologyLessonContent() {
   const { technologySlug, topicId } = useParams();
   const progress = useProgress();
 
@@ -475,16 +527,36 @@ function LessonContent() {
   const prev = technology.topics[topicIndex - 1];
   const next = technology.topics[topicIndex + 1];
 
-  const quiz = getQuizForTechnology(technology.id);
+  const quiz = getQuizForTopic(technology.id, topic.id);
 
   const done = Boolean(
     progress.completed[`${technology.id}/${topic.id}`]
   );
+  const lessonRead = hasReadLesson(progress, technology.id, topic.id) || done;
 
   useEffect(() => {
     rememberLastTopic(technology.id, topic.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [technology.id, topic.id]);
+
+  const previousTopicComplete = !prev || Boolean(progress.completed[`${technology.id}/${prev.id}`]);
+  const learningWorkspacePath = myLearningCoursePath(null, technology.id);
+  if (!previousTopicComplete) {
+    return (
+      <Sidebar>
+        <PageShell max="max-w-[980px]">
+          <LockedTopicNotice
+            courseName={technology.name}
+            topicName={topic.title}
+            step={topicIndex + 1}
+            total={technology.topics.length}
+            backTo={learningWorkspacePath}
+            previousTo={prev ? `/student/topics/${technology.id}/topic/${prev.id}` : null}
+          />
+        </PageShell>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar>
@@ -499,16 +571,16 @@ function LessonContent() {
         <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
 
           <Link
-            to="/student/topics"
+            to="/student/my-learning"
             className="!text-[#526D71] !no-underline hover:!text-[#06424B]"
           >
-            Topics
+            My Learning
           </Link>
 
           <ChevronRight size={14} />
 
           <Link
-            to={`/student/topics/${technology.id}`}
+            to={learningWorkspacePath}
             className="!text-[#526D71] !no-underline hover:!text-[#06424B]"
           >
             {technology.name}
@@ -599,16 +671,25 @@ function LessonContent() {
                 })}
 
                 {quiz && (
-                  <Link
-                    to={`/student/quiz/${quiz.slug}`}
-                    className="mt-3 flex items-center gap-3 border-t border-[#E9EEEE] px-3 py-4 text-xs font-bold !text-[#06424B] !no-underline hover:bg-[#F7F9F9]"
-                  >
-                    <ClipboardCheck
-                      size={18}
-                      className="text-[#C18B1C]"
-                    />
-                    Take {technology.name} Quiz
-                  </Link>
+                  <div className="mt-3 border-t border-[#E9EEEE] px-3 py-4">
+                    {done ? (
+                      <p className="inline-flex items-center gap-2 text-xs font-extrabold text-[#28765E]">
+                        <CheckCircle2 size={17} /> {topic.title} quiz completed
+                      </p>
+                    ) : lessonRead ? (
+                      <Link
+                        to={`/student/quiz/${quiz.slug}`}
+                        className="flex items-center gap-3 rounded-xl bg-[#FFF7E6] px-3 py-3 text-xs font-bold !text-[#06424B] !no-underline transition hover:bg-[#FFF0CA]"
+                      >
+                        <ClipboardCheck size={18} className="text-[#C18B1C]" />
+                        Open this topic's 10-question quiz
+                      </Link>
+                    ) : (
+                      <p className="inline-flex items-center gap-2 text-xs font-semibold text-[#87989A]">
+                        <LockKeyhole size={15} /> Read this lesson to unlock its quiz
+                      </p>
+                    )}
+                  </div>
                 )}
               </nav>
             </Card>
@@ -797,68 +878,62 @@ function LessonContent() {
 
             {/* Completion Card */}
             <Card className="p-5 sm:p-6">
+              {!lessonRead && (
+                <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[#DCE9E7] bg-[#F7FAF9] p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-extrabold text-[#123B43]">Finished reading this lesson?</p>
+                    <p className="mt-1 text-xs leading-5 text-[#71878A]">Review the lesson sections and examples above, then mark this topic as read to unlock its 10-question quiz.</p>
+                  </div>
+                  <button type="button" onClick={() => markLessonRead(technology.id, topic.id)} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0A515C]">
+                    <CheckCircle2 size={15} /> Mark as read
+                  </button>
+                </div>
+              )}
+              {lessonRead && !done && (
+                <p className="mb-5 inline-flex items-center gap-2 rounded-lg bg-[#EAF5EF] px-3 py-2 text-xs font-bold text-[#28765E]">
+                  <CheckCircle2 size={14} /> Lesson marked as read · Quiz unlocked
+                </p>
+              )}
 
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-base font-extrabold text-[#123B43]">
-                    Finished this topic?
+                    {done ? "Topic quiz completed" : "Complete this topic"}
                   </h3>
-
-                  <p className="mt-1 text-xs text-[#789094]">
-                    Mark this lesson complete to track your progress.
+                  <p className="mt-1 text-xs leading-5 text-[#789094]">
+                    {done
+                      ? "Your topic progress has been saved. You can review the lesson or continue to the next topic."
+                      : "Take the 10-question topic quiz. Answer all 10 questions. Each answer shows immediate feedback, and the next topic unlocks regardless of your score."}
                   </p>
                 </div>
-
-                <Btn
-                  variant={done ? "soft" : "gold"}
-                  icon={CheckCircle2}
-                  onClick={() =>
-                    toggleTopicComplete(technology.id, topic.id)
-                  }
-                >
-                  {done
-                    ? "Completed – tap to undo"
-                    : "Mark as Complete"}
-                </Btn>
+                {done ? (
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#EAF5EF] px-4 py-3 text-xs font-extrabold text-[#28765E]">
+                    <CheckCircle2 size={15} /> Quiz completed
+                  </span>
+                ) : quiz && lessonRead ? (
+                  <LinkButton to={`/student/quiz/${quiz.slug}`} variant="gold" icon={ClipboardCheck}>
+                    Take Topic Quiz · 10 Questions
+                  </LinkButton>
+                ) : quiz ? (
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#F2F5F5] px-4 py-3 text-xs font-bold text-[#839597]">
+                    <LockKeyhole size={14} /> Mark this lesson as read to unlock the quiz
+                  </span>
+                ) : null}
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3 border-t border-[#E9EEEE] pt-5">
-
-                <LinkButton
-                  to="/student/resources"
-                  variant="outline"
-                  icon={FileText}
-                >
+                <LinkButton to="/student/resources" variant="outline" icon={FileText}>
                   Resources
                 </LinkButton>
-
-                {quiz && (
-                  <LinkButton
-                    to={`/student/quiz/${quiz.slug}`}
-                    variant="outline"
-                    icon={ClipboardCheck}
-                  >
-                    Take Quiz
-                  </LinkButton>
-                )}
-
-                {next ? (
-                  <LinkButton
-                    to={`/student/topics/${technology.id}/topic/${next.id}`}
-                    iconRight={ArrowRight}
-                  >
+                {next && done && (
+                  <LinkButton to={`/student/topics/${technology.id}/topic/${next.id}`} iconRight={ArrowRight}>
                     Next Topic
                   </LinkButton>
-                ) : (
-                  quiz && (
-                    <LinkButton
-                      to={`/student/quiz/${quiz.slug}`}
-                      iconRight={ArrowRight}
-                    >
-                      Finish with Quiz
-                    </LinkButton>
-                  )
+                )}
+                {!next && done && (
+                  <LinkButton to={myLearningCoursePath(null, technology.id)} iconRight={ArrowRight}>
+                    Back to IT Courses in My Learning
+                  </LinkButton>
                 )}
               </div>
             </Card>
@@ -925,6 +1000,301 @@ function LessonContent() {
       </PageShell>
     </Sidebar>
   );
+}
+
+function VocationalModuleLesson({ course, module }) {
+  const progress = useProgress();
+  const done = Boolean(progress.completed[`${course.id}/${module.id}`]);
+  const lessonRead = hasReadLesson(progress, course.id, module.id) || done;
+  const moduleIndex = course.modules.findIndex((item) => item.id === module.id);
+  const previousModule = course.modules[moduleIndex - 1];
+  const nextModule = course.modules[moduleIndex + 1];
+  const quiz = getQuizForCourseModule(course.id, module.id);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [course.id, module.id]);
+
+  const previousModuleComplete = !previousModule || Boolean(progress.completed[`${course.id}/${previousModule.id}`]);
+  const learningWorkspacePath = myLearningCoursePath(course.id);
+  if (!previousModuleComplete) {
+    return (
+      <Sidebar>
+        <PageShell max="max-w-[980px]">
+          <LockedTopicNotice
+            courseName={course.name}
+            topicName={module.title}
+            step={moduleIndex + 1}
+            total={course.modules.length}
+            backTo={learningWorkspacePath}
+            previousTo={previousModule ? `/student/topics/${course.id}/topic/${previousModule.id}` : null}
+          />
+        </PageShell>
+      </Sidebar>
+    );
+  }
+
+  return (
+    <Sidebar>
+      <PageShell max="max-w-[1180px]">
+        <StudentPageHeader title={course.name} subtitle={`${course.category} / ${module.title}`} />
+
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
+          <Link to="/student/my-learning" className="!text-[#526D71] !no-underline hover:!text-[#06424B]">My Learning</Link>
+          <ChevronRight size={14} />
+          <Link to={learningWorkspacePath} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{course.name}</Link>
+          <ChevronRight size={14} />
+          <span className="text-[#06424B]">{module.title}</span>
+        </nav>
+
+        <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+          <aside className="lg:sticky lg:top-5 lg:h-fit">
+            <Card className="overflow-hidden">
+              <div className="bg-[#123B43] px-5 py-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <BookOpen size={15} className="text-[#FFAB0B]" />
+                  <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">Course Topics</span>
+                </div>
+                <h2 className="text-xl font-extrabold text-white">{course.name}</h2>
+                <p className="mt-1 text-xs text-white/55">{course.modules.length} structured topics</p>
+              </div>
+              <nav className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
+                {course.modules.map((item, index) => {
+                  const active = item.id === module.id;
+                  const complete = Boolean(progress.completed[`${course.id}/${item.id}`]);
+                  const previous = course.modules[index - 1];
+                  const unlocked = !previous || Boolean(progress.completed[`${course.id}/${previous.id}`]);
+                  const content = (
+                    <>
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${complete ? "bg-[#06424B] text-white" : active ? "bg-[#FFAB0B] text-[#123B43]" : "bg-[#EEF3F4] text-[#526D71]"}`}>
+                        {complete ? <CheckCircle2 size={15} /> : unlocked ? index + 1 : <LockKeyhole size={13} />}
+                      </span>
+                      <span className="min-w-0 flex-1 leading-5">{item.title}</span>
+                      {active && <ChevronRight size={15} className="shrink-0 text-[#06424B]" />}
+                    </>
+                  );
+                  const classes = `flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] !no-underline transition ${active ? "bg-[#E9F0EF] font-bold !text-[#06424B] ring-1 ring-[#06424B]/10" : unlocked ? "font-medium !text-[#526D71] hover:bg-[#F4F7F7]" : "cursor-not-allowed font-medium !text-[#9AAEAF]"}`;
+                  return unlocked ? (
+                    <Link key={item.id} to={`/student/topics/${course.id}/topic/${item.id}`} className={classes}>
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={item.id} aria-disabled="true" className={classes}>
+                      {content}
+                    </div>
+                  );
+                })}
+              </nav>
+            </Card>
+          </aside>
+
+          <article className="min-w-0 space-y-6">
+            <Card className="p-6 sm:p-8">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">Topic {String(moduleIndex + 1).padStart(2, "0")}</span>
+                <span className="text-xs font-semibold text-[#789094]">{course.name}</span>
+                {done && <span className="rounded-full bg-[#E1F2EC] px-3 py-1 text-[10px] font-bold text-[#28765E]">Topic Completed</span>}
+              </div>
+              <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">{module.title}</h1>
+              <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">{module.description}</p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {previousModule && <LinkButton to={`/student/topics/${course.id}/topic/${previousModule.id}`} variant="outline" size="sm" icon={ArrowLeft}>Previous Topic</LinkButton>}
+                {nextModule && done && <LinkButton to={`/student/topics/${course.id}/topic/${nextModule.id}`} size="sm" iconRight={ArrowRight}>Next Topic</LinkButton>}
+              </div>
+            </Card>
+
+            <Card className="p-6 sm:p-8">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF1D1] text-[#94650C]"><BookOpen size={19} /></span>
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">Learning Content</p>
+                  <h2 className="text-xl font-extrabold text-[#123B43]">Understand the topic</h2>
+                </div>
+              </div>
+              <div className="mt-6 space-y-5">
+                {(module.overview || "Study the topic overview and review the key learning points before attempting the quiz.").split("\n\n").map((paragraph, index) => (
+                  <p key={index} className="text-[15px] leading-8 text-[#405D61]">{paragraph}</p>
+                ))}
+              </div>
+
+              {module.lessonSections?.length > 0 && (
+                <div className="mt-8 space-y-5">
+                  <div className="border-b border-[#E7EEEE] pb-3">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B07A06]">Detailed learning guide</p>
+                    <h3 className="mt-1 text-lg font-extrabold text-[#123B43]">Learn the topic step by step</h3>
+                    <p className="mt-1 text-sm leading-6 text-[#71878A]">Read each section in order. The examples explain how the knowledge is used in a real training or workplace situation.</p>
+                  </div>
+                  {module.lessonSections.map((section, sectionIndex) => (
+                    <section key={`${module.id}-section-${sectionIndex}`} className="rounded-2xl border border-[#E1EAE8] bg-white p-5 sm:p-6">
+                      <div className="mb-4 flex items-start gap-3">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EAF2F0] text-xs font-extrabold text-[#245D53]">
+                          {String(sectionIndex + 1).padStart(2, "0")}
+                        </span>
+                        <h3 className="pt-1 text-base font-extrabold leading-6 text-[#123B43]">{section.title}</h3>
+                      </div>
+                      {section.paragraphs?.length > 0 && (
+                        <div className="space-y-4">
+                          {section.paragraphs.map((paragraph, paragraphIndex) => (
+                            <p key={paragraphIndex} className="text-sm leading-7 text-[#405D61]">{paragraph}</p>
+                          ))}
+                        </div>
+                      )}
+                      {section.steps?.length > 0 && (
+                        <ol className="mt-4 space-y-3">
+                          {section.steps.map((step, stepIndex) => (
+                            <li key={stepIndex} className="flex items-start gap-3 rounded-xl bg-[#F7F9F9] p-3.5">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#06424B] text-[11px] font-extrabold text-white">{stepIndex + 1}</span>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-[#123B43]">{step.title}</p>
+                                <p className="mt-1 text-sm leading-6 text-[#526D71]">{step.detail}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                      {section.bullets?.length > 0 && (
+                        <ul className="mt-4 space-y-3">
+                          {section.bullets.map((item, itemIndex) => (
+                            <li key={itemIndex} className="flex items-start gap-3 text-sm leading-6 text-[#405D61]">
+                              <CheckCircle2 size={16} className="mt-1 shrink-0 text-[#34866E]" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  ))}
+                </div>
+              )}
+
+              {module.guidedPractice && (
+                <div className="mt-7 rounded-2xl border border-[#DCE9E7] bg-white p-5 sm:p-6">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3F1] text-[#245D53]"><PlayCircle size={18} /></span>
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#34866E]">Practical application</p>
+                      <h3 className="text-base font-extrabold text-[#123B43]">Guided practice</h3>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-sm leading-7 text-[#405D61]">{module.guidedPractice}</p>
+                </div>
+              )}
+              {module.professionalChecklist?.length > 0 && (
+                <div className="mt-6 rounded-2xl border border-[#E4ECEB] bg-[#F7F9F9] p-5 sm:p-6">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#123B43]">Professional practice checklist</h3>
+                  <ul className="mt-4 space-y-3">
+                    {module.professionalChecklist.map((item, index) => (
+                      <li key={index} className="flex items-start gap-3 text-sm leading-6 text-[#405D61]">
+                        <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[#34866E]" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {module.learningPoints?.length > 0 && (
+                <div className="mt-7 rounded-xl border border-[#E4ECEB] bg-[#F7F9F9] p-5">
+                  <h3 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-[#123B43]">Key Learning Points</h3>
+                  <ul className="space-y-3">
+                    {module.learningPoints.map((point, index) => (
+                      <li key={index} className="flex items-start gap-3 text-sm leading-6 text-[#405D61]">
+                        <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[#34866E]" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-5 sm:p-6">
+              {!lessonRead && (
+                <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[#DCE9E7] bg-[#F7FAF9] p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-extrabold text-[#123B43]">Finished reading this lesson?</p>
+                    <p className="mt-1 text-xs leading-5 text-[#71878A]">Review the full learning content, detailed guide and practical activity above, then mark this topic as read to unlock its 10-question quiz.</p>
+                  </div>
+                  <button type="button" onClick={() => markLessonRead(course.id, module.id)} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0A515C]">
+                    <CheckCircle2 size={15} /> Mark as read
+                  </button>
+                </div>
+              )}
+              {lessonRead && !done && (
+                <p className="mb-5 inline-flex items-center gap-2 rounded-lg bg-[#EAF5EF] px-3 py-2 text-xs font-bold text-[#28765E]">
+                  <CheckCircle2 size={14} /> Lesson marked as read · Quiz unlocked
+                </p>
+              )}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-base font-extrabold text-[#123B43]">{done ? "Topic quiz completed" : "Check your understanding"}</h3>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-[#789094]">Complete the 10-question quiz. Each answer shows immediate feedback. Complete all 10 questions to unlock the next topic, regardless of score.</p>
+                </div>
+                {done ? (
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#EAF5EF] px-4 py-3 text-xs font-extrabold text-[#28765E]">
+                    <CheckCircle2 size={15} /> Quiz completed
+                  </span>
+                ) : quiz && lessonRead ? (
+                  <LinkButton to={`/student/quiz/${quiz.slug}`} variant="gold" icon={ClipboardCheck}>
+                    Start 10-Question Quiz
+                  </LinkButton>
+                ) : quiz ? (
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#F2F5F5] px-4 py-3 text-xs font-bold text-[#839597]">
+                    <LockKeyhole size={14} /> Mark this lesson as read to unlock the quiz
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-5 flex flex-wrap gap-3 border-t border-[#E9EEEE] pt-5">
+                <LinkButton to={learningWorkspacePath} variant="outline">All Course Topics</LinkButton>
+                {!nextModule && done && <LinkButton to={learningWorkspacePath} iconRight={ArrowRight}>Go to Final Assignment</LinkButton>}
+              </div>
+            </Card>
+          </article>
+        </div>
+      </PageShell>
+    </Sidebar>
+  );
+}
+
+function LessonContent() {
+  const { technologySlug, topicId } = useParams();
+  const { isEnrolled } = useEnrolledCourses();
+  const course = courseCategories.find((item) => item.id === technologySlug && item.type === "vocational");
+  const module = course?.modules.find((item) => item.id === topicId);
+  const technology = technologies.find((item) => item.id === technologySlug);
+  const technologyTopic = technology?.topics.find((item) => item.id === topicId);
+  const requiredCourseId = course ? course.id : technology ? technology.id : null;
+
+  if (!requiredCourseId || (course && !module) || (technology && !technologyTopic)) {
+    return (
+      <Sidebar>
+        <PageShell max="max-w-[900px]">
+          <Card className="p-8">
+            <h1 className="text-xl font-extrabold text-[#06424B]">Lesson not found</h1>
+            <p className="mt-2 text-sm leading-6 text-[#5A7478]">The requested course topic is unavailable. Return to Explore Courses and select a valid topic.</p>
+            <LinkButton to="/student/topics" className="mt-5">Explore Courses</LinkButton>
+          </Card>
+        </PageShell>
+      </Sidebar>
+    );
+  }
+
+  if (!isEnrolled(requiredCourseId)) {
+    return (
+      <Sidebar>
+        <PageShell max="max-w-[900px]">
+          <Card className="p-8 text-center">
+            <h1 className="text-xl font-extrabold text-[#06424B]">Add this course to My Learning first</h1>
+            <p className="mt-2 text-sm leading-6 text-[#5A7478]">Open the course overview and select Add Course to My Learning before starting its lessons.</p>
+            <LinkButton to={`/student/topics/${course ? course.id : technology.id}`} variant="gold" className="mt-5">View Course Overview</LinkButton>
+          </Card>
+        </PageShell>
+      </Sidebar>
+    );
+  }
+
+  if (course && module) return <VocationalModuleLesson course={course} module={module} />;
+  if (technology) return <TechnologyLessonContent />;
+  return null;
 }
 
 export default LessonContent;

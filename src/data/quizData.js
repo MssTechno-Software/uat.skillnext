@@ -1,3 +1,5 @@
+import { courseCategories, myLearningCoursePath, technologies } from "./studentLearningData";
+
 // Technology quizzes. One quiz per technology; each question has one correct answer.
 // q(question, [options], correctIndex, explanation)
 const q = (question, options, correct, explanation) => ({ question, options, answer: options[correct], explanation });
@@ -55,10 +57,185 @@ export const quizzes = [
   ]),
 ];
 
+// Course-unit assessments. Each vocational module and each existing IT topic has
+// its own 10-question quiz. A 15-question final assignment is generated per course
+// track from the same approved learning points.
+const questionStems = [
+  (title) => `Which statement is an essential principle of ${title}?`,
+  (title) => `A learner is reviewing ${title}. Which point should they remember?`,
+  (title) => `Which practice best supports safe and effective ${title}?`,
+  (title) => `Which statement correctly describes a key part of ${title}?`,
+  (title) => `What is the most appropriate approach when applying ${title}?`,
+  (title) => `Which option reflects the recommended process for ${title}?`,
+  (title) => `Which fact should guide a beginner working with ${title}?`,
+  (title) => `Which statement is accurate about ${title}?`,
+  (title) => `Which action is consistent with the learning objectives for ${title}?`,
+  (title) => `Which point is important when checking understanding of ${title}?`,
+];
+
+const fallbackDistractors = [
+  "Ignore the service or machine instructions and choose settings by guesswork.",
+  "Skip preparation and check the result only after the work is finished.",
+  "Use the same method for every situation without checking the requirements.",
+  "Change the approved process without recording or authorisation.",
+  "Treat safety, accuracy and client or product requirements as optional.",
+  "Continue even when the work area or equipment appears unsuitable.",
+];
+
+function uniqueFacts(values) {
+  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
+function createQuestions({ idPrefix, title, facts, count = 10 }) {
+  const sourceFacts = uniqueFacts(facts);
+  const safeFacts = sourceFacts.length ? sourceFacts : [`Follow the approved learning guidance for ${title}.`];
+
+  return Array.from({ length: count }, (_, index) => {
+    const correctFact = safeFacts[index % safeFacts.length];
+    const distractors = [0, 1, 2].map((offset) =>
+      fallbackDistractors[(index + offset) % fallbackDistractors.length]
+    );
+
+    const correctPosition = index % 4;
+    const options = [...distractors];
+    options.splice(correctPosition, 0, correctFact);
+    return {
+      id: `${idPrefix}-q${index + 1}`,
+      question: questionStems[index % questionStems.length](title),
+      options,
+      answer: correctFact,
+      explanation: correctFact,
+    };
+  });
+}
+
+function topicFacts(topic) {
+  const lessonItems = topic.lessonItems || [];
+  const facts = [
+    topic.summary,
+    topic.tip,
+    ...lessonItems.flatMap((lesson) => lesson.points || []),
+    ...lessonItems.map((lesson) => `${lesson.title}: ${(lesson.text || "").split(/[.!?]/)[0]}.`),
+  ];
+  return uniqueFacts(facts).filter((fact) => fact.length > 12);
+}
+
+function moduleQuiz(course, module, nextModule) {
+  const slug = `${course.id}-${module.id}-quiz`;
+  return {
+    slug,
+    title: `${module.title} – Topic Quiz`,
+    description: `Answer 10 questions about ${module.title}. Review the feedback for every answer; any score completes this topic.`,
+    courseId: course.id,
+    courseName: course.name,
+    moduleId: module.id,
+    assessmentType: "module",
+    nextPath: nextModule
+      ? `/student/topics/${course.id}/topic/${nextModule.id}`
+      : myLearningCoursePath(course.id),
+    questions: createQuestions({
+      idPrefix: slug,
+      title: module.title,
+      facts: module.learningPoints || [module.overview, module.description],
+      count: 10,
+    }),
+  };
+}
+
+function technologyTopicQuiz(technology, topic, nextTopic) {
+  const slug = `${technology.id}-${topic.id}-quiz`;
+  const facts = topicFacts(topic);
+  return {
+    slug,
+    title: `${topic.title} – Topic Quiz`,
+    description: `10 questions based on the ${technology.name} topic you have just studied.`,
+    courseId: technology.id,
+    courseName: technology.name,
+    technologyId: technology.id,
+    topicId: topic.id,
+    assessmentType: "topic",
+    nextPath: nextTopic
+      ? `/student/topics/${technology.id}/topic/${nextTopic.id}`
+      : myLearningCoursePath(null, technology.id),
+    questions: createQuestions({
+      idPrefix: slug,
+      title: topic.title,
+      facts,
+      count: 10,
+    }),
+  };
+}
+
+function finalAssignment(courseId, courseName, units) {
+  const slug = `${courseId}-final-assignment`;
+  const unitQuestions = units.map((unit) => unit.questions || []);
+  const selected = Array.from({ length: 15 }, (_, index) => {
+    const unitIndex = Math.floor((index * unitQuestions.length) / 15);
+    const questions = unitQuestions[unitIndex] || [];
+    const questionIndex = Math.floor(index / Math.max(1, unitQuestions.length)) % Math.max(1, questions.length);
+    const sourceQuestion = questions[questionIndex] || questions[0];
+    return sourceQuestion
+      ? { ...sourceQuestion, id: `${slug}-q${index + 1}` }
+      : null;
+  }).filter(Boolean);
+
+  return {
+    slug,
+    title: `${courseName} – Final Assignment`,
+    description: "Complete the 15-question final assignment. A score of 80% or higher is required to complete this course.",
+    courseId,
+    courseName,
+    assessmentType: "final",
+    isFinalAssignment: true,
+    passPercentage: 80,
+    nextPath: "/student/my-learning",
+    questions: selected,
+  };
+}
+
+const courseModuleQuizzes = [];
+const technologyTopicQuizzes = [];
+const finalAssignments = [];
+
+courseCategories.filter((course) => course.type === "vocational").forEach((course) => {
+  const moduleQuizzes = course.modules.map((module, index) =>
+    moduleQuiz(course, module, course.modules[index + 1])
+  );
+  courseModuleQuizzes.push(...moduleQuizzes);
+  finalAssignments.push(finalAssignment(course.id, course.name, moduleQuizzes));
+});
+
+technologies.forEach((technology) => {
+  const topicQuizzes = technology.topics.map((topic, index) =>
+    technologyTopicQuiz(technology, topic, technology.topics[index + 1])
+  );
+  technologyTopicQuizzes.push(...topicQuizzes);
+  // Each IT technology is an independently enrolled course with its own
+  // final assignment; the IT Courses directory itself is never assessed.
+  finalAssignments.push(finalAssignment(technology.id, technology.name, topicQuizzes));
+});
+
+export const courseUnitQuizzes = [...courseModuleQuizzes, ...technologyTopicQuizzes];
+export const courseFinalAssignments = finalAssignments;
+export const allLearningAssessments = [...courseUnitQuizzes, ...courseFinalAssignments];
+
 export const getQuiz = (slug) => {
   // "react-basics" was the earlier sample slug – keep it working.
   const normalised = slug === "react-basics" ? "react" : slug;
-  return quizzes.find((quiz) => quiz.slug === normalised);
+  return (
+    allLearningAssessments.find((quiz) => quiz.slug === normalised) ||
+    quizzes.find((quiz) => quiz.slug === normalised)
+  );
 };
 
-export const getQuizForTechnology = (technologyId) => quizzes.find((quiz) => quiz.technologyId === technologyId);
+export const getQuizForTechnology = (technologyId) =>
+  quizzes.find((quiz) => quiz.technologyId === technologyId);
+
+export const getQuizForTopic = (technologyId, topicId) =>
+  technologyTopicQuizzes.find((quiz) => quiz.technologyId === technologyId && quiz.topicId === topicId);
+
+export const getQuizForCourseModule = (courseId, moduleId) =>
+  courseModuleQuizzes.find((quiz) => quiz.courseId === courseId && quiz.moduleId === moduleId);
+
+export const getFinalAssignmentForCourse = (courseId) =>
+  finalAssignments.find((quiz) => quiz.courseId === courseId);

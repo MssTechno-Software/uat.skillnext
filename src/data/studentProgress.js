@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
 
-// Lightweight progress tracking stored in the browser (localStorage).
-// This keeps the portal useful before the backend exists. Replace these helpers
-// with API calls to the Skill Next progress service when it is available.
+// Lightweight course and assessment progress stored in the browser.
+// Replace the storage helpers with the authenticated Skill Next APIs when ready.
 
-const KEY = "skillnext.student.progress.v1";
+const KEY = "skillnext.student.progress.v2";
 const EVENT = "skillnext-progress-changed";
-const empty = () => ({ completed: {}, quizzes: [], last: null });
+const empty = () => ({ completed: {}, completedCourses: {}, lessonRead: {}, quizzes: [], last: null });
 
 export function loadProgress() {
   try {
     const raw = window.localStorage.getItem(KEY);
-    return raw ? { ...empty(), ...JSON.parse(raw) } : empty();
+    const parsed = raw ? JSON.parse(raw) : {};
+    return {
+      ...empty(),
+      ...(parsed && typeof parsed === "object" ? parsed : {}),
+      completed: parsed?.completed || {},
+      completedCourses: parsed?.completedCourses || {},
+      lessonRead: parsed?.lessonRead || {},
+      quizzes: Array.isArray(parsed?.quizzes) ? parsed.quizzes : [],
+    };
   } catch {
     return empty();
   }
@@ -21,7 +28,7 @@ function saveProgress(progress) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(progress));
   } catch {
-    /* storage unavailable – progress simply is not remembered */
+    // Progress remains available for the current session if storage is unavailable.
   }
   window.dispatchEvent(new Event(EVENT));
 }
@@ -34,6 +41,36 @@ export function toggleTopicComplete(technologyId, topicId) {
   saveProgress(progress);
 }
 
+// A lesson is marked as read after the learner reaches the end of the lesson and confirms it.
+export function markLessonRead(courseId, unitId) {
+  if (!courseId || !unitId) return;
+  const progress = loadProgress();
+  progress.lessonRead = progress.lessonRead || {};
+  progress.lessonRead[`${courseId}/${unitId}`] = new Date().toISOString();
+  saveProgress(progress);
+}
+
+export function hasReadLesson(progress, courseId, unitId) {
+  if (!courseId || !unitId) return false;
+  const key = `${courseId}/${unitId}`;
+  return Boolean(progress?.lessonRead?.[key] || progress?.completed?.[key]);
+}
+
+// A learning unit is completed after all quiz questions are answered, regardless of score.
+export function completeLearningUnit(courseId, unitId) {
+  if (!courseId || !unitId) return;
+  const progress = loadProgress();
+  progress.completed[`${courseId}/${unitId}`] = new Date().toISOString();
+  saveProgress(progress);
+}
+
+export function completeCourseFinal(courseId) {
+  if (!courseId) return;
+  const progress = loadProgress();
+  progress.completedCourses[courseId] = new Date().toISOString();
+  saveProgress(progress);
+}
+
 export function rememberLastTopic(technologyId, topicId) {
   const progress = loadProgress();
   if (progress.last?.technologyId === technologyId && progress.last?.topicId === topicId) return;
@@ -41,9 +78,21 @@ export function rememberLastTopic(technologyId, topicId) {
   saveProgress(progress);
 }
 
-export function recordQuizAttempt({ slug, title, score, total }) {
+export function recordQuizAttempt({ slug, title, score, total, courseId, unitId, assessmentType }) {
   const progress = loadProgress();
-  progress.quizzes = [{ slug, title, score, total, date: new Date().toISOString() }, ...progress.quizzes].slice(0, 50);
+  progress.quizzes = [
+    {
+      slug,
+      title,
+      score,
+      total,
+      courseId: courseId || null,
+      unitId: unitId || null,
+      assessmentType: assessmentType || "practice",
+      date: new Date().toISOString(),
+    },
+    ...progress.quizzes,
+  ].slice(0, 100);
   saveProgress(progress);
 }
 
@@ -62,9 +111,52 @@ export function useProgress() {
 }
 
 export function technologyProgress(progress, technology) {
-  const done = technology.topics.filter((topic) => progress.completed[`${technology.id}/${topic.id}`]).length;
-  const total = technology.topics.length;
+  const topics = technology?.topics || [];
+  const done = topics.filter((topic) => progress.completed[`${technology.id}/${topic.id}`]).length;
+  const total = topics.length;
   return { done, total, percent: total ? Math.round((done / total) * 100) : 0 };
+}
+
+export function courseProgress(progress, course) {
+  if (!course) return { done: 0, total: 0, percent: 0, completed: false };
+
+  // The IT Courses category is only a catalogue. Each technology is now an
+  // individually enrolled learning course and owns its own final assignment.
+  if (Array.isArray(course.topics)) {
+    const stats = technologyProgress(progress, course);
+    const completed = Boolean(progress.completedCourses?.[course.id]);
+    return {
+      ...stats,
+      percent: completed ? 100 : Math.min(90, stats.total ? Math.round((stats.done / stats.total) * 90) : 0),
+      completed,
+    };
+  }
+
+  // Retain support for the legacy IT catalogue shape if any older page reads it.
+  if (course.type === "technology" && Array.isArray(course.courses)) {
+    const tracks = course.courses;
+    const done = tracks.reduce((sum, technology) => sum + technologyProgress(progress, technology).done, 0);
+    const total = tracks.reduce((sum, technology) => sum + technologyProgress(progress, technology).total, 0);
+    const completed = Boolean(progress.completedCourses?.[course.id]);
+    return {
+      done,
+      total,
+      percent: completed ? 100 : Math.min(90, total ? Math.round((done / total) * 90) : 0),
+      completed,
+    };
+  }
+
+  const modules = course.modules || [];
+  const done = modules.filter((module) => progress.completed[`${course.id}/${module.id}`]).length;
+  const total = modules.length;
+  return {
+    done,
+    total,
+    percent: progress.completedCourses?.[course.id]
+      ? 100
+      : Math.min(90, total ? Math.round((done / total) * 90) : 0),
+    completed: Boolean(progress.completedCourses?.[course.id]),
+  };
 }
 
 export function bestScore(progress, slug) {

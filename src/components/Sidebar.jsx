@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -22,6 +22,7 @@ import {
 
 // Update this import path if authSession.js is in another folder.
 import { getUserRole, clearAuthSession } from "../services/authSession";
+import { useEnrolledCourses } from "../data/studentCourseEnrollment";
 
 // ============================================
 // STUDENT NAVIGATION
@@ -51,6 +52,7 @@ const studentNavigation = [
         label: "Explore Topics",
         path: "/student/topics",
         icon: Compass,
+        end: true,
       },
       {
         label: "Study Resources",
@@ -63,7 +65,7 @@ const studentNavigation = [
     title: "PRACTICE & ASSESSMENT",
     items: [
       {
-        label: "AI Practice",
+        label: "Interview Prep",
         path: "/student/ai-practice",
         icon: Brain,
       },
@@ -130,6 +132,8 @@ const teacherNavigation = [
 
 function Sidebar({ children }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { enrolledCourseIds = [] } = useEnrolledCourses();
 
   const [openSidebar, setOpenSidebar] = useState(true);
   const [mobileSidebar, setMobileSidebar] = useState(false);
@@ -144,6 +148,15 @@ function Sidebar({ children }) {
       : studentNavigation;
 
   const isTeacher = userRole === "teacher";
+
+  // Course and lesson pages share the existing /student/topics routes.
+  // Treat an enrolled course route as part of My Learning; keep non-enrolled
+  // course previews under Explore Topics.
+  const topicRouteMatch = location.pathname.match(/^\/student\/topics\/([^/]+)/);
+  const routeCourseId = topicRouteMatch?.[1] || null;
+  const isEnrolledCourseRoute = Boolean(
+    !isTeacher && routeCourseId && enrolledCourseIds.includes(routeCourseId)
+  );
 
   const portalTitle = isTeacher
     ? "Teacher Portal"
@@ -331,6 +344,22 @@ function Sidebar({ children }) {
                 {group.items.map((item) => {
                   const Icon = item.icon;
 
+                  // Explore is active for the catalogue and non-enrolled previews.
+                  // Enrolled course/topic/lesson pages highlight My Learning instead.
+                  const resolveActiveState = (routeIsActive) => {
+                    if (isTeacher) return routeIsActive;
+
+                    if (item.path === "/student/my-learning") {
+                      return routeIsActive || isEnrolledCourseRoute;
+                    }
+
+                    if (item.path === "/student/topics") {
+                      return routeIsActive || Boolean(routeCourseId && !isEnrolledCourseRoute);
+                    }
+
+                    return routeIsActive;
+                  };
+
                   return (
                     <NavLink
                       key={item.path}
@@ -338,73 +367,80 @@ function Sidebar({ children }) {
                       end={item.end || false}
                       onClick={closeMobileSidebar}
                       title={!openSidebar ? item.label : undefined}
-                      style={({ isActive }) => ({
-                        color: isActive ? "#FFFFFF" : "#435C64",
-                      })}
-                      className={({ isActive }) => `
-                        group relative
-                        flex min-h-[52px]
-                        items-center gap-[15px]
-                        rounded-[14px]
-                        px-[17px] py-3
-                        text-[13px]
-                        transition-all duration-200
-                        ${
-                          !openSidebar
-                            ? "lg:justify-center lg:px-0"
-                            : ""
-                        }
-                        ${
-                          isActive
-                            ? `
-                              bg-[#243746]
-                              font-semibold
-                              text-white
-                              shadow-[0_9px_22px_rgba(36,55,70,0.14)]
-                            `
-                            : `
-                              font-medium
-                              text-[#435C64]
-                              hover:bg-[#E5E9E2]
-                              hover:text-[#243746]
-                            `
-                        }
-                      `}
+                      style={({ isActive }) => {
+                        const active = resolveActiveState(isActive);
+                        return { color: active ? "#FFFFFF" : "#435C64" };
+                      }}
+                      className={({ isActive }) => {
+                        const active = resolveActiveState(isActive);
+                        return `
+                          group relative
+                          flex min-h-[52px]
+                          items-center gap-[15px]
+                          rounded-[14px]
+                          px-[17px] py-3
+                          text-[13px]
+                          transition-all duration-200
+                          ${
+                            !openSidebar
+                              ? "lg:justify-center lg:px-0"
+                              : ""
+                          }
+                          ${
+                            active
+                              ? `
+                                bg-[#243746]
+                                font-semibold
+                                text-white
+                                shadow-[0_9px_22px_rgba(36,55,70,0.14)]
+                              `
+                              : `
+                                font-medium
+                                text-[#435C64]
+                                hover:bg-[#E5E9E2]
+                                hover:text-[#243746]
+                              `
+                          }
+                        `;
+                      }}
                     >
-                      {({ isActive }) => (
-                        <>
-                          {/* MENU ICON */}
-                          <Icon
-                            size={21}
-                            strokeWidth={1.8}
-                            style={{
-                              color: isActive ? "#E3BD7A" : "#607A7E",
-                            }}
-                            className="shrink-0 transition-colors"
-                          />
-
-                          {/* MENU LABEL */}
-                          {openSidebar && (
-                            <span
-                              className="min-w-0 flex-1 truncate"
+                      {({ isActive }) => {
+                        const active = resolveActiveState(isActive);
+                        return (
+                          <>
+                            {/* MENU ICON */}
+                            <Icon
+                              size={21}
+                              strokeWidth={1.8}
                               style={{
-                                color: isActive ? "#FFFFFF" : "#435C64",
+                                color: active ? "#E3BD7A" : "#607A7E",
                               }}
-                            >
-                              {item.label}
-                            </span>
-                          )}
+                              className="shrink-0 transition-colors"
+                            />
 
-                          {/* ACTIVE INDICATOR */}
-                          {isActive && openSidebar && (
-                            <span className="
-                              h-[10px] w-[10px]
-                              shrink-0 rounded-full
-                              bg-[#E3BD7A]
-                            " />
-                          )}
-                        </>
-                      )}
+                            {/* MENU LABEL */}
+                            {openSidebar && (
+                              <span
+                                className="min-w-0 flex-1 truncate"
+                                style={{
+                                  color: active ? "#FFFFFF" : "#435C64",
+                                }}
+                              >
+                                {item.label}
+                              </span>
+                            )}
+
+                            {/* ACTIVE INDICATOR */}
+                            {active && openSidebar && (
+                              <span className="
+                                h-[10px] w-[10px]
+                                shrink-0 rounded-full
+                                bg-[#E3BD7A]
+                              " />
+                            )}
+                          </>
+                        );
+                      }}
                     </NavLink>
                   );
                 })}
