@@ -7,7 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 
 import {
@@ -24,7 +24,7 @@ const chip =
 
 function AIPractice() {
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1250px]">
         <StudentPageHeader
           title="Interview Prep"
@@ -86,7 +86,7 @@ function AIPractice() {
               </p>
 
               <h3 className="mt-1 text-2xl font-extrabold text-[#06424B]">
-                Course-Specific AI Theory
+                AI Theory Practice
               </h3>
 
               <p className="mt-3 min-h-[72px] text-[15px] leading-7 text-[#4F6B6F]">
@@ -113,15 +113,8 @@ function AIPractice() {
             </div>
           </Card>
         </div>
-
-        <Note icon={Brain} className="mt-6">
-          Voice transcription uses the browser speech-recognition feature when
-          supported. The current source includes a topic-based interview
-          question set and guided response review; live AI question generation
-          and semantic evaluation require the Skill Next interview API.
-        </Note>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

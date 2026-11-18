@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { resendVerification } from "../../api/auth.api";
+import { forgotPassword } from "../../api/auth.api";
 import {
   AlertCircle,
   ArrowLeft,
@@ -83,10 +83,9 @@ function ForgotPassword() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  const requestResetLink = async (address) => {
-    // Resend the account verification email through the existing auth API.
-    return resendVerification(address);
-  };
+ const requestResetLink = async (address) => {
+  return forgotPassword(address);
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();

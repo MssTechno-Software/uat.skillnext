@@ -9,10 +9,15 @@ const API = axios.create({
   },
 });
 
-// Attach token automatically for protected requests
+// Attach authentication token automatically
 API.interceptors.request.use(
   (config) => {
-    if (config.requiresAuth !== false) {
+    const requiresAuth = config.requiresAuth !== false;
+
+    // Preserve the authentication requirement for response handling
+    config.requiresAuth = requiresAuth;
+
+    if (requiresAuth) {
       const token = getAccessToken();
 
       if (token) {

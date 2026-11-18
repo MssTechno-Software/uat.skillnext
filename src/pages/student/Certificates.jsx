@@ -1,6 +1,6 @@
 import { Award, CalendarDays, CheckCircle2, GraduationCap } from "lucide-react";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, EmptyState, LinkButton, PageShell, SectionHeading } from "../../components/student/ui";
 import { courseCategories, myLearningCoursePath, technologies } from "../../data/studentLearningData";
@@ -26,7 +26,7 @@ function Certificates() {
     .sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1100px]">
         <StudentPageHeader title="Certificates" subtitle="Your course completion certificates, earned after passing the final assignment." />
 
@@ -84,7 +84,7 @@ function Certificates() {
           <GraduationCap size={15} className="mt-0.5 shrink-0" />Certificate records are currently saved in this browser. Connect the Skill Next certificate service for server-issued, downloadable and cross-device certificates.
         </p>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

@@ -1,9 +1,11 @@
-
 const SESSION_KEYS = Object.freeze({
   accessToken: "skillnext.accessToken",
   refreshToken: "skillnext.refreshToken",
   userId: "skillnext.userId",
   role: "skillnext.role",
+  firstName: "skillnext.firstName",
+  lastName: "skillnext.lastName",
+  email: "skillnext.email",
 });
 
 const getStorage = () => {
@@ -11,7 +13,6 @@ const getStorage = () => {
   return window.sessionStorage;
 };
 
-// Get session value
 const getSessionValue = (key) => {
   try {
     return getStorage()?.getItem(key) ?? null;
@@ -20,7 +21,7 @@ const getSessionValue = (key) => {
   }
 };
 
-// Getters
+// Existing getters
 export const getAccessToken = () =>
   getSessionValue(SESSION_KEYS.accessToken);
 
@@ -33,16 +34,29 @@ export const getUserId = () =>
 export const getUserRole = () =>
   getSessionValue(SESSION_KEYS.role);
 
-// Check authentication
+// New profile getters
+export const getFirstName = () =>
+  getSessionValue(SESSION_KEYS.firstName);
+
+export const getLastName = () =>
+  getSessionValue(SESSION_KEYS.lastName);
+
+export const getUserEmail = () =>
+  getSessionValue(SESSION_KEYS.email);
+
+// Authentication check
 export const hasAuthSession = () =>
   Boolean(getAccessToken());
 
-// Create session after successful authentication
+// Create session after successful login
 export const createAuthSession = ({
   accessToken,
   refreshToken,
   userId,
   role,
+  firstName,
+  lastName,
+  email,
 }) => {
   const storage = getStorage();
 
@@ -61,6 +75,9 @@ export const createAuthSession = ({
     [SESSION_KEYS.refreshToken]: refreshToken,
     [SESSION_KEYS.userId]: userId,
     [SESSION_KEYS.role]: role,
+    [SESSION_KEYS.firstName]: firstName,
+    [SESSION_KEYS.lastName]: lastName,
+    [SESSION_KEYS.email]: email,
   };
 
   try {
@@ -75,7 +92,7 @@ export const createAuthSession = ({
   }
 };
 
-// Clear session during logout
+// Clear complete session during logout
 export const clearAuthSession = () => {
   try {
     const storage = getStorage();

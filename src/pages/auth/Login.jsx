@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import LoginVisual, { Logo } from "../../components/auth/LoginVisual";
 import { loginUser } from "../../api/auth.api";
+import Loader from "../../components/Loader";
 
 import { createAuthSession } from "../../services/authSession";
 
@@ -85,53 +86,6 @@ const extractBackendError = (error) => {
         fieldErrors,
     };
 };
-
-/* ---------- Loading Overlay ---------- */
-
-function LoaderOverlay({ open, text = "Signing you in..." }) {
-    if (!open) return null;
-
-    return (
-        <div
-            className="fixed inset-0 z-40 flex items-center justify-center"
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-        >
-            {/* Applies the loading backdrop and prevents interaction with the page. */}
-            <div className="absolute inset-0 bg-[#06424B]/25 backdrop-blur-[6px]" />
-            {/* Groups the loader indicator and its status message. */}
-            <div className="relative flex flex-col items-center gap-3">
-                {/* Displays the existing animated loading indicator. */}
-                <div className="relative h-16 w-16 animate-[loaderIn_.18s_ease-out]">
-                    <div
-                        className="absolute inset-0 rounded-full border-[5px]"
-                        style={{ borderColor: "rgba(255,255,255,0.55)" }}
-                    />
-                    <div
-                        className="absolute inset-0 animate-spin rounded-full border-[5px] border-transparent"
-                        style={{ borderTopColor: YELLOW, borderRightColor: TEAL }}
-                    />
-                </div>
-
-                {/* Displays the loading status message using the brand color palette. */}
-                <p className="text-sm font-semibold tracking-wide">
-                    <span className="text-[#FFAB0B]">Loading</span>
-                    <span className="text-[#06424B]">, please wait...</span>
-                </p>
-            </div>
-
-            <span className="sr-only">{text}</span>
-
-            <style>{`
-                @keyframes loaderIn {
-                    from { opacity: 0; transform: scale(.9); }
-                    to   { opacity: 1; transform: scale(1); }
-                }
-            `}</style>
-        </div>
-    );
-}
 
 /* ---------- Authentication Error Dialog ---------- */
 
@@ -574,7 +528,10 @@ function Login() {
                 </div>
             </section>
 
-            <LoaderOverlay open={isSubmitting} />
+            <Loader
+                open={isSubmitting}
+                text="Signing you in..."
+            />
 
             <AlertDialog
                 open={dialog.open}

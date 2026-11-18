@@ -13,6 +13,7 @@ import {
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
+import { resetPassword } from "../../api/auth.api";
 
 const REDIRECT_SECONDS = 5;
 const RING_LENGTH = 2 * Math.PI * 42;
@@ -213,29 +214,45 @@ function ResetPassword() {
 
   const handleCaps = (e) => setCapsOn(e.getModifierState?.("CapsLock"));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    setTouched({ password: true, confirm: true });
 
-    if (!token) return;
-    if (errors.password || errors.confirm) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    setSubmitting(true);
+  setFormError("");
+  setTouched({ password: true, confirm: true });
 
-    try {
-      // TODO: replace with the real set-password API call using token + password
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      setSuccess(true);
-    } catch (err) {
-      setFormError(
-        "We couldn't reset your password. Please try again in a moment."
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  if (!token) {
+    setFormError("Invalid or expired reset link. Please request a new link.");
+    return;
+  }
 
+  if (errors.password || errors.confirm) {
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    await resetPassword({
+      token,
+      password,
+      confirmPassword,
+    });
+
+    setSuccess(true);
+  } catch (err) {
+    const detail = err?.response?.data?.detail;
+    const message = err?.response?.data?.message;
+
+    setFormError(
+      (typeof detail === "string" && detail) ||
+      (typeof message === "string" && message) ||
+      "We couldn't reset your password. Please try again."
+    );
+  } finally {
+    setSubmitting(false);
+  }
+};
   return (
     <main className="relative flex min-h-dvh w-full items-center justify-center overflow-x-hidden bg-[#EEF3F4] px-3 py-5 sm:px-5">
       <style>{styles}</style>

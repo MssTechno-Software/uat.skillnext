@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, EmptyState, IconBadge, PageShell, SectionHeading } from "../../components/student/ui";
 import { courseCategories, technologies } from "../../data/studentLearningData";
@@ -42,7 +42,7 @@ function InterviewPrepCourses() {
   };
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1400px]">
         <StudentPageHeader
           title="Course-Specific Interview Prep"
@@ -135,7 +135,7 @@ function InterviewPrepCourses() {
           )}
         </section>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

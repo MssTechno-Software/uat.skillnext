@@ -6,21 +6,21 @@ import {
 } from "../../services/authSession";
 
 function ProtectedRoute({ allowedRole, children }) {
-  // Check authentication
+  // No active session: redirect to login
   if (!hasAuthSession()) {
     return <Navigate to="/login" replace />;
   }
 
-  // Get logged-in user role
   const userRole = (getUserRole() || "").trim().toLowerCase();
+  const requiredRole = (allowedRole || "").trim().toLowerCase();
 
   // Invalid role
   if (!userRole) {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect users to their own portal
-  if (userRole !== allowedRole) {
+  // Redirect users to their respective portals
+  if (userRole !== requiredRole) {
     if (userRole === "student") {
       return <Navigate to="/student/dashboard" replace />;
     }

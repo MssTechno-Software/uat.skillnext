@@ -13,10 +13,8 @@ import {
   saveInterviewFeedback,
   saveInterviewSession,
 } from "../../data/interviewPrepSession";
-
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
-
 import {
   BackLink,
   Card,
@@ -58,7 +56,7 @@ function TopicInterviewFeedback({ state }) {
   };
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1050px]">
         <StudentPageHeader
           title="Interview Feedback"
@@ -204,7 +202,7 @@ function TopicInterviewFeedback({ state }) {
           </div>
         </Card>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 
@@ -231,7 +229,7 @@ function SelfIntroductionFeedback({ state }) {
   ).length;
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1050px]">
         <StudentPageHeader
           title="Interview Feedback"
@@ -387,7 +385,7 @@ function SelfIntroductionFeedback({ state }) {
           </div>
         </Card>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 
@@ -407,7 +405,7 @@ function AIFeedback() {
   }
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[950px]">
         <StudentPageHeader
           title="Practice Feedback"
@@ -462,7 +460,7 @@ function AIFeedback() {
           </div>
         </Card>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

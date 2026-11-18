@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { html } from "@codemirror/lang-html";
 import { EditorView } from "@codemirror/view";
-
+import Loader from "../../components/Loader";
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,6 +18,7 @@ import {
   Play,
   PlayCircle,
   RotateCcw,
+  RefreshCw,
   Code2,
   Eye,
   BookOpen,
@@ -27,7 +28,7 @@ import {
   LockKeyhole,
 } from "lucide-react";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import {
   Card,
@@ -35,9 +36,9 @@ import {
   PageShell,
 } from "../../components/student/ui";
 
-import { courseCategories, myLearningCoursePath, technologies } from "../../data/studentLearningData";
-import { useEnrolledCourses } from "../../data/studentCourseEnrollment";
-import { getQuizForCourseModule, getQuizForTopic } from "../../data/quizData";
+import { myLearningCoursePath, technologies } from "../../data/studentLearningData";
+import { getQuizForTopic } from "../../data/quizData";
+import { getCourseContent, completeModule } from "../../api/course.api";
 import { hasReadLesson, markLessonRead, rememberLastTopic, useProgress } from "../../data/studentProgress";
 
 /* ======================================================
@@ -543,7 +544,7 @@ function TechnologyLessonContent() {
   const learningWorkspacePath = myLearningCoursePath(null, technology.id);
   if (!previousTopicComplete) {
     return (
-      <Sidebar>
+      
         <PageShell max="max-w-[980px]">
           <LockedTopicNotice
             courseName={technology.name}
@@ -554,12 +555,12 @@ function TechnologyLessonContent() {
             previousTo={prev ? `/student/topics/${technology.id}/topic/${prev.id}` : null}
           />
         </PageShell>
-      </Sidebar>
+      
     );
   }
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1500px]">
 
         <StudentPageHeader
@@ -998,303 +999,678 @@ function TechnologyLessonContent() {
 
         </div>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 
-function VocationalModuleLesson({ course, module }) {
-  const progress = useProgress();
-  const done = Boolean(progress.completed[`${course.id}/${module.id}`]);
-  const lessonRead = hasReadLesson(progress, course.id, module.id) || done;
-  const moduleIndex = course.modules.findIndex((item) => item.id === module.id);
-  const previousModule = course.modules[moduleIndex - 1];
-  const nextModule = course.modules[moduleIndex + 1];
-  const quiz = getQuizForCourseModule(course.id, module.id);
+/* ======================================================
+   API COURSE MODULE CONTENT
+   GET /api/courses/{course_id}/content
+   POST /api/modules/{module_id}/complete
+====================================================== */
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [course.id, module.id]);
+const MODULE_PROGRESS_STORAGE_PREFIX = "skillnext:course-module-progress:";
 
-  const previousModuleComplete = !previousModule || Boolean(progress.completed[`${course.id}/${previousModule.id}`]);
-  const learningWorkspacePath = myLearningCoursePath(course.id);
-  if (!previousModuleComplete) {
+function readApiModuleProgress(courseId) {
+  if (typeof window === "undefined") return [];
+  try {
+    const saved = JSON.parse(
+      window.localStorage.getItem(`${MODULE_PROGRESS_STORAGE_PREFIX}${courseId}`) || "{}"
+    );
+    return Array.isArray(saved.completedModuleIds)
+      ? saved.completedModuleIds.map(Number).filter(Number.isFinite)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function isApiModuleComplete(module) {
+  const status = String(module?.status || module?.completionStatus || "").toLowerCase();
+  return (
+    module?.completed === true ||
+    module?.isCompleted === true ||
+    status === "completed" ||
+    Number(module?.percentage) >= 100
+  );
+}
+
+function markdownBodyToBlocks(body) {
+  if (!body || typeof body !== "string") return [];
+
+  const blocks = [];
+  let paragraphLines = [];
+  let listItems = [];
+  let listType = null;
+
+  const flushParagraph = () => {
+    if (paragraphLines.length) {
+      blocks.push({ type: "paragraph", text: paragraphLines.join(" ").trim() });
+      paragraphLines = [];
+    }
+  };
+
+  const flushList = () => {
+    if (listItems.length) {
+      blocks.push({ type: listType, items: [...listItems] });
+      listItems = [];
+      listType = null;
+    }
+  };
+
+  body.split(/\r?\n/).forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) {
+      flushParagraph();
+      flushList();
+      return;
+    }
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      blocks.push({
+        type: heading[1].length === 1 ? "heading" : "subheading",
+        text: heading[2],
+      });
+      return;
+    }
+
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+    if (bullet || numbered) {
+      flushParagraph();
+      const nextType = bullet ? "bullet_list" : "numbered_list";
+      if (listType && listType !== nextType) flushList();
+      listType = nextType;
+      listItems.push((bullet || numbered)[1]);
+      return;
+    }
+
+    flushList();
+    paragraphLines.push(line);
+  });
+
+  flushParagraph();
+  flushList();
+  return blocks;
+}
+
+function ApiContentBlocks({ content }) {
+  const blocks = Array.isArray(content?.blocks) && content.blocks.length
+    ? content.blocks
+    : markdownBodyToBlocks(content?.body);
+
+  if (!blocks.length) {
     return (
-      <Sidebar>
-        <PageShell max="max-w-[980px]">
-          <LockedTopicNotice
-            courseName={course.name}
-            topicName={module.title}
-            step={moduleIndex + 1}
-            total={course.modules.length}
-            backTo={learningWorkspacePath}
-            previousTo={previousModule ? `/student/topics/${course.id}/topic/${previousModule.id}` : null}
-          />
-        </PageShell>
-      </Sidebar>
+      <p className="text-sm leading-7 text-[#718486]">
+        Learning content has not been published for this item yet.
+      </p>
     );
   }
 
   return (
-    <Sidebar>
-      <PageShell max="max-w-[1180px]">
-        <StudentPageHeader title={course.name} subtitle={`${course.category} / ${module.title}`} />
+    <div className="space-y-5">
+      {blocks.map((block, index) => {
+        const type = String(block?.type || "paragraph").toLowerCase();
+        const text = block?.text || block?.content || "";
+        const items = Array.isArray(block?.items) ? block.items : [];
 
-        <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
-          <Link to="/student/my-learning" className="!text-[#526D71] !no-underline hover:!text-[#06424B]">My Learning</Link>
-          <ChevronRight size={14} />
-          <Link to={learningWorkspacePath} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{course.name}</Link>
-          <ChevronRight size={14} />
-          <span className="text-[#06424B]">{module.title}</span>
-        </nav>
+        if (type === "heading") {
+          return (
+            <h2 key={index} className="pt-2 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">
+              {text}
+            </h2>
+          );
+        }
+
+        if (type === "subheading") {
+          return (
+            <h3 key={index} className="pt-1 text-base font-extrabold leading-6 text-[#123B43] sm:text-lg">
+              {text}
+            </h3>
+          );
+        }
+
+        if (type === "bullet_list" || type === "numbered_list") {
+          const ListTag = type === "numbered_list" ? "ol" : "ul";
+          return (
+            <ListTag
+              key={index}
+              className={`${type === "numbered_list" ? "list-decimal" : "list-disc"} ml-6 space-y-2.5 text-sm leading-7 text-[#405D61] marker:text-[#B88736]`}
+            >
+              {items.map((item, itemIndex) => (
+                <li key={itemIndex} className="pl-1">{item}</li>
+              ))}
+            </ListTag>
+          );
+        }
+
+        return (
+          <p key={index} className="text-sm leading-7 text-[#405D61] sm:text-[15px]">
+            {text}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function CourseModuleLoading() {
+  return (
+    <PageShell max="max-w-[1180px]">
+      <section
+        role="status"
+        aria-live="polite"
+        aria-label="Loading course lesson"
+        className="mx-auto w-full"
+      >
+        <div className="mb-6 flex items-center gap-4 rounded-2xl border border-[#E1E9E9] bg-white px-5 py-4 shadow-[0_8px_28px_rgba(6,66,75,0.05)]">
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3F4]">
+            <span className="absolute inset-0 rounded-2xl border-2 border-[#DCE7E5]" />
+            <span className="absolute inset-0 animate-spin rounded-2xl border-2 border-transparent border-t-[#FFAB0B]" />
+            <BookOpen size={20} className="relative text-[#06424B]" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-extrabold text-[#06424B]">
+              Preparing your learning space
+            </p>
+            <p className="mt-1 text-xs leading-5 text-[#718486]">
+              Loading course modules and lesson content...
+            </p>
+          </div>
+          <span className="ml-auto hidden h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#FFAB0B] sm:block" />
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
-          <aside className="lg:sticky lg:top-5 lg:h-fit">
-            <Card className="overflow-hidden">
-              <div className="bg-[#123B43] px-5 py-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <BookOpen size={15} className="text-[#FFAB0B]" />
-                  <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">Course Topics</span>
-                </div>
-                <h2 className="text-xl font-extrabold text-white">{course.name}</h2>
-                <p className="mt-1 text-xs text-white/55">{course.modules.length} structured topics</p>
-              </div>
-              <nav className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
-                {course.modules.map((item, index) => {
-                  const active = item.id === module.id;
-                  const complete = Boolean(progress.completed[`${course.id}/${item.id}`]);
-                  const previous = course.modules[index - 1];
-                  const unlocked = !previous || Boolean(progress.completed[`${course.id}/${previous.id}`]);
-                  const content = (
-                    <>
-                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${complete ? "bg-[#06424B] text-white" : active ? "bg-[#FFAB0B] text-[#123B43]" : "bg-[#EEF3F4] text-[#526D71]"}`}>
-                        {complete ? <CheckCircle2 size={15} /> : unlocked ? index + 1 : <LockKeyhole size={13} />}
-                      </span>
-                      <span className="min-w-0 flex-1 leading-5">{item.title}</span>
-                      {active && <ChevronRight size={15} className="shrink-0 text-[#06424B]" />}
-                    </>
-                  );
-                  const classes = `flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] !no-underline transition ${active ? "bg-[#E9F0EF] font-bold !text-[#06424B] ring-1 ring-[#06424B]/10" : unlocked ? "font-medium !text-[#526D71] hover:bg-[#F4F7F7]" : "cursor-not-allowed font-medium !text-[#9AAEAF]"}`;
-                  return unlocked ? (
-                    <Link key={item.id} to={`/student/topics/${course.id}/topic/${item.id}`} className={classes}>
-                      {content}
-                    </Link>
-                  ) : (
-                    <div key={item.id} aria-disabled="true" className={classes}>
-                      {content}
-                    </div>
-                  );
-                })}
-              </nav>
-            </Card>
-          </aside>
+          <div className="hidden space-y-3 lg:block">
+            <div className="h-40 animate-pulse rounded-2xl bg-[#DCE7E5]" />
+            <div className="space-y-2 rounded-2xl border border-[#E5ECEB] bg-white p-4">
+              {[0, 1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  className="h-10 animate-pulse rounded-xl bg-[#F0F4F3]"
+                />
+              ))}
+            </div>
+          </div>
 
-          <article className="min-w-0 space-y-6">
-            <Card className="p-6 sm:p-8">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">Topic {String(moduleIndex + 1).padStart(2, "0")}</span>
-                <span className="text-xs font-semibold text-[#789094]">{course.name}</span>
-                {done && <span className="rounded-full bg-[#E1F2EC] px-3 py-1 text-[10px] font-bold text-[#28765E]">Topic Completed</span>}
-              </div>
-              <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">{module.title}</h1>
-              <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">{module.description}</p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                {previousModule && <LinkButton to={`/student/topics/${course.id}/topic/${previousModule.id}`} variant="outline" size="sm" icon={ArrowLeft}>Previous Topic</LinkButton>}
-                {nextModule && done && <LinkButton to={`/student/topics/${course.id}/topic/${nextModule.id}`} size="sm" iconRight={ArrowRight}>Next Topic</LinkButton>}
-              </div>
-            </Card>
+          <div className="min-w-0 space-y-5">
+            <div className="rounded-2xl border border-[#E5ECEB] bg-white p-6 sm:p-8">
+              <div className="h-6 w-32 animate-pulse rounded-lg bg-[#FFF1D1]" />
+              <div className="mt-5 h-9 w-3/4 animate-pulse rounded-lg bg-[#DCE7E5]" />
+              <div className="mt-4 h-4 w-full animate-pulse rounded bg-[#E8EFED]" />
+              <div className="mt-2 h-4 w-5/6 animate-pulse rounded bg-[#E8EFED]" />
+            </div>
+            <div className="space-y-4 rounded-2xl border border-[#E5ECEB] bg-white p-6 sm:p-8">
+              <div className="h-6 w-2/5 animate-pulse rounded-lg bg-[#DCE7E5]" />
+              <div className="h-4 w-full animate-pulse rounded bg-[#E8EFED]" />
+              <div className="h-4 w-full animate-pulse rounded bg-[#E8EFED]" />
+              <div className="h-4 w-4/5 animate-pulse rounded bg-[#E8EFED]" />
+              <div className="mt-6 h-28 animate-pulse rounded-xl bg-[#F0F4F3]" />
+            </div>
+          </div>
+        </div>
+        <span className="sr-only">Please wait while the lesson loads.</span>
+      </section>
+    </PageShell>
+  );
+}
 
-            <Card className="p-6 sm:p-8">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF1D1] text-[#94650C]"><BookOpen size={19} /></span>
-                <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">Learning Content</p>
-                  <h2 className="text-xl font-extrabold text-[#123B43]">Understand the topic</h2>
-                </div>
-              </div>
-              <div className="mt-6 space-y-5">
-                {(module.overview || "Study the topic overview and review the key learning points before attempting the quiz.").split("\n\n").map((paragraph, index) => (
-                  <p key={index} className="text-[15px] leading-8 text-[#405D61]">{paragraph}</p>
-                ))}
-              </div>
+function ApiCourseModuleLesson({ courseId, moduleId }) {
+  const [course, setCourse] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [completedModuleIds, setCompletedModuleIds] = useState(() => readApiModuleProgress(courseId));
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completionError, setCompletionError] = useState("");
+  const [completionMessage, setCompletionMessage] = useState("");
+  const [completionSummary, setCompletionSummary] = useState(null);
 
-              {module.lessonSections?.length > 0 && (
-                <div className="mt-8 space-y-5">
-                  <div className="border-b border-[#E7EEEE] pb-3">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B07A06]">Detailed learning guide</p>
-                    <h3 className="mt-1 text-lg font-extrabold text-[#123B43]">Learn the topic step by step</h3>
-                    <p className="mt-1 text-sm leading-6 text-[#71878A]">Read each section in order. The examples explain how the knowledge is used in a real training or workplace situation.</p>
+  useEffect(() => {
+    let active = true;
+
+    const loadContent = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await getCourseContent(courseId);
+        if (!response || response.success === false) {
+          throw new Error(response?.message || "Course content could not be loaded.");
+        }
+
+        const payload = response.data || {};
+        if (!payload.course?.id) {
+          throw new Error("The course content response is missing course details.");
+        }
+
+        const visibleModules = (Array.isArray(payload.modules) ? payload.modules : [])
+          .filter((item) => item && item.visible !== false)
+          .map((item) => ({
+            ...item,
+            contents: Array.isArray(item.contents)
+              ? item.contents.filter((content) => content && content.visible !== false)
+              : [],
+          }))
+          .sort((a, b) => Number(a.position || 0) - Number(b.position || 0));
+
+        if (active) {
+          setCourse(payload.course);
+          setModules(visibleModules);
+          const apiDoneIds = visibleModules.filter(isApiModuleComplete).map((item) => Number(item.id));
+          setCompletedModuleIds((current) => [...new Set([
+            ...current,
+            ...readApiModuleProgress(courseId),
+            ...apiDoneIds,
+          ])]);
+        }
+      } catch (requestError) {
+        console.error("Course Content API Error:", requestError);
+        if (active) {
+          const backend = requestError?.response?.data;
+          const message = backend?.message || backend?.detail || requestError?.message;
+          setError(typeof message === "string" ? message : "We couldn't load this module's learning content. Please try again.");
+        }
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    loadContent();
+    return () => { active = false; };
+  }, [courseId]);
+
+  useEffect(() => {
+    setCompletedModuleIds(readApiModuleProgress(courseId));
+    setCompletionError("");
+    setCompletionMessage("");
+    setCompletionSummary(null);
+  }, [courseId, moduleId]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [courseId, moduleId]);
+
+  const moduleIndex = modules.findIndex((item) => String(item.id) === String(moduleId));
+  const module = moduleIndex >= 0 ? modules[moduleIndex] : null;
+  const previousModule = moduleIndex > 0 ? modules[moduleIndex - 1] : null;
+  const nextModule = moduleIndex >= 0 ? modules[moduleIndex + 1] || null : null;
+  const completedSet = new Set(completedModuleIds.map(String));
+  const isCompleted = Boolean(module && (completedSet.has(String(module.id)) || isApiModuleComplete(module)));
+  const isUnlocked = Boolean(module && (isCompleted || !previousModule || completedSet.has(String(previousModule.id))));
+  const learningPath = `/student/my-learning?course=${encodeURIComponent(courseId)}`;
+
+  const handleCompleteModule = async () => {
+    if (!module || isCompleting || isCompleted) return;
+
+    setIsCompleting(true);
+    setCompletionError("");
+    setCompletionMessage("");
+
+    try {
+      const response = await completeModule(module.id);
+      if (!response || response.success === false) {
+        throw new Error(response?.message || "The module could not be marked as completed.");
+      }
+
+      const progressData = response.data || {};
+      const returnedModules = Array.isArray(progressData.modules) ? progressData.modules : [];
+      const returnedDoneIds = returnedModules
+        .filter(isApiModuleComplete)
+        .map((item) => Number(item.moduleId ?? item.id))
+        .filter(Number.isFinite);
+      const nextCompletedIds = [...new Set([
+        ...readApiModuleProgress(courseId),
+        ...completedModuleIds,
+        ...returnedDoneIds,
+        Number(module.id),
+      ])];
+
+      try {
+        window.localStorage.setItem(
+          `${MODULE_PROGRESS_STORAGE_PREFIX}${courseId}`,
+          JSON.stringify({
+            completedModuleIds: nextCompletedIds,
+            apiProgress: progressData,
+          })
+        );
+      } catch (storageError) {
+        console.warn("Module progress could not be saved in this browser:", storageError);
+      }
+
+      setCompletedModuleIds(nextCompletedIds);
+      setCompletionSummary(progressData);
+      setCompletionMessage(
+        response.message || `${module.name || "This module"} has been marked as completed. The next module is now unlocked.`
+      );
+    } catch (requestError) {
+      console.error("Complete Module API Error:", requestError);
+      const backend = requestError?.response?.data;
+      const message = backend?.message || backend?.detail || requestError?.message;
+      setCompletionError(typeof message === "string" ? message : "We couldn't complete this module. Please try again.");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+ if (isLoading) {
+  return (
+    <Loader
+      open={isLoading}
+      text="Loading course content..."
+    />
+  );
+}
+
+  if (error || !course || !module) {
+    return (
+      <PageShell max="max-w-[980px]">
+        <Card className="p-8">
+          <h1 className="text-xl font-extrabold text-[#06424B]">
+            {module ? "Unable to load module content" : "Module not found"}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-[#5A7478]">
+            {error || "This module is not part of the selected course."}
+          </p>
+          <LinkButton to={learningPath} variant="gold" className="mt-5" icon={ArrowLeft}>
+            Back to My Learning
+          </LinkButton>
+        </Card>
+      </PageShell>
+    );
+  }
+
+  if (!isUnlocked) {
+    return (
+      <PageShell max="max-w-[980px]">
+        <Card className="overflow-hidden border-[#DCE7E5] p-0">
+          <div className="bg-[#06424B] px-6 py-7 text-white sm:px-8">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]">
+                <LockKeyhole size={21} />
+              </span>
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFCF70]">Learning sequence</p>
+                <h1 className="mt-1 text-2xl font-extrabold">Complete the previous module first</h1>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-7 text-white/75">
+              This module stays locked until the previous module is marked as completed.
+            </p>
+          </div>
+          <div className="p-6 sm:p-8">
+            <p className="text-sm font-bold text-[#06424B]">Previous module: {previousModule?.name || "Previous module"}</p>
+            <LinkButton to={`/student/topics/${courseId}/topic/${previousModule?.id}`} variant="gold" icon={PlayCircle} className="mt-5">
+              Open Previous Module
+            </LinkButton>
+          </div>
+        </Card>
+      </PageShell>
+    );
+  }
+
+  const courseName = course.fullName || course.shortName || "Course";
+  const totalContents = modules.reduce((total, item) => total + (item.contents?.length || 0), 0);
+  const contentCount = module.contents?.length || 0;
+
+  return (
+    <PageShell max="max-w-[1500px]">
+      <StudentPageHeader title={courseName} subtitle={`${course.shortName || "Course curriculum"} / ${module.name}`} />
+
+      <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
+        <Link to="/student/my-learning" className="!text-[#526D71] !no-underline hover:!text-[#06424B]">My Learning</Link>
+        <ChevronRight size={14} />
+        <Link to={learningPath} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{courseName}</Link>
+        <ChevronRight size={14} />
+        <span className="text-[#06424B]">{module.name}</span>
+      </nav>
+
+      <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-5 lg:h-fit">
+          <Card className="overflow-hidden">
+            <div className="bg-[#123B43] px-5 py-5">
+              <div className="mb-3 flex items-center gap-2">
+                <BookOpen size={15} className="text-[#FFAB0B]" />
+                <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">Course Modules</span>
+              </div>
+              <h2 className="text-xl font-extrabold text-white">{courseName}</h2>
+              <p className="mt-1 text-xs text-white/55">{modules.length} structured modules</p>
+            </div>
+
+            <nav className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
+              {modules.map((item, index) => {
+                const itemComplete = completedSet.has(String(item.id)) || isApiModuleComplete(item);
+                const prev = modules[index - 1];
+                const itemUnlocked = itemComplete || !prev || completedSet.has(String(prev.id));
+                const active = String(item.id) === String(module.id);
+                const itemClass = `flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] !no-underline transition ${
+                  active
+                    ? "bg-[#E9F0EF] font-bold !text-[#06424B] ring-1 ring-[#06424B]/10"
+                    : itemUnlocked
+                      ? "font-medium !text-[#526D71] hover:bg-[#F4F7F7]"
+                      : "cursor-not-allowed font-medium !text-[#9AAEAF]"
+                }`;
+                const label = (
+                  <>
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${itemComplete ? "bg-[#06424B] text-white" : active ? "bg-[#FFAB0B] text-[#123B43]" : "bg-[#EEF3F4] text-[#526D71]"}`}>
+                      {itemComplete ? <CheckCircle2 size={15} /> : itemUnlocked ? index + 1 : <LockKeyhole size={13} />}
+                    </span>
+                    <span className="min-w-0 flex-1 leading-5">{item.name}</span>
+                    {active && <ChevronRight size={15} className="shrink-0 text-[#06424B]" />}
+                  </>
+                );
+                return itemUnlocked ? (
+                  <Link key={item.id} to={`/student/topics/${courseId}/topic/${item.id}`} className={itemClass}>
+                    {label}
+                  </Link>
+                ) : (
+                  <div key={item.id} aria-disabled="true" className={itemClass}>
+                    {label}
                   </div>
-                  {module.lessonSections.map((section, sectionIndex) => (
-                    <section key={`${module.id}-section-${sectionIndex}`} className="rounded-2xl border border-[#E1EAE8] bg-white p-5 sm:p-6">
-                      <div className="mb-4 flex items-start gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#EAF2F0] text-xs font-extrabold text-[#245D53]">
-                          {String(sectionIndex + 1).padStart(2, "0")}
-                        </span>
-                        <h3 className="pt-1 text-base font-extrabold leading-6 text-[#123B43]">{section.title}</h3>
-                      </div>
-                      {section.paragraphs?.length > 0 && (
-                        <div className="space-y-4">
-                          {section.paragraphs.map((paragraph, paragraphIndex) => (
-                            <p key={paragraphIndex} className="text-sm leading-7 text-[#405D61]">{paragraph}</p>
-                          ))}
-                        </div>
-                      )}
-                      {section.steps?.length > 0 && (
-                        <ol className="mt-4 space-y-3">
-                          {section.steps.map((step, stepIndex) => (
-                            <li key={stepIndex} className="flex items-start gap-3 rounded-xl bg-[#F7F9F9] p-3.5">
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#06424B] text-[11px] font-extrabold text-white">{stepIndex + 1}</span>
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-[#123B43]">{step.title}</p>
-                                <p className="mt-1 text-sm leading-6 text-[#526D71]">{step.detail}</p>
-                              </div>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                      {section.bullets?.length > 0 && (
-                        <ul className="mt-4 space-y-3">
-                          {section.bullets.map((item, itemIndex) => (
-                            <li key={itemIndex} className="flex items-start gap-3 text-sm leading-6 text-[#405D61]">
-                              <CheckCircle2 size={16} className="mt-1 shrink-0 text-[#34866E]" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  ))}
-                </div>
-              )}
+                );
+              })}
+            </nav>
+          </Card>
+        </aside>
 
-              {module.guidedPractice && (
-                <div className="mt-7 rounded-2xl border border-[#DCE9E7] bg-white p-5 sm:p-6">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3F1] text-[#245D53]"><PlayCircle size={18} /></span>
-                    <div>
-                      <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#34866E]">Practical application</p>
-                      <h3 className="text-base font-extrabold text-[#123B43]">Guided practice</h3>
-                    </div>
+        <article className="min-w-0 space-y-6">
+          <Card className="p-6 sm:p-8">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">
+                Module {String(moduleIndex + 1).padStart(2, "0")} of {modules.length}
+              </span>
+              <span className="rounded-lg bg-[#EEF3F4] px-3 py-1.5 text-[10px] font-bold text-[#526D71]">
+                {contentCount} {contentCount === 1 ? "learning item" : "learning items"}
+              </span>
+              {isCompleted && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#E1F2EC] px-3 py-1 text-[10px] font-bold text-[#28765E]">
+                  <CheckCircle2 size={13} /> Module completed
+                </span>
+              )}
+            </div>
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">
+              {module.name}
+            </h1>
+            <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">
+              {module.summary || "Read the learning items below and review the key concepts in this module."}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <LinkButton to={learningPath} variant="outline" size="sm" icon={ArrowLeft}>
+                Back to Course
+              </LinkButton>
+              {previousModule && (
+                <LinkButton to={`/student/topics/${courseId}/topic/${previousModule.id}`} variant="outline" size="sm">
+                  Previous Module
+                </LinkButton>
+              )}
+              {isCompleted && nextModule && (
+                <LinkButton to={`/student/topics/${courseId}/topic/${nextModule.id}`} size="sm" iconRight={ArrowRight}>
+                  Next Module
+                </LinkButton>
+              )}
+            </div>
+          </Card>
+
+          {contentCount > 0 ? (
+            module.contents.map((content, index) => (
+              <Card key={content.id ?? `${module.id}-content-${index}`} className="p-6 sm:p-8">
+                <div className="mb-6 flex items-start gap-4 border-b border-[#E7EEEE] pb-5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1D1] text-sm font-extrabold text-[#94650C]">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">
+                      {String(content.contentType || content.content_type || "learning content").replace(/[_-]+/g, " ")}
+                    </p>
+                    <h2 className="mt-1 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">
+                      {content.title || "Learning content"}
+                    </h2>
                   </div>
-                  <p className="mt-4 text-sm leading-7 text-[#405D61]">{module.guidedPractice}</p>
                 </div>
-              )}
-              {module.professionalChecklist?.length > 0 && (
-                <div className="mt-6 rounded-2xl border border-[#E4ECEB] bg-[#F7F9F9] p-5 sm:p-6">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#123B43]">Professional practice checklist</h3>
-                  <ul className="mt-4 space-y-3">
-                    {module.professionalChecklist.map((item, index) => (
-                      <li key={index} className="flex items-start gap-3 text-sm leading-6 text-[#405D61]">
-                        <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[#34866E]" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {module.learningPoints?.length > 0 && (
-                <div className="mt-7 rounded-xl border border-[#E4ECEB] bg-[#F7F9F9] p-5">
-                  <h3 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-[#123B43]">Key Learning Points</h3>
-                  <ul className="space-y-3">
-                    {module.learningPoints.map((point, index) => (
-                      <li key={index} className="flex items-start gap-3 text-sm leading-6 text-[#405D61]">
-                        <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[#34866E]" />
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+
+                <ApiContentBlocks content={content} />
+
+                {(content.url || content.previewUrl || content.downloadUrl) && (
+                  <div className="mt-7 flex flex-wrap gap-3 border-t border-[#E7EEEE] pt-5">
+                    {(content.url || content.previewUrl) && (
+                      <a
+                        href={content.previewUrl || content.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#F4F7F7]"
+                      >
+                        <BookOpen size={15} /> Open resource
+                      </a>
+                    )}
+                    {content.downloadUrl && (
+                      <a
+                        href={content.downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#EEF3F4] px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#E2EBEC]"
+                      >
+                        <ExternalLink size={15} /> Download {content.fileName || "file"}
+                      </a>
+                    )}
+                  </div>
+                )}
+              </Card>
+            ))
+          ) : (
+            <Card className="p-7">
+              <p className="text-sm leading-7 text-[#718486]">
+                This module has been published, but its learning content has not been added yet.
+              </p>
             </Card>
+          )}
 
-            <Card className="p-5 sm:p-6">
-              {!lessonRead && (
-                <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[#DCE9E7] bg-[#F7FAF9] p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-extrabold text-[#123B43]">Finished reading this lesson?</p>
-                    <p className="mt-1 text-xs leading-5 text-[#71878A]">Review the full learning content, detailed guide and practical activity above, then mark this topic as read to unlock its 10-question quiz.</p>
-                  </div>
-                  <button type="button" onClick={() => markLessonRead(course.id, module.id)} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0A515C]">
-                    <CheckCircle2 size={15} /> Mark as read
-                  </button>
-                </div>
-              )}
-              {lessonRead && !done && (
-                <p className="mb-5 inline-flex items-center gap-2 rounded-lg bg-[#EAF5EF] px-3 py-2 text-xs font-bold text-[#28765E]">
-                  <CheckCircle2 size={14} /> Lesson marked as read · Quiz unlocked
+          <Card className="p-5 sm:p-6">
+            {isCompleted ? (
+              <div className="rounded-xl border border-[#CFE5DB] bg-[#F3FAF6] p-4">
+                <p className="inline-flex items-center gap-2 text-sm font-extrabold text-[#28765E]">
+                  <CheckCircle2 size={17} /> Module completed
                 </p>
-              )}
+                <p className="mt-1 text-xs leading-5 text-[#55786A]">
+                  {completionMessage || "This module has been marked as completed. The next module is available in your learning path."}
+                </p>
+                {completionSummary?.percentage !== undefined && (
+                  <p className="mt-2 text-xs font-bold text-[#28765E]">
+                    Course module completion: {Math.round(Number(completionSummary.percentage) || 0)}%
+                  </p>
+                )}
+              </div>
+            ) : (
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#123B43]">{done ? "Topic quiz completed" : "Check your understanding"}</h3>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-[#789094]">Complete the 10-question quiz. Each answer shows immediate feedback. Complete all 10 questions to unlock the next topic, regardless of score.</p>
+                  <h3 className="text-base font-extrabold text-[#123B43]">Finished this module?</h3>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-[#789094]">
+                    Review all learning items, then mark this module as complete. The completion API will update your course progress and release the next module.
+                  </p>
                 </div>
-                {done ? (
-                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#EAF5EF] px-4 py-3 text-xs font-extrabold text-[#28765E]">
-                    <CheckCircle2 size={15} /> Quiz completed
-                  </span>
-                ) : quiz && lessonRead ? (
-                  <LinkButton to={`/student/quiz/${quiz.slug}`} variant="gold" icon={ClipboardCheck}>
-                    Start 10-Question Quiz
-                  </LinkButton>
-                ) : quiz ? (
-                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#F2F5F5] px-4 py-3 text-xs font-bold text-[#839597]">
-                    <LockKeyhole size={14} /> Mark this lesson as read to unlock the quiz
-                  </span>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={handleCompleteModule}
+                  disabled={isCompleting}
+                  aria-busy={isCompleting}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-xs font-extrabold text-[#06424B] shadow-[0_6px_16px_rgba(255,171,11,0.18)] transition hover:-translate-y-0.5 hover:bg-[#FFC13C] hover:shadow-[0_9px_20px_rgba(255,171,11,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-y-0"
+                >
+                  {isCompleting ? (
+                    <>
+                      <RefreshCw size={15} className="animate-spin" />
+                      Saving completion...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={15} />
+                      Mark Module Complete
+                    </>
+                  )}
+                </button>
               </div>
-              <div className="mt-5 flex flex-wrap gap-3 border-t border-[#E9EEEE] pt-5">
-                <LinkButton to={learningWorkspacePath} variant="outline">All Course Topics</LinkButton>
-                {!nextModule && done && <LinkButton to={learningWorkspacePath} iconRight={ArrowRight}>Go to Final Assignment</LinkButton>}
-              </div>
-            </Card>
-          </article>
-        </div>
-      </PageShell>
-    </Sidebar>
+            )}
+
+            {isCompleting && (
+              <p role="status" aria-live="polite" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#F3E2B8] bg-[#FFFAEE] px-4 py-3 text-xs font-semibold text-[#805C17]">
+                <RefreshCw size={14} className="animate-spin" />
+                Saving your module progress securely...
+              </p>
+            )}
+
+            {completionError && (
+              <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-red-700">
+                {completionError}
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-3 border-t border-[#E9EEEE] pt-5">
+              <LinkButton to={learningPath} variant="outline">All Course Modules</LinkButton>
+              {isCompleted && nextModule && (
+                <LinkButton to={`/student/topics/${courseId}/topic/${nextModule.id}`} variant="gold" iconRight={ArrowRight}>
+                  Continue to Next Module
+                </LinkButton>
+              )}
+              {isCompleted && !nextModule && (
+                <span className="inline-flex items-center gap-2 rounded-xl bg-[#EAF5EF] px-4 py-3 text-xs font-extrabold text-[#28765E]">
+                  <CheckCircle2 size={15} /> All modules completed
+                </span>
+              )}
+            </div>
+          </Card>
+        </article>
+      </div>
+    </PageShell>
   );
 }
 
 function LessonContent() {
   const { technologySlug, topicId } = useParams();
-  const { isEnrolled } = useEnrolledCourses();
-  const course = courseCategories.find((item) => item.id === technologySlug && item.type === "vocational");
-  const module = course?.modules.find((item) => item.id === topicId);
+
+  // Numeric route values are backend course IDs (for example /topics/5/topic/26).
+  // Non-numeric values continue to use the existing technology learning path.
+  if (/^\d+$/.test(String(technologySlug || ""))) {
+    return <ApiCourseModuleLesson courseId={technologySlug} moduleId={topicId} />;
+  }
+
   const technology = technologies.find((item) => item.id === technologySlug);
   const technologyTopic = technology?.topics.find((item) => item.id === topicId);
-  const requiredCourseId = course ? course.id : technology ? technology.id : null;
 
-  if (!requiredCourseId || (course && !module) || (technology && !technologyTopic)) {
+  if (!technology || !technologyTopic) {
     return (
-      <Sidebar>
-        <PageShell max="max-w-[900px]">
-          <Card className="p-8">
-            <h1 className="text-xl font-extrabold text-[#06424B]">Lesson not found</h1>
-            <p className="mt-2 text-sm leading-6 text-[#5A7478]">The requested course topic is unavailable. Return to Explore Courses and select a valid topic.</p>
-            <LinkButton to="/student/topics" className="mt-5">Explore Courses</LinkButton>
-          </Card>
-        </PageShell>
-      </Sidebar>
+      <PageShell max="max-w-[900px]">
+        <Card className="p-8">
+          <h1 className="text-xl font-extrabold text-[#06424B]">Lesson not found</h1>
+          <p className="mt-2 text-sm leading-6 text-[#5A7478]">
+            The requested learning topic is unavailable. Return to Explore Courses and select a valid topic.
+          </p>
+          <LinkButton to="/student/topics" className="mt-5">Explore Courses</LinkButton>
+        </Card>
+      </PageShell>
     );
   }
 
-  if (!isEnrolled(requiredCourseId)) {
-    return (
-      <Sidebar>
-        <PageShell max="max-w-[900px]">
-          <Card className="p-8 text-center">
-            <h1 className="text-xl font-extrabold text-[#06424B]">Add this course to My Learning first</h1>
-            <p className="mt-2 text-sm leading-6 text-[#5A7478]">Open the course overview and select Add Course to My Learning before starting its lessons.</p>
-            <LinkButton to={`/student/topics/${course ? course.id : technology.id}`} variant="gold" className="mt-5">View Course Overview</LinkButton>
-          </Card>
-        </PageShell>
-      </Sidebar>
-    );
-  }
-
-  if (course && module) return <VocationalModuleLesson course={course} module={module} />;
-  if (technology) return <TechnologyLessonContent />;
-  return null;
+  return <TechnologyLessonContent />;
 }
 
 export default LessonContent;

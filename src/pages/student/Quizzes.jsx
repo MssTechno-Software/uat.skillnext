@@ -12,7 +12,7 @@ import {
   Target,
 } from "lucide-react";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import {
   Card,
@@ -315,7 +315,7 @@ function Quizzes() {
   }, [enrolledCourses, progress]);
 
   return (
-    <Sidebar>
+    
       <PageShell>
         <div className="mx-auto w-full max-w-[1250px]">
           <StudentPageHeader
@@ -374,7 +374,6 @@ function Quizzes() {
                   })}
                 </div>
               </div>
-
               <div className="mt-4 space-y-5">
                 {activeTab === "quizzes" ? (
                   enrolledCourses.map((course) => (
@@ -395,7 +394,7 @@ function Quizzes() {
           </div>
         </div>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

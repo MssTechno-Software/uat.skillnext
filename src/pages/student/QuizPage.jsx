@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, Send, XCircle } from "lucide-react";
 
-import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { BackLink, Btn, Card, LinkButton, PageShell, ProgressBar } from "../../components/student/ui";
 import { getQuiz } from "../../data/quizData";
@@ -29,14 +28,14 @@ function QuizPage() {
 
   if (!quiz) {
     return (
-      <Sidebar>
+      
         <PageShell max="max-w-[900px]">
           <Card className="p-8">
             <h1 className="text-xl font-bold text-[#06424B]">Quiz not found</h1>
             <LinkButton to="/student/quizzes" className="mt-4">Back to quizzes</LinkButton>
           </Card>
         </PageShell>
-      </Sidebar>
+      
     );
   }
 
@@ -82,7 +81,7 @@ function QuizPage() {
 
   if (!parentCourseEnrolled || !finalUnlocked || !unitUnlocked || !lessonContentRead) {
     return (
-      <Sidebar>
+      
         <PageShell max="max-w-[900px]">
           <Card className="p-8 text-center">
             <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1D1] text-[#94650C]"><LockKeyhole size={25} /></span>
@@ -99,13 +98,13 @@ function QuizPage() {
             <LinkButton to={learningWorkspacePath} className="mt-5">Go to My Learning</LinkButton>
           </Card>
         </PageShell>
-      </Sidebar>
+      
     );
   }
 
   if (topicAlreadyCompleted || finalAlreadyCompleted) {
     return (
-      <Sidebar>
+      
         <PageShell max="max-w-[900px]">
           <Card className="p-8 text-center">
             <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF5EF] text-[#28765E]">
@@ -129,7 +128,7 @@ function QuizPage() {
             </div>
           </Card>
         </PageShell>
-      </Sidebar>
+      
     );
   }
 
@@ -195,7 +194,7 @@ function QuizPage() {
   };
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[900px]">
         <StudentPageHeader
           title={isFinalAssignment ? "Final Course Assignment" : "Topic Quiz"}
@@ -318,7 +317,7 @@ function QuizPage() {
           </div>
         </Card>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

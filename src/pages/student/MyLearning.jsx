@@ -1,587 +1,708 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  AlertTriangle,
+  AlertCircle,
+  ArrowLeft,
   ArrowRight,
   BookOpen,
   CheckCircle2,
-  ChevronRight,
-  ClipboardCheck,
-  Compass,
   GraduationCap,
   LockKeyhole,
   PlayCircle,
-  Target,
-  Trash2,
-  X,
+  RefreshCw,
 } from "lucide-react";
 
-import Sidebar from "../../components/Sidebar";
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import {
-  BackLink,
   Card,
-  EmptyState,
   Hero,
-  IconBadge,
-  LinkButton,
   PageShell,
-  ProgressBar,
   SectionHeading,
 } from "../../components/student/ui";
-import {
-  courseCategories,
-  myLearningCoursePath,
-  technologies,
-} from "../../data/studentLearningData";
-import { useEnrolledCourses } from "../../data/studentCourseEnrollment";
-import {
-  bestScore,
-  courseProgress,
-  hasReadLesson,
-  useProgress,
-} from "../../data/studentProgress";
-import {
-  getFinalAssignmentForCourse,
-  getQuizForCourseModule,
-  getQuizForTopic,
-} from "../../data/quizData";
+import Loader from "../../components/Loader";
+import { getMyLearnings, getCourseContent } from "../../api/course.api";
 
-function EnrolledCourseList({ courses, progress, onRemoveCourse }) {
-  const [coursePendingRemoval, setCoursePendingRemoval] = useState(null);
+const STORAGE_PREFIX = "skillnext:course-module-progress:";
+
+/* =====================================================
+   API + PROGRESS HELPERS
+===================================================== */
+
+const getErrorMessage = (error, fallback) => {
+  const backend = error?.response?.data;
+  if (typeof backend === "string" && backend.trim()) return backend;
+  if (typeof backend?.message === "string" && backend.message.trim()) return backend.message;
+
+  if (backend?.detail) {
+    if (typeof backend.detail === "string") return backend.detail;
+    if (Array.isArray(backend.detail)) {
+      const messages = backend.detail
+        .map((item) => item?.msg || item?.message || "")
+        .filter(Boolean);
+      if (messages.length) return messages.join(" ");
+    }
+  }
+
+  if (!error?.response && !error?.request && error?.message) return error.message;
+  return fallback;
+};
+
+const clampPercentage = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.min(100, Math.max(0, Math.round(number)));
+};
+
+// Prefer the API's item counts so the displayed percentage always matches
+// the completed/total figures. Fall back to the API percentage when counts
+// are not available in the response.
+const getEnrollmentPercentage = (entry) => {
+  const total = Number(entry?.totalItems);
+  const completed = Number(entry?.completedItems);
+
+  if (Number.isFinite(total) && total > 0 && Number.isFinite(completed)) {
+    return clampPercentage((completed / total) * 100);
+  }
+
+  const rawPercentage = entry?.percentage;
+  if (rawPercentage !== undefined && rawPercentage !== null && String(rawPercentage).trim() !== "") {
+    return clampPercentage(String(rawPercentage).replace("%", "").trim());
+  }
+
+  return String(entry?.status || "").toLowerCase() === "completed" ? 100 : 0;
+};
+
+const normalizeMyLearnings = (response) => {
+  if (!response || response.success === false) {
+    throw new Error(response?.message || "Your enrolled courses could not be loaded.");
+  }
+  if (!Array.isArray(response.data)) {
+    throw new Error("The My Learnings response does not contain a valid course list.");
+  }
+
+  return response.data
+    .filter((entry) => entry?.course?.id !== undefined && entry?.course?.id !== null)
+    .map((entry) => ({
+      ...entry,
+      totalItems: Math.max(0, Number(entry.totalItems) || 0),
+      completedItems: Math.max(0, Number(entry.completedItems) || 0),
+      percentage: getEnrollmentPercentage(entry),
+      status: entry.status || "not_started",
+    }));
+};
+
+const isModuleCompleted = (module) => {
+  const status = String(module?.status || module?.completionStatus || "").toLowerCase();
+  return (
+    module?.completed === true ||
+    module?.isCompleted === true ||
+    status === "completed" ||
+    Number(module?.percentage) >= 100
+  );
+};
+
+const readStoredModuleProgress = (courseId) => {
+  if (typeof window === "undefined") return { completedModuleIds: [], apiProgress: null };
+  try {
+    const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${courseId}`);
+    if (!raw) return { completedModuleIds: [], apiProgress: null };
+    const parsed = JSON.parse(raw);
+    return {
+      completedModuleIds: Array.isArray(parsed?.completedModuleIds)
+        ? parsed.completedModuleIds.map(Number).filter(Number.isFinite)
+        : [],
+      apiProgress: parsed?.apiProgress || null,
+    };
+  } catch {
+    return { completedModuleIds: [], apiProgress: null };
+  }
+};
+
+const getCompletedModuleIds = (courseId, modules) => {
+  const stored = readStoredModuleProgress(courseId).completedModuleIds;
+  const returnedByContent = modules.filter(isModuleCompleted).map((module) => Number(module.id));
+  return [...new Set([...stored, ...returnedByContent].filter(Number.isFinite))];
+};
+
+const formatStatus = (status) => {
+  const normalized = String(status || "not_started").toLowerCase();
+  if (normalized === "completed") return "Completed";
+  if (normalized === "in_progress") return "In progress";
+  if (normalized === "not_started" || normalized === "not started") return "Not started";
+  return normalized.replace(/[_-]+/g, " ");
+};
+
+function CircularProgress({ value = 0, size = 68, label = "Course progress" }) {
+  const percentage = clampPercentage(value);
+  const strokeWidth = size >= 76 ? 6 : 5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - percentage / 100);
 
   return (
-    <>
-      <StudentPageHeader
-        title="My Learning"
-        subtitle="Your enrolled courses, topics, lessons and assessment progress."
-      />
+    <div
+      className="relative shrink-0"
+      style={{ width: size, height: size }}
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percentage}
+    >
+      <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#E7EEEE"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#FFAB0B"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset] duration-1000 ease-out"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-extrabold tabular-nums text-[#06424B]">
+        {percentage}%
+      </span>
+    </div>
+  );
+}
 
-      {courses.length === 0 ? (
-        <Card className="p-6 sm:p-9">
-          <EmptyState
-            icon={BookOpen}
-            title="Your learning space is ready"
-            text="Explore the available courses, review a course overview and add the courses you want to study. Every course you add will appear here."
-            action={
-              <LinkButton to="/student/topics" variant="gold" icon={Compass}>
-                Explore Courses
-              </LinkButton>
-            }
-          />
+const normalizeCourseContent = (response) => {
+  if (!response || response.success === false) {
+    throw new Error(response?.message || "The course content could not be loaded.");
+  }
+
+  const payload = response.data;
+  const course = payload?.course;
+  if (!course?.id) {
+    throw new Error("The course content response is missing course information.");
+  }
+
+  const modules = Array.isArray(payload.modules)
+    ? payload.modules
+      .filter((module) => module && module.visible !== false)
+      .map((module) => ({
+        ...module,
+        contents: Array.isArray(module.contents)
+          ? module.contents.filter((item) => item && item.visible !== false)
+          : [],
+      }))
+      .sort((a, b) => Number(a.position || 0) - Number(b.position || 0))
+    : [];
+
+  return { course, modules };
+};
+
+/* =====================================================
+   LOADING / ERROR STATES
+===================================================== */
+
+function MyLearningLoading() {
+  return (
+    <div className="mx-auto w-full max-w-[1250px] animate-pulse space-y-6">
+      <div className="h-8 w-56 rounded-lg bg-[#DCE7E5]" />
+      <div className="h-4 w-80 max-w-full rounded bg-[#E5ECEA]" />
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="h-64 rounded-[22px] bg-white" />
+        <div className="h-64 rounded-[22px] bg-white" />
+      </div>
+    </div>
+  );
+}
+
+function ErrorState({ title, message, onRetry, backToList = false }) {
+  return (
+    <Card className="px-6 py-12 text-center sm:px-10">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1EE] text-[#A85A50]">
+        <AlertCircle size={25} />
+      </div>
+      <h2 className="mt-4 text-xl font-extrabold text-[#06424B]">{title}</h2>
+      <p className="mx-auto mt-2 max-w-[520px] text-sm leading-6 text-[#718486]">{message}</p>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-bold text-[#06424B] transition hover:bg-[#FFC13C]"
+          >
+            <RefreshCw size={15} /> Try Again
+          </button>
+        )}
+        {backToList && (
+          <Link
+            to="/student/my-learning"
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E3] bg-white px-5 text-sm font-bold text-[#06424B] !no-underline transition hover:bg-[#F4F7F7]"
+          >
+            <ArrowLeft size={15} /> Back to My Learning
+          </Link>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+/* =====================================================
+   ENROLLED COURSE LIST — GET /api/my-learnings
+===================================================== */
+
+function EnrolledCourseList({ enrollments }) {
+  return (
+    <>
+      <style>{`
+        @keyframes skillNextFadeUp {
+          from { opacity: 0; transform: translate3d(0, 14px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+        @keyframes skillNextGoldIn {
+          from { opacity: 0; transform: translate3d(10px, 0, 0) scale(.98); }
+          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        .skill-next-enter { animation: skillNextFadeUp 520ms cubic-bezier(.2,.75,.25,1) both; }
+        .skill-next-card-enter { animation: skillNextGoldIn 560ms cubic-bezier(.2,.75,.25,1) both; }
+        @media (prefers-reduced-motion: reduce) {
+          .skill-next-enter, .skill-next-card-enter { animation: none !important; }
+        }
+      `}</style>
+
+      <section className="skill-next-enter relative isolate mb-8 overflow-hidden rounded-[28px] border border-[#DCE7E5] bg-white px-6 py-7 shadow-[0_14px_38px_rgba(6,66,75,0.055)] sm:px-9 sm:py-8">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full border-[26px] border-[#FFAB0B]/[0.07]" />
+        <div aria-hidden="true" className="pointer-events-none absolute right-28 top-10 h-2 w-2 rounded-full bg-[#FFAB0B] shadow-[0_0_0_7px_rgba(255,171,11,0.12)]" />
+
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#FFF5DF] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[1.55px] text-[#91680D]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
+              Your learning space
+            </span>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#06424B] sm:text-[38px] sm:leading-tight">
+              My Learning
+            </h1>
+            <p className="mt-2 max-w-[650px] text-sm leading-7 text-[#718486] sm:text-[15px]">
+              Pick up where you left off. Your courses, module progress and learning content are all in one place.
+            </p>
+          </div>
+
+          <Link
+            to="/student/topics"
+            className="group inline-flex h-12 shrink-0 items-center justify-center gap-3 self-start rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline shadow-[0_8px_20px_rgba(255,171,11,0.18)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFC13C] hover:shadow-[0_12px_24px_rgba(255,171,11,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2 sm:self-center"
+          >
+            Explore Courses
+            <ArrowRight size={17} className="transition-transform duration-200 group-hover:translate-x-1" />
+          </Link>
+        </div>
+      </section>
+
+      {enrollments.length === 0 ? (
+        <Card className="p-8 text-center sm:p-10">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EEF3F4] text-[#06424B]">
+            <BookOpen size={25} />
+          </div>
+          <h2 className="mt-4 text-xl font-extrabold text-[#06424B]">Your learning space is ready</h2>
+          <p className="mx-auto mt-2 max-w-[500px] text-sm leading-6 text-[#718486]">
+            You have not enrolled in any courses yet. Explore the available courses and add one to start learning.
+          </p>
+          <Link
+            to="/student/topics"
+            className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline transition hover:bg-[#FFC13C]"
+          >
+            Explore Courses <ArrowRight size={16} />
+          </Link>
         </Card>
       ) : (
         <>
           <SectionHeading
             title="Your enrolled courses"
-            subtitle="Open a course to continue its topics, lesson content and assessments. Your learning stays inside My Learning."
+            subtitle="Open a course to view its modules and learning content. Modules become available one at a time."
           />
-          <div className="grid gap-4 lg:grid-cols-2">
-            {courses.map((course) => {
-              const isTechnologyTrack = course.enrollmentKind === "technology";
-              const courseStats = courseProgress(progress, course);
-              const itemCount = isTechnologyTrack ? course.topics.length : course.modules.length;
-              const itemLabel = isTechnologyTrack ? "topics" : "topics";
-              const coursePath = isTechnologyTrack
-                ? myLearningCoursePath(null, course.id)
-                : myLearningCoursePath(course.id);
+          <div className="grid gap-5 lg:grid-cols-2">
+            {enrollments.map((enrollment, index) => {
+              const course = enrollment.course;
+              const courseName = course.fullName || course.shortName || "Untitled course";
+              const courseId = course.id;
+              const percentage = clampPercentage(enrollment.percentage);
+              const isCompleted = percentage === 100 || String(enrollment.status).toLowerCase() === "completed";
+              const statusLabel = isCompleted ? "Completed" : percentage > 0 ? "In progress" : formatStatus(enrollment.status);
 
               return (
-                <Card key={course.id} className="flex flex-col p-6">
-                  <div className="flex items-start gap-4">
-                    <IconBadge
-                      icon={isTechnologyTrack ? GraduationCap : BookOpen}
-                      tone={course.accent === "gold" ? "gold" : "teal"}
-                      size="lg"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-extrabold tracking-[1.3px] text-[#B07A06]">
-                        {course.category.toUpperCase()}
-                      </p>
-                      <h3 className="mt-1 text-xl font-bold text-[#06424B]">
-                        {course.name}
-                      </h3>
-                      <p className="mt-1 text-[13px] text-[#5A7478]">
-                        {itemCount} {itemLabel}
-                      </p>
+                <div
+                  key={courseId}
+                  className="skill-next-card-enter h-full"
+                  style={{ animationDelay: `${Math.min(index * 90, 450)}ms` }}
+                >
+                  <Card
+                    className="group flex h-full flex-col overflow-hidden border border-[#E2EAEA] bg-white p-0 shadow-[0_8px_26px_rgba(6,66,75,0.045)] transition duration-200 hover:-translate-y-1 hover:border-[#E4C77F] hover:shadow-[0_16px_34px_rgba(6,66,75,0.09)]"
+                  >
+                    <div className="h-1.5 w-full bg-[#EEF3F4]">
+                      <div
+                        className="h-full rounded-r-full bg-[#FFAB0B] transition-all duration-700"
+                        style={{ width: `${percentage}%` }}
+                      />
                     </div>
-                    <div
-                      className="relative flex h-12 w-12 shrink-0 items-center justify-center"
-                      role="progressbar"
-                      aria-label="Course progress"
-                      aria-valuenow={courseStats.percent}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    >
-                      <svg
-                        className="h-12 w-12 -rotate-90"
-                        viewBox="0 0 48 48"
-                      >
-                        {/* Background Circle */}
-                        <circle
-                          cx="24"
-                          cy="24"
-                          r="20"
-                          fill="none"
-                          stroke="#E7EEEE"
-                          strokeWidth="4"
-                        />
 
-                        {/* Gold Progress Circle */}
-                        <circle
-                          cx="24"
-                          cy="24"
-                          r="20"
-                          fill="none"
-                          stroke="#FFAB0B"
-                          strokeWidth="4"
-                          strokeLinecap="round"
-                          strokeDasharray={2 * Math.PI * 20}
-                          strokeDashoffset={
-                            2 * Math.PI * 20 * (1 - courseStats.percent / 100)
-                          }
-                          className="transition-all duration-500 ease-in-out"
-                        />
-                      </svg>
+                    <div className="flex flex-1 flex-col p-5 sm:p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3F4] text-[#06424B] transition group-hover:bg-[#FFF3D8]">
+                          <GraduationCap size={23} />
+                        </div>
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[1.25px] text-[#A87916]">
+                            {course.categoryName || course.shortName || "ENROLLED COURSE"}
+                          </p>
+                          <h2 className="mt-1 line-clamp-2 text-base font-extrabold leading-6 text-[#06424B] sm:text-lg">
+                            {courseName}
+                          </h2>
+                          <span className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${isCompleted ? "bg-[#E8F5EE] text-[#28765E]" : percentage > 0 ? "bg-[#FFF5DF] text-[#936B12]" : "bg-[#EEF3F4] text-[#718486]"}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${isCompleted ? "bg-[#34866E]" : percentage > 0 ? "bg-[#D49A18]" : "bg-[#9AABAC]"}`} />
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <CircularProgress value={percentage} size={68} label={`${courseName} completion`} />
+                      </div>
 
-                      {/* Progress Percentage */}
-                      <span className="absolute text-[11px] font-extrabold text-[#06424B]">
-                        {courseStats.percent}%
-                      </span>
+                      <p className="mt-5 min-h-[48px] text-sm leading-6 text-[#627C7F] line-clamp-2">
+                        {course.summary || "Continue through the course modules in the order provided."}
+                      </p>
+
+                      <div className="mt-5 rounded-2xl border border-[#EAF0EF] bg-[#F8FAFA] p-4 transition-colors duration-200 group-hover:border-[#F0DCA9] group-hover:bg-[#FFFCF5]">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs font-bold text-[#526D71]">Learning progress</p>
+                          <p className="text-xs font-extrabold tabular-nums text-[#06424B]">{percentage}%</p>
+                        </div>
+                        <div
+                          className="mt-3 h-2 overflow-hidden rounded-full bg-[#E5ECEB]"
+                          role="progressbar"
+                          aria-label={`${courseName} learning progress`}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={percentage}
+                        >
+                          <div
+                            className="h-full rounded-full bg-[#FFAB0B] transition-all duration-700"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-2 text-[11px] font-medium text-[#829596]">
+                          <span>{enrollment.completedItems} of {enrollment.totalItems} learning items completed</span>
+                          <span className="shrink-0">{enrollment.totalItems} total</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto pt-5">
+                        <Link
+                          to={`/student/my-learning?course=${encodeURIComponent(courseId)}`}
+                          className="inline-flex h-11 w-full items-center justify-between rounded-xl bg-[#06424B] px-4 text-sm font-extrabold !no-underline transition hover:bg-[#0B5661] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-2"
+                        >
+                          <span className="!text-[#F4F7F7]">
+                            {percentage > 0 ? "Continue Learning" : "Start Learning"}
+                          </span>
+
+                          <ArrowRight size={17} className="text-[#FFAB0B] transition group-hover:translate-x-0.5" />
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-
-                  <p className="mt-4 min-h-[48px] text-sm leading-6 text-[#627C7F]">
-                    {course.description}
-                  </p>
-                  <ProgressBar value={courseStats.percent} className="mt-4" />
-                  <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-[#829596]">
-                    <span>
-                      {courseStats.done} / {courseStats.total} topics completed
-                    </span>
-                    <span>
-                      {courseStats.completed ? "Course completed" : "In progress"}
-                    </span>
-                  </div>
-
-                  <div className="mt-auto flex flex-wrap gap-3 pt-5">
-                    <LinkButton
-                      to={coursePath}
-                      icon={PlayCircle}
-                    >
-                      {courseStats.done > 0 ? "Continue Learning" : "Open Course"}
-                    </LinkButton>
-                    <LinkButton
-                      to={coursePath}
-                      variant="outline"
-                      iconRight={ArrowRight}
-                    >
-                      View Topics
-                    </LinkButton>
-                    <button
-                      type="button"
-                      onClick={() => setCoursePendingRemoval(course)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#E7D9D7] bg-white px-4 py-2.5 text-xs font-bold text-[#8B514B] transition hover:border-[#C98E86] hover:bg-[#FFF8F7] focus:outline-none focus:ring-2 focus:ring-[#C98E86]/30"
-                    >
-                      <Trash2 size={14} /> Remove course
-                    </button>
-                  </div>
-                </Card>
+                  </Card>
+                </div>
               );
             })}
           </div>
-          <p className="mt-6 text-sm text-[#5A7478]">
-            Want to learn something new?{" "}
-            <Link
-              to="/student/topics"
-              className="font-bold !text-[#06424B] underline decoration-[#FFAB0B] decoration-2 underline-offset-4"
-            >
-              Explore more courses
-            </Link>
-          </p>
         </>
-      )}
-
-      {coursePendingRemoval && (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-[#102F33]/55 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setCoursePendingRemoval(null);
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="remove-course-title"
-            aria-describedby="remove-course-description"
-            className="w-full max-w-[440px] rounded-[24px] border border-white/70 bg-white p-6 shadow-[0_24px_80px_rgba(6,44,49,0.28)] sm:p-7"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF1EE] text-[#A85A50]">
-                <AlertTriangle size={22} />
-              </div>
-              <button
-                type="button"
-                onClick={() => setCoursePendingRemoval(null)}
-                aria-label="Close confirmation"
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#73898B] transition hover:bg-[#F2F5F5] hover:text-[#06424B]"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <h2 id="remove-course-title" className="mt-5 text-xl font-extrabold text-[#123B43]">Remove this course?</h2>
-            <p id="remove-course-description" className="mt-2 text-sm leading-7 text-[#5A7478]">
-              <span className="font-bold text-[#06424B]">{coursePendingRemoval.name}</span> will be removed from your My Learning list. Your saved lesson and quiz progress will remain available if you enrol in this course again.
-            </p>
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setCoursePendingRemoval(null)}
-                className="rounded-xl border border-[#DCE6E4] bg-white px-5 py-3 text-sm font-bold text-[#456367] transition hover:bg-[#F6F8F8]"
-              >
-                Keep course
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onRemoveCourse(coursePendingRemoval.id);
-                  setCoursePendingRemoval(null);
-                }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#8B514B] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_18px_rgba(139,81,75,0.18)] transition hover:bg-[#75413C]"
-              >
-                <Trash2 size={15} /> Remove course
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </>
   );
 }
 
-function FinalAssignmentCard({ course, progress, allTopicsComplete }) {
-  const finalAssignment = getFinalAssignmentForCourse(course.id);
-  const finalScore = finalAssignment
-    ? bestScore(progress, finalAssignment.slug)
-    : null;
-  const completed = Boolean(progress.completedCourses?.[course.id]);
+/* =====================================================
+   COURSE CONTENT + SEQUENTIAL MODULE ACCESS
+   GET /api/courses/{course_id}/content
+===================================================== */
 
-  return (
-    <Card className={`p-5 ${completed ? "border-[#B9DED2] bg-[#F3FAF7]" : allTopicsComplete ? "border-[#F3D78B] bg-[#FFF9EA]" : ""}`}>
-      <div className="flex flex-wrap items-center gap-2 text-[#06424B]">
-        {completed ? (
-          <CheckCircle2 size={19} className="text-[#28765E]" />
-        ) : allTopicsComplete ? (
-          <Target size={19} className="text-[#B07A06]" />
-        ) : (
-          <LockKeyhole size={19} className="text-[#8B9A9C]" />
-        )}
-        <h3 className="text-base font-extrabold">Final Assignment</h3>
-        <span className={`ml-auto rounded-full px-2.5 py-1 text-[10px] font-extrabold ${completed
-            ? "bg-[#E1F2EC] text-[#28765E]"
-            : allTopicsComplete
-              ? "bg-[#FFF1D1] text-[#94650C]"
-              : "bg-[#F0F3F3] text-[#829596]"
-          }`}>
-          {completed ? "Completed" : allTopicsComplete ? "Unlocked" : "Locked"}
-        </span>
-      </div>
-      <p className="mt-2 text-[13px] leading-6 text-[#5A7478]">
-        Complete the 15-question final assignment after finishing every topic. A score of 80% (12 correct answers) is required to complete the course and earn its certificate.
-      </p>
-      {finalScore !== null && (
-        <p className="mt-2 text-xs font-bold text-[#06424B]">
-          Best attempt: {finalScore}%
-        </p>
-      )}
-      {completed ? (
-        <p className="mt-4 rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-[#28765E]">
-          Course completed. Your certificate is available in Certificates.
-        </p>
-      ) : allTopicsComplete && finalAssignment ? (
-        <LinkButton
-          to={`/student/quiz/${finalAssignment.slug}`}
-          variant="gold"
-          className="mt-4 w-full"
-          icon={ClipboardCheck}
-        >
-          {finalScore !== null ? "Retake / Review Final Assignment" : "Start Final Assignment"}
-        </LinkButton>
-      ) : (
-        <p className="mt-4 rounded-xl bg-[#F2F5F5] px-3 py-2.5 text-xs font-semibold leading-5 text-[#72888B]">
-          Finish all topic lessons and submit each 10-question topic quiz to unlock the final assignment. Topic quiz scores do not affect progression.
-        </p>
-      )}
-    </Card>
-  );
-}
-
-function VocationalCourseWorkspace({ course, progress }) {
-  const stats = courseProgress(progress, course);
-  const allTopicsComplete = stats.total > 0 && stats.done === stats.total;
-  const nextAvailable = course.modules.find((module, index) => {
-    const alreadyCompleted = Boolean(progress.completed[`${course.id}/${module.id}`]);
-    const previous = course.modules[index - 1];
-    const previousCompleted = !previous || Boolean(progress.completed[`${course.id}/${previous.id}`]);
-    return !alreadyCompleted && previousCompleted;
-  });
+function CourseModulesWorkspace({ course, modules, onBack }) {
+  const courseId = course.id;
+  const completedIds = useMemo(() => getCompletedModuleIds(courseId, modules), [courseId, modules]);
+  const completedSet = useMemo(() => new Set(completedIds.map(String)), [completedIds]);
+  const completedCount = modules.filter((module) => completedSet.has(String(module.id))).length;
+  const percentage = modules.length ? Math.round((completedCount / modules.length) * 100) : 0;
+  const nextModuleIndex = modules.findIndex((module) => !completedSet.has(String(module.id)));
 
   return (
     <>
       <StudentPageHeader
-        title={course.name}
-        subtitle="Your enrolled course workspace. Continue every topic, lesson and quiz here in My Learning."
+        title={course.fullName || course.shortName || "Course"}
+        subtitle="Follow the course in order. Open the available module, review its learning content, and mark it complete to unlock the next module."
       />
-      <BackLink to="/student/my-learning">Back to My Learning</BackLink>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-[#527477] transition hover:text-[#06424B]"
+      >
+        <ArrowLeft size={16} /> Back to My Learning
+      </button>
 
       <Hero
-        eyebrow="YOUR ENROLLED COURSE"
-        title={`Continue ${course.name}`}
-        text={`${course.description} Work through each topic in order. After every topic lesson, answer its 10-question quiz; your score does not block the next topic.`}
+        eyebrow={course.shortName || "YOUR ENROLLED COURSE"}
+        title={course.fullName || course.shortName || "Continue learning"}
+        text={course.summary || "Start with the first module and progress through the course one step at a time."}
       >
         <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
           <BookOpen size={15} className="text-[#FFAB0B]" />
-          {course.duration}
+          {modules.length} {modules.length === 1 ? "module" : "modules"}
         </span>
-        {nextAvailable && (
-          <LinkButton
-            to={`/student/topics/${course.id}/topic/${nextAvailable.id}`}
-            variant="gold"
-            icon={PlayCircle}
-          >
-            Continue Lesson
-          </LinkButton>
-        )}
-      </Hero>
-
-      <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section>
-          <SectionHeading
-            title="Course topics"
-            subtitle="Open the first topic to begin. The next topic unlocks automatically after all 10 questions in the previous topic quiz are submitted, regardless of score."
-          />
-          <div className="space-y-3">
-            {course.modules.map((module, index) => {
-              const previous = course.modules[index - 1];
-              const unlocked = !previous || Boolean(progress.completed[`${course.id}/${previous.id}`]);
-              const done = Boolean(progress.completed[`${course.id}/${module.id}`]);
-              const quiz = getQuizForCourseModule(course.id, module.id);
-              const score = quiz ? bestScore(progress, quiz.slug) : null;
-              const lessonRead = hasReadLesson(progress, course.id, module.id) || done;
-
-              return (
-                <Card
-                  key={module.id}
-                  className={`p-5 sm:p-6 ${done ? "border-[#A8D9CB] bg-[#F5FBF9]" : ""}`}
-                >
-                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div className="flex min-w-0 items-start gap-4">
-                      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold ${done ? "bg-[#06424B] text-[#FFAB0B]" : "bg-[#FFF1D1] text-[#94650C]"}`}>
-                        {done ? <CheckCircle2 size={22} /> : String(index + 1).padStart(2, "0")}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-extrabold text-[#06424B]">{module.title}</h3>
-                          {done ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#E1F2EC] px-2.5 py-1 text-[10px] font-bold text-[#28765E]">
-                              <CheckCircle2 size={11} /> Quiz completed
-                            </span>
-                          ) : !unlocked ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#F0F3F3] px-2.5 py-1 text-[10px] font-bold text-[#829596]">
-                              <LockKeyhole size={11} /> Locked · Previous quiz required
-                            </span>
-                          ) : lessonRead ? (
-                            <span className="rounded-full bg-[#EAF4F2] px-2.5 py-1 text-[10px] font-bold text-[#376C68]">Quiz available in lesson</span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF5DF] px-2.5 py-1 text-[10px] font-bold text-[#8A650E]">
-                              <LockKeyhole size={11} /> Read lesson to unlock quiz
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-1 text-sm leading-6 text-[#5A7478]">{module.description}</p>
-                        <p className="mt-2 text-[11px] font-semibold text-[#829596]">
-                          Lesson content · 10-question topic quiz{score !== null ? ` · Best score ${score}%` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    {unlocked ? (
-                      <LinkButton
-                        to={`/student/topics/${course.id}/topic/${module.id}`}
-                        iconRight={ChevronRight}
-                        className="self-start sm:self-center"
-                      >
-                        {done ? "Review Lesson" : "Open Lesson"}
-                      </LinkButton>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 self-start rounded-xl bg-[#F2F5F5] px-3 py-2.5 text-xs font-bold text-[#8A9B9D] sm:self-center">
-                        <LockKeyhole size={14} /> Complete previous quiz
-                      </span>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-
-        <aside className="space-y-4 xl:sticky xl:top-6 xl:h-fit">
-          <Card className="p-5">
-            <h3 className="text-base font-extrabold text-[#06424B]">Course progress</h3>
-            <p className="mt-3 text-4xl font-extrabold text-[#06424B]">{stats.percent}%</p>
-            <ProgressBar value={stats.percent} className="mt-3" />
-            <p className="mt-2 text-xs text-[#5A7478]">{stats.done} of {stats.total} topics completed</p>
-          </Card>
-          <FinalAssignmentCard
-            course={course}
-            progress={progress}
-            allTopicsComplete={allTopicsComplete}
-          />
-        </aside>
-      </div>
-    </>
-  );
-}
-
-function TechnologyPathWorkspace({ technology, progress }) {
-  const stats = courseProgress(progress, technology);
-  const allTopicsComplete = stats.total > 0 && stats.done === stats.total;
-  const nextAvailable = technology.topics.find((topic, index) => {
-    const alreadyCompleted = Boolean(progress.completed[`${technology.id}/${topic.id}`]);
-    const previous = technology.topics[index - 1];
-    const previousCompleted = !previous || Boolean(progress.completed[`${technology.id}/${previous.id}`]);
-    return !alreadyCompleted && previousCompleted;
-  });
-
-  return (
-    <>
-      <StudentPageHeader
-        title={technology.name}
-        subtitle={`Your individual ${technology.name} course workspace. Topics, lessons, quizzes and its final assignment stay together here in My Learning.`}
-      />
-      <BackLink to="/student/my-learning">Back to My Learning</BackLink>
-      <Hero
-        eyebrow="YOUR ENROLLED IT COURSE"
-        title={`Continue ${technology.name}`}
-        text={`${technology.description} Study each topic in order. After reading its lesson content, complete the 10-question topic quiz. Every topic quiz has no pass mark; the 80% requirement applies only to the final assignment.`}
-      >
         <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
           <GraduationCap size={15} className="text-[#FFAB0B]" />
-          {technology.topics.length} topics · {technology.lessons} lessons
+          {percentage}% modules completed
         </span>
-        {nextAvailable && (
-          <LinkButton
-            to={`/student/topics/${technology.id}/topic/${nextAvailable.id}`}
-            variant="gold"
-            icon={PlayCircle}
-          >
-            Continue Learning
-          </LinkButton>
-        )}
       </Hero>
 
-      <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section>
+      <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <section className="min-w-0">
           <SectionHeading
-            title="Topics and lessons"
-            subtitle="Open a topic to study its web content. Mark it as read to unlock its 10-question quiz; submit all answers to unlock the next topic, regardless of score."
+            title="Your learning path"
+            subtitle="Completed modules remain available for review. Only the next unfinished module is open."
           />
-          <div className="space-y-3">
-            {technology.topics.map((topic, index) => {
-              const previous = technology.topics[index - 1];
-              const unlocked = !previous || Boolean(progress.completed[`${technology.id}/${previous.id}`]);
-              const done = Boolean(progress.completed[`${technology.id}/${topic.id}`]);
-              const quiz = getQuizForTopic(technology.id, topic.id);
-              const score = quiz ? bestScore(progress, quiz.slug) : null;
-              const lessonRead = hasReadLesson(progress, technology.id, topic.id) || done;
 
-              return (
-                <Card key={topic.id} className={`p-5 sm:p-6 ${done ? "border-[#A8D9CB] bg-[#F5FBF9]" : ""}`}>
-                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div className="flex min-w-0 items-start gap-4">
-                      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold ${done ? "bg-[#06424B] text-[#FFAB0B]" : "bg-[#FFF1D1] text-[#94650C]"}`}>
-                        {done ? <CheckCircle2 size={22} /> : String(index + 1).padStart(2, "0")}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-extrabold text-[#06424B]">{topic.title}</h3>
-                          {done ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#E1F2EC] px-2.5 py-1 text-[10px] font-bold text-[#28765E]"><CheckCircle2 size={11} /> Quiz completed</span>
-                          ) : !unlocked ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#F0F3F3] px-2.5 py-1 text-[10px] font-bold text-[#829596]"><LockKeyhole size={11} /> Locked · Previous quiz required</span>
-                          ) : lessonRead ? (
-                            <span className="rounded-full bg-[#EAF4F2] px-2.5 py-1 text-[10px] font-bold text-[#376C68]">Quiz available in lesson</span>
+          {modules.length === 0 ? (
+            <Card className="p-6">
+              <p className="text-sm leading-6 text-[#718486]">No published modules are available for this course yet.</p>
+            </Card>
+          ) : (
+            <ol className="space-y-3">
+              {modules.map((module, index) => {
+                const isCompleted = completedSet.has(String(module.id));
+                const isUnlocked = isCompleted || index === 0 || completedSet.has(String(modules[index - 1]?.id));
+                const isCurrent = !isCompleted && index === nextModuleIndex;
+                const contentsCount = Array.isArray(module.contents) ? module.contents.length : 0;
+                const linkPath = `/student/topics/${courseId}/topic/${module.id}`;
+
+                return (
+                  <li key={module.id}>
+                    <Card className={`p-4 sm:p-5 ${isCurrent ? "border-[#FFAB0B] shadow-[0_10px_28px_rgba(255,171,11,0.12)]" : isCompleted ? "border-[#CFE5DB] bg-[#FBFDFC]" : "bg-[#FAFBFB]"}`}>
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${isCompleted ? "bg-[#E5F3EC] text-[#28765E]" : isCurrent ? "bg-[#FFAB0B] text-[#06424B]" : "border border-[#DCE6E4] bg-[#EEF2F2] text-[#9AABAC]"}`}>
+                          {isCompleted ? <CheckCircle2 size={19} /> : isUnlocked ? <PlayCircle size={19} /> : <LockKeyhole size={17} />}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-extrabold tracking-[1.1px] text-[#A87916]">
+                                MODULE {String(index + 1).padStart(2, "0")}
+                              </p>
+                              <h3 className={`mt-1 text-base font-extrabold ${isUnlocked ? "text-[#06424B]" : "text-[#7C9193]"}`}>
+                                {module.name || "Untitled module"}
+                              </h3>
+                            </div>
+                            <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${isCompleted ? "bg-[#E5F3EC] text-[#28765E]" : isCurrent ? "bg-[#FFF2D8] text-[#8A650E]" : "bg-[#EEF2F2] text-[#829596]"}`}>
+                              {isCompleted ? "COMPLETED" : isCurrent ? "AVAILABLE NOW" : "LOCKED"}
+                            </span>
+                          </div>
+
+                          <p className="mt-2 text-sm leading-6 text-[#627C7F]">
+                            {module.summary || "Review the learning items in this module."}
+                          </p>
+                          <p className="mt-2 text-[11px] font-semibold text-[#829596]">
+                            {contentsCount} {contentsCount === 1 ? "learning item" : "learning items"}
+                          </p>
+
+                          {isUnlocked ? (
+                            <Link
+                              to={linkPath}
+                              className={`mt-4 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-xs font-extrabold !no-underline transition ${isCompleted ? "border border-[#CFE5DB] bg-white text-[#28765E] hover:bg-[#F2F8F5]" : "bg-[#FFAB0B] text-[#06424B] hover:bg-[#FFC13C]"}`}
+                            >
+                              {isCompleted ? "Review Module" : "Open Module"}
+                              <ArrowRight size={15} />
+                            </Link>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF5DF] px-2.5 py-1 text-[10px] font-bold text-[#8A650E]"><LockKeyhole size={11} /> Read lesson to unlock quiz</span>
+                            <p className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-[#91A1A2]">
+                              <LockKeyhole size={13} /> Complete the previous module to unlock this one.
+                            </p>
                           )}
                         </div>
-                        <p className="mt-1 text-sm leading-6 text-[#5A7478]">{topic.summary}</p>
-                        <p className="mt-2 text-[11px] font-semibold text-[#829596]">{topic.lessons.length} lesson sections · 10-question topic quiz{score !== null ? ` · Best score ${score}%` : ""}</p>
                       </div>
-                    </div>
-                    {unlocked ? (
-                      <LinkButton to={`/student/topics/${technology.id}/topic/${topic.id}`} iconRight={ChevronRight} className="self-start sm:self-center">
-                        {done ? "Review Lesson" : "Open Lesson"}
-                      </LinkButton>
-                    ) : (
-                      <span className="inline-flex items-center gap-2 self-start rounded-xl bg-[#F2F5F5] px-3 py-2.5 text-xs font-bold text-[#8A9B9D] sm:self-center"><LockKeyhole size={14} /> Complete previous quiz</span>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                    </Card>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </section>
 
-        <aside className="space-y-4 xl:sticky xl:top-6 xl:h-fit">
-          <Card className="p-5">
-            <h3 className="text-base font-extrabold text-[#06424B]">Course progress</h3>
-            <p className="mt-3 text-4xl font-extrabold text-[#06424B]">{stats.percent}%</p>
-            <ProgressBar value={stats.percent} className="mt-3" />
-            <p className="mt-2 text-xs text-[#5A7478]">{stats.done} of {stats.total} topics completed</p>
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:h-fit">
+          <Card className="overflow-hidden border border-[#E2EAEA] p-0 shadow-[0_10px_28px_rgba(6,66,75,0.05)]">
+            <div className="border-b border-[#EAF0EF] bg-[#F8FAFA] px-5 py-4">
+              <h3 className="font-extrabold text-[#06424B]">Course progress</h3>
+              <p className="mt-1 text-[11px] text-[#829596]">Based on completed modules</p>
+            </div>
+            <div className="flex flex-col items-center px-5 py-6">
+              <CircularProgress value={percentage} size={112} label="Course module completion" />
+              <p className="mt-3 text-sm font-extrabold text-[#06424B]">
+                {percentage === 100 ? "Course modules completed" : percentage > 0 ? "You're making progress" : "Ready to get started"}
+              </p>
+              <p className="mt-1 text-xs text-[#829596]">
+                {completedCount} of {modules.length} modules completed
+              </p>
+              <div className="mt-5 grid w-full grid-cols-2 gap-2">
+                <div className="rounded-xl bg-[#F4F7F7] px-3 py-3 text-center">
+                  <p className="text-xl font-extrabold tabular-nums text-[#06424B]">{modules.length}</p>
+                  <p className="mt-1 text-[10px] font-bold text-[#829596]">Total modules</p>
+                </div>
+                <div className="rounded-xl bg-[#F4F7F7] px-3 py-3 text-center">
+                  <p className="text-xl font-extrabold tabular-nums text-[#06424B]">{Math.max(0, modules.length - completedCount)}</p>
+                  <p className="mt-1 text-[10px] font-bold text-[#829596]">Remaining</p>
+                </div>
+              </div>
+              {completedCount === modules.length && modules.length > 0 && (
+                <p className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#28765E]">
+                  <CheckCircle2 size={15} /> All course modules completed
+                </p>
+              )}
+            </div>
           </Card>
-          <FinalAssignmentCard
-            course={technology}
-            progress={progress}
-            allTopicsComplete={allTopicsComplete}
-          />
+
+          <Card className="p-5">
+            <div className="flex items-center gap-2 text-[#06424B]">
+              <LockKeyhole size={17} className="text-[#B88736]" />
+              <h3 className="text-sm font-extrabold">Sequential learning</h3>
+            </div>
+            <p className="mt-2 text-xs leading-6 text-[#718486]">
+              Finish the current module and select Mark Module Complete. The completion API confirms the module, and the next module then becomes available.
+            </p>
+          </Card>
         </aside>
       </div>
     </>
   );
 }
 
+/* =====================================================
+   MAIN PAGE
+===================================================== */
+
 function MyLearning() {
-  const progress = useProgress();
-  const { enrolledCourseIds, removeCourse } = useEnrolledCourses();
-  const [searchParams] = useSearchParams();
-  const enrolledVocationalCourses = courseCategories.filter(
-    (course) => course.type === "vocational" && enrolledCourseIds.includes(course.id)
-  );
-  const enrolledTechnologyCourses = technologies
-    .filter((technology) => enrolledCourseIds.includes(technology.id))
-    .map((technology) => ({ ...technology, enrollmentKind: "technology" }));
-  const enrolledCourses = [...enrolledVocationalCourses, ...enrolledTechnologyCourses];
+  const [searchParams, setSearchParams] = useSearchParams();
   const selectedCourseId = searchParams.get("course");
-  const selectedTechnologyId = searchParams.get("technology");
-  const selectedCourse = enrolledVocationalCourses.find((course) => course.id === selectedCourseId);
-  const selectedTechnology = enrolledTechnologyCourses.find((technology) => technology.id === selectedTechnologyId);
+
+  const [enrollments, setEnrollments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [courseContent, setCourseContent] = useState(null);
+  const [isContentLoading, setIsContentLoading] = useState(false);
+  const [contentError, setContentError] = useState("");
+
+  const selectedEnrollment = useMemo(
+    () => enrollments.find((entry) => String(entry.course.id) === String(selectedCourseId)),
+    [enrollments, selectedCourseId]
+  );
+
+  const loadMyLearnings = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await getMyLearnings();
+      setEnrollments(normalizeMyLearnings(response));
+    } catch (requestError) {
+      console.error("My Learnings API Error:", requestError);
+      setEnrollments([]);
+      setError(getErrorMessage(requestError, "We couldn't load your enrolled courses. Please try again."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loadCourseContent = useCallback(async () => {
+    if (!selectedEnrollment?.course?.id) return;
+    setIsContentLoading(true);
+    setContentError("");
+    setCourseContent(null);
+
+    try {
+      const response = await getCourseContent(selectedEnrollment.course.id);
+      setCourseContent(normalizeCourseContent(response));
+    } catch (requestError) {
+      console.error("Course Content API Error:", requestError);
+      setContentError(getErrorMessage(requestError, "We couldn't load this course's content. Please try again."));
+    } finally {
+      setIsContentLoading(false);
+    }
+  }, [selectedEnrollment]);
+
+  useEffect(() => {
+    loadMyLearnings();
+  }, [loadMyLearnings]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!selectedCourseId || !selectedEnrollment) {
+      setCourseContent(null);
+      setContentError("");
+      setIsContentLoading(false);
+      return;
+    }
+    loadCourseContent();
+  }, [isLoading, selectedCourseId, selectedEnrollment, loadCourseContent]);
+
+  const returnToCourseList = () => {
+    setSearchParams({});
+    loadMyLearnings();
+  };
+
+  if (isLoading) {
+    return (
+      <PageShell>
+        <MyLearningLoading />
+        <Loader open={isLoading} text="Loading your learning space..." />
+      </PageShell>
+    );
+  }
 
   return (
-    <Sidebar>
-      <PageShell>
-        <div className="mx-auto w-full max-w-[1250px]">
-          {selectedCourse?.type === "vocational" && (
-            <VocationalCourseWorkspace course={selectedCourse} progress={progress} />
-          )}
-          {selectedTechnology && (
-            <TechnologyPathWorkspace technology={selectedTechnology} progress={progress} />
-          )}
-          {!selectedCourse && !selectedTechnology && (
-            <EnrolledCourseList courses={enrolledCourses} progress={progress} onRemoveCourse={removeCourse} />
-          )}
-        </div>
-      </PageShell>
-    </Sidebar>
+    <PageShell>
+      <div className="mx-auto w-full max-w-[1250px]">
+        {error ? (
+          <ErrorState title="Unable to load My Learning" message={error} onRetry={loadMyLearnings} />
+        ) : selectedCourseId ? (
+          !selectedEnrollment ? (
+            <ErrorState
+              title="Course not found in My Learning"
+              message="This course is not listed in your enrolled courses. Return to My Learning and select one of your enrolled courses."
+              backToList
+            />
+          ) : isContentLoading ? (
+            <>
+              <MyLearningLoading />
+              <Loader open={isContentLoading} text="Loading course content and modules..." />
+            </>
+          ) : contentError ? (
+            <ErrorState
+              title="Unable to load course content"
+              message={contentError}
+              onRetry={loadCourseContent}
+              backToList
+            />
+          ) : courseContent ? (
+            <CourseModulesWorkspace
+              course={courseContent.course}
+              modules={courseContent.modules}
+              onBack={returnToCourseList}
+            />
+          ) : null
+        ) : (
+          <EnrolledCourseList enrollments={enrollments} />
+        )}
+      </div>
+    </PageShell>
   );
 }
 

@@ -112,3 +112,15 @@ textarea:focus-visible {
   outline: 2px solid #244951;
   outline-offset: 2px;
 }
+
+@keyframes moduleNoticeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

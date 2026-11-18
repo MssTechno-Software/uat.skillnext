@@ -1,7 +1,10 @@
+
+import { useEffect, useState } from "react";
 import {
   Routes,
   Route,
   Navigate,
+  useNavigate,
 } from "react-router-dom";
 
 // Authentication Pages
@@ -25,62 +28,154 @@ import StudentRoutes from "./student/StudentRoutes";
 // Teacher Routes
 import TeacherRoutes from "./teacher/TeacherRoutes";
 
-function App() {
+// Session
+import { clearAuthSession } from "./services/authSession";
+
+function SessionExpiredPopup({ onLogin }) {
   return (
-    <Routes>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#06424B]/25 p-4 backdrop-blur-[6px]">
+      <div
+        className="w-full max-w-[420px] rounded-[28px] border border-[#E8EFED] bg-white p-7 text-center shadow-2xl sm:p-9"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="session-expired-title"
+        aria-describedby="session-expired-description"
+      >
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF3D8]">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="30"
+            height="30"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#94650C"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </div>
 
-      {/* Default Route */}
-      <Route
-        path="/"
-        element={<Navigate to="/login" replace />}
-      />
+        <h2
+          id="session-expired-title"
+          className="mt-5 text-xl font-extrabold text-[#06424B]"
+        >
+          Your Session Has Expired
+        </h2>
 
-      {/* Authentication Routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/email-sent" element={<EmailSent />} />
-      <Route path="/set-password" element={<SetPassword />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+        <p
+          id="session-expired-description"
+          className="mx-auto mt-3 max-w-[320px] text-sm leading-6 text-[#718486]"
+        >
+          For your security, your session has expired.
+          Please log in again to continue learning.
+        </p>
 
-      {/* Legal Routes */}
-      <Route
-        path="/terms-and-conditions"
-        element={<TermsAndConditions />}
-      />
+        <button
+          type="button"
+          onClick={onLogin}
+          className="mt-7 flex h-12 w-full items-center justify-center rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
+        >
+          Login Again
+        </button>
 
-      <Route
-        path="/privacy-policy"
-        element={<PrivacyPolicy />}
-      />
+        <p className="mt-4 text-[11px] font-medium text-[#9AA9AA]">
+          SKILL NEXT CONSULTING INC.
+        </p>
+      </div>
+    </div>
+  );
+}
 
-      {/* Student Protected Routes */}
-      <Route
-        path="/student/*"
-        element={
-          <ProtectedRoute allowedRole="student">
-            <StudentRoutes />
-          </ProtectedRoute>
-        }
-      />
+function App() {
+  const navigate = useNavigate();
+  const [sessionExpired, setSessionExpired] = useState(false);
 
-      {/* Teacher Protected Routes */}
-      <Route
-        path="/teacher/*"
-        element={
-          <ProtectedRoute allowedRole="teacher">
-            <TeacherRoutes />
-          </ProtectedRoute>
-        }
-      />
+  // Listen for session expiration from any authenticated API request
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setSessionExpired(true);
+    };
 
-      {/* Invalid Routes */}
-      <Route
-        path="*"
-        element={<Navigate to="/login" replace />}
-      />
+    window.addEventListener("session-expired", handleSessionExpired);
 
-    </Routes>
+    return () => {
+      window.removeEventListener(
+        "session-expired",
+        handleSessionExpired
+      );
+    };
+  }, []);
+
+  // Clear session only when the user clicks Login Again
+  const handleLoginAgain = () => {
+    clearAuthSession();
+    setSessionExpired(false);
+    navigate("/login", { replace: true });
+  };
+
+  return (
+    <>
+      <Routes>
+        {/* Default Route */}
+        <Route
+          path="/"
+          element={<Navigate to="/login" replace />}
+        />
+
+        {/* Authentication Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/email-sent" element={<EmailSent />} />
+        <Route path="/set-password" element={<SetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* Legal Routes */}
+        <Route
+          path="/terms-and-conditions"
+          element={<TermsAndConditions />}
+        />
+
+        <Route
+          path="/privacy-policy"
+          element={<PrivacyPolicy />}
+        />
+
+        {/* Student Protected Routes */}
+        <Route
+          path="/student/*"
+          element={
+            <ProtectedRoute allowedRole="student">
+              <StudentRoutes />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Teacher Protected Routes */}
+        <Route
+          path="/teacher/*"
+          element={
+            <ProtectedRoute allowedRole="teacher">
+              <TeacherRoutes />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Invalid Routes */}
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
+        />
+      </Routes>
+
+      {/* Global Session Expired Popup */}
+      {sessionExpired && (
+        <SessionExpiredPopup onLogin={handleLoginAgain} />
+      )}
+    </>
   );
 }
 

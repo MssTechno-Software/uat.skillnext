@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Braces, Code2, Database, Globe, Layers } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, IconBadge, PageShell, SectionHeading } from "../../components/student/ui";
 import { courseCategories, technologies } from "../../data/studentLearningData";
@@ -45,7 +45,7 @@ function InterviewPrepSubtopics() {
   if ((!technology && !vocationalCourse) || !isEnrolled) return null;
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1400px]">
         <StudentPageHeader
           title={`Choose a ${technology ? "Topic" : "Subtopic"}`}
@@ -84,7 +84,7 @@ function InterviewPrepSubtopics() {
           </div>
         </section>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

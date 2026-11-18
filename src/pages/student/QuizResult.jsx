@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, LinkButton, PageShell, ProgressBar, SectionHeading } from "../../components/student/ui";
 import { courseCategories, myLearningCoursePath, technologies } from "../../data/studentLearningData";
@@ -36,7 +36,7 @@ function QuizResult() {
   );
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[950px]">
         <StudentPageHeader
           title={isFinalAssignment ? "Final Assignment Results" : "Quiz Results"}
@@ -158,7 +158,7 @@ function QuizResult() {
           <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>My Learning</LinkButton>
         </div>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

@@ -1,11 +1,11 @@
 import { CalendarDays, Clock3 } from "lucide-react";
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, EmptyState, IconBadge, PageShell } from"../../components/student/ui";
 
 function Calendar() {
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1100px]">
         <StudentPageHeader title="Learning Calendar" subtitle="Keep track of scheduled classes, assessments and learning deadlines." />
         <Card className="p-5 sm:p-7">
@@ -21,7 +21,7 @@ function Calendar() {
           </div>
         </Card>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

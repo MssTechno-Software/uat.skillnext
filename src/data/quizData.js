@@ -166,29 +166,32 @@ function technologyTopicQuiz(technology, topic, nextTopic) {
   };
 }
 
-function finalAssignment(courseId, courseName, units) {
+// 15-question final assessment for a course.
+// Final-assessment marks contribute to the combined course percentage; the final
+// assessment itself does not have a separate 80% pass requirement.
+function finalAssignment(courseId, courseName, units, nextPath = "/student/my-learning") {
   const slug = `${courseId}-final-assignment`;
-  const unitQuestions = units.map((unit) => unit.questions || []);
-  const selected = Array.from({ length: 15 }, (_, index) => {
-    const unitIndex = Math.floor((index * unitQuestions.length) / 15);
-    const questions = unitQuestions[unitIndex] || [];
-    const questionIndex = Math.floor(index / Math.max(1, unitQuestions.length)) % Math.max(1, questions.length);
-    const sourceQuestion = questions[questionIndex] || questions[0];
-    return sourceQuestion
-      ? { ...sourceQuestion, id: `${slug}-q${index + 1}` }
-      : null;
-  }).filter(Boolean);
+  const pool = units.filter((unit) => (unit.questions || []).length > 0);
+
+  const selected = pool.length
+    ? Array.from({ length: 15 }, (_, index) => {
+        const unit = pool[index % pool.length];
+        const source = unit.questions[Math.floor(index / pool.length) % unit.questions.length];
+        return { ...source, id: `${slug}-q${index + 1}` };
+      })
+    : [];
 
   return {
     slug,
     title: `${courseName} – Final Assignment`,
-    description: "Complete the 15-question final assignment. A score of 80% or higher is required to complete this course.",
+    description: "Complete the 15-question final assessment. Its marks are combined with your topic quiz scores and coding assignment (where applicable). You pass the course when your overall percentage reaches 80%.",
     courseId,
     courseName,
     assessmentType: "final",
     isFinalAssignment: true,
-    passPercentage: 80,
-    nextPath: "/student/my-learning",
+    maxAttempts: 3,
+    overallPassPercentage: 80,
+    nextPath,
     questions: selected,
   };
 }
@@ -202,7 +205,9 @@ courseCategories.filter((course) => course.type === "vocational").forEach((cours
     moduleQuiz(course, module, course.modules[index + 1])
   );
   courseModuleQuizzes.push(...moduleQuizzes);
-  finalAssignments.push(finalAssignment(course.id, course.name, moduleQuizzes));
+  finalAssignments.push(
+    finalAssignment(course.id, course.name, moduleQuizzes, myLearningCoursePath(course.id))
+  );
 });
 
 technologies.forEach((technology) => {
@@ -212,7 +217,9 @@ technologies.forEach((technology) => {
   technologyTopicQuizzes.push(...topicQuizzes);
   // Each IT technology is an independently enrolled course with its own
   // final assignment; the IT Courses directory itself is never assessed.
-  finalAssignments.push(finalAssignment(technology.id, technology.name, topicQuizzes));
+  finalAssignments.push(
+    finalAssignment(technology.id, technology.name, topicQuizzes, myLearningCoursePath(null, technology.id))
+  );
 });
 
 export const courseUnitQuizzes = [...courseModuleQuizzes, ...technologyTopicQuizzes];

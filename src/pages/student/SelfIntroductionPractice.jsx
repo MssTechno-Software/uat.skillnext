@@ -11,7 +11,7 @@ import {
   Timer,
 } from "lucide-react";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { BackLink, Card, PageShell } from "../../components/student/ui";
 
@@ -287,7 +287,7 @@ function SelfIntroductionPractice() {
     : 0;
 
   return (
-    <Sidebar>
+    
       <PageShell max={started ? "max-w-[1400px]" : "max-w-[1050px]"}>
         {!started ? (
           <>
@@ -613,7 +613,7 @@ function SelfIntroductionPractice() {
           </>
         )}
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

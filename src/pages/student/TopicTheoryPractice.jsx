@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Mic, MicOff, Send, SkipForward, Timer, Award, RotateCcw, BookOpen } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import { PageShell } from "../../components/student/ui";
 import { courseCategories, technologies } from "../../data/studentLearningData";
 import { useEnrolledCourses } from "../../data/studentCourseEnrollment";
@@ -229,7 +229,7 @@ function TopicTheoryPractice() {
   if (!session || !course) return null;
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1400px]">
         <style>{`
           @keyframes skillNextVoiceWave {
@@ -367,7 +367,7 @@ function TopicTheoryPractice() {
           </section>
         )}
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

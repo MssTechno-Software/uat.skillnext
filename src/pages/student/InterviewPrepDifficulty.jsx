@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Gauge, Sparkles, Target, Zap } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import Sidebar from "../../components/Sidebar";
+ 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, PageShell, SectionHeading } from "../../components/student/ui";
 import { courseCategories, technologies } from "../../data/studentLearningData";
@@ -66,7 +66,7 @@ function InterviewPrepDifficulty() {
   if (!learningCourse || !enrolled || !topic) return null;
 
   return (
-    <Sidebar>
+    
       <PageShell max="max-w-[1400px]">
         <StudentPageHeader
           title="Refine Your Focus"
@@ -121,7 +121,7 @@ function InterviewPrepDifficulty() {
           </Card>
         </div>
       </PageShell>
-    </Sidebar>
+    
   );
 }
 

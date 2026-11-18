@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { registerUser } from "../../api/auth.api";
 import { getApiErrorMessage } from "../../utils/apiErrorHandler";
+import Loader from "../../components/Loader";
 import {
     AlertCircle,
     AlertTriangle,
@@ -1621,26 +1622,17 @@ function Signup() {
                                 {/* Submit */}
                                 <button
                                     type="submit"
+                                    disabled={submitting}
                                     className="group flex h-[56px] w-full items-center justify-center gap-[14px] rounded-[11px] border-0 bg-[#FFAB0B] text-[13px] font-extrabold text-[#06424B] shadow-[0_9px_22px_rgba(255,171,11,.25)] transition-all duration-[250ms] hover:-translate-y-0.5 hover:bg-[#F5A000] hover:shadow-[0_13px_27px_rgba(255,171,11,.32)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {submitting ? (
-                                        <>
-                                            <span>Creating your account</span>
-                                            <Loader2 size={19} className="animate-spin" />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span>
-                                                Continue with {isStudent ? "Student" : "Teacher"} Registration
-                                            </span>
-                                            <ArrowRight
-                                                size={19}
-                                                className="transition-transform group-hover:translate-x-1"
-                                            />
-                                        </>
-                                    )}
+                                    <span>
+                                        Continue with {isStudent ? "Student" : "Teacher"} Registration
+                                    </span>
+                                    <ArrowRight
+                                        size={19}
+                                        className="transition-transform group-hover:translate-x-1"
+                                    />
                                 </button>
-
                                 <p className="pt-1 text-center text-[13px] text-gray-500">
                                     Already have an account?
                                     <button
@@ -1767,6 +1759,10 @@ function Signup() {
                     </div>
                 </ModalShell>
             )}
+            <Loader
+                open={submitting}
+                text="Creating your account..."
+            />
         </main>
     );
 }
