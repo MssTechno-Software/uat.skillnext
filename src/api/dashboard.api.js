@@ -1,10 +1,21 @@
 import API from "./axiosInstance";
 
-// Fetch the logged-in student's dashboard summary and enrolled courses.
-export const getStudentDashboard = async () => {
-  const response = await API.get("/api/dashboard/me", {
-    requiresAuth: true,
-  });
+// Share simultaneous dashboard requests.
+let dashboardRequest = null;
 
-  return response.data;
+// Get student dashboard data.
+export const getStudentDashboard = () => {
+  if (dashboardRequest) {
+    return dashboardRequest;
+  }
+
+  dashboardRequest = API.get("/api/dashboard/me", {
+    requiresAuth: true,
+  })
+    .then((response) => response.data)
+    .finally(() => {
+      dashboardRequest = null;
+    });
+
+  return dashboardRequest;
 };

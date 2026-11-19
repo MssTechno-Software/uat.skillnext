@@ -1,1055 +1,135 @@
-
-import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import CodeMirror from "@uiw/react-codemirror";
-import { html } from "@codemirror/lang-html";
-import { EditorView } from "@codemirror/view";
-import Loader from "../../components/Loader";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
+  Code2,
   Copy,
   ExternalLink,
-  FileText,
-  Lightbulb,
-  Play,
-  PlayCircle,
-  RotateCcw,
-  RefreshCw,
-  Code2,
-  Eye,
-  BookOpen,
+  LockKeyhole,
   Maximize2,
   Minimize2,
-  Check,
-  LockKeyhole,
+  Play,
+  PlayCircle,
+  RefreshCw,
+  RotateCcw,
+  Terminal,
+  X,
 } from "lucide-react";
 
- 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
+import { Card, LinkButton, PageShell } from "../../components/student/ui";
+import Loader from "../../components/Loader";
+import ApiErrorModal from "../../components/ApiErrorModal";
+import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 import {
-  Card,
-  LinkButton,
-  PageShell,
-} from "../../components/student/ui";
+  getCourseContent,
+  getCourseLearningPath,
+  completeModule,
+} from "../../api/course.api";
+import { getModuleAssessments } from "../../api/assessment.api";
 
-import { myLearningCoursePath, technologies } from "../../data/studentLearningData";
-import { getQuizForTopic } from "../../data/quizData";
-import { getCourseContent, completeModule } from "../../api/course.api";
-import { hasReadLesson, markLessonRead, rememberLastTopic, useProgress } from "../../data/studentProgress";
+const normalizeModules = (payload) => (Array.isArray(payload?.modules) ? payload.modules : [])
+  .filter((module) => module && module.visible !== false && module.id !== undefined && module.id !== null)
+  .map((module) => ({
+    ...module,
+    contents: Array.isArray(module.contents)
+      ? module.contents.filter((content) => content && content.visible !== false)
+      : [],
+  }))
+  .sort((a, b) => Number(a.position || 0) - Number(b.position || 0));
 
-/* ======================================================
-   CODE EDITOR THEME
-====================================================== */
 
-const editorTheme = EditorView.theme(
-  {
-    "&": {
-      backgroundColor: "#102E36",
-      color: "#E5F3F0",
-      fontSize: "13px",
-      height: "100%",
-    },
-
-    ".cm-content": {
-      caretColor: "#FFAB0B",
-      fontFamily: "Consolas, Monaco, monospace",
-      padding: "16px 0",
-    },
-
-    ".cm-line": {
-      padding: "0 16px",
-      lineHeight: "1.8",
-    },
-
-    ".cm-gutters": {
-      backgroundColor: "#102E36",
-      color: "#66858A",
-      border: "none",
-      paddingLeft: "8px",
-    },
-
-    ".cm-activeLine": {
-      backgroundColor: "#FFFFFF08",
-    },
-
-    ".cm-activeLineGutter": {
-      backgroundColor: "#FFFFFF08",
-      color: "#FFAB0B",
-    },
-
-    "&.cm-focused": {
-      outline: "none",
-    },
-
-    ".cm-selectionBackground": {
-      backgroundColor: "#35616A !important",
-    },
-
-    ".cm-cursor": {
-      borderLeftColor: "#FFAB0B",
-    },
-  },
-  { dark: true }
-);
-
-/* ======================================================
-   BUILD HTML PREVIEW
-====================================================== */
-
-function buildPreview(code) {
-  const source = code || "";
-
-  const hasFullDocument =
-    /<!doctype\s+html/i.test(source) ||
-    /<html[\s>]/i.test(source);
-
-  if (hasFullDocument) {
-    return source;
+const normalizeLearningPath = (response) => {
+  if (!response || response.success === false) {
+    throw new Error(response?.message || "Your course progress could not be loaded.");
   }
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      padding: 20px;
-      font-family: Arial, sans-serif;
-      color: #222;
-      line-height: 1.6;
-    }
-  </style>
-</head>
-
-<body>
-  ${source}
-</body>
-</html>`;
-}
-
-/* ======================================================
-   TRY IT YOURSELF PLAYGROUND
-====================================================== */
-
-function TryItYourself({ initial }) {
-  const [code, setCode] = useState(initial || "");
-  const [lastRun, setLastRun] = useState(initial || "");
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [activeTab, setActiveTab] = useState("editor");
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    setCode(initial || "");
-    setLastRun(initial || "");
-    setActiveTab("editor");
-  }, [initial]);
-
-  // Automatically update output while typing.
-  const preview = useMemo(
-    () => buildPreview(code),
-    [code]
-  );
-
-  const runCode = () => {
-    setLastRun(code);
-    setActiveTab("preview");
-  };
-
-  const resetCode = () => {
-    setCode(initial || "");
-    setLastRun(initial || "");
-    setActiveTab("editor");
-  };
-
-  const copyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopied(false);
-    }
-  };
-
-  const editorExtensions = useMemo(
-    () => [html(), editorTheme, EditorView.lineWrapping],
-    []
-  );
-
-  return (
-    <section
-      className={`mt-7 overflow-hidden rounded-2xl border border-[#DCE5E7] bg-white shadow-sm ${
-        isFullscreen
-          ? "fixed inset-3 z-[100] mt-0 flex flex-col"
-          : ""
-      }`}
-    >
-      {/* Playground Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#123B43] px-5 py-4">
-
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-            <Code2 size={20} className="text-[#FFAB0B]" />
-          </div>
-
-          <div>
-            <h3 className="text-sm font-extrabold text-white">
-              Try it Yourself
-            </h3>
-
-            <p className="mt-1 text-[11px] text-white/60">
-              Write code. Experiment. See the result.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#FFAB0B]">
-            HTML
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setIsFullscreen((value) => !value)}
-            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
-          >
-            {isFullscreen ? (
-              <Minimize2 size={17} />
-            ) : (
-              <Maximize2 size={17} />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Editor / Preview Toolbar */}
-      <div className="flex flex-wrap items-center justify-between border-b border-[#E7EEEE] bg-[#F7F9F9] px-4">
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab("editor")}
-            className={`flex items-center gap-2 border-b-2 px-3 py-3 text-xs font-bold transition ${
-              activeTab === "editor"
-                ? "border-[#06424B] text-[#06424B]"
-                : "border-transparent text-[#789094] hover:text-[#06424B]"
-            }`}
-          >
-            <Code2 size={15} />
-            Code Editor
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("preview")}
-            className={`flex items-center gap-2 border-b-2 px-3 py-3 text-xs font-bold transition ${
-              activeTab === "preview"
-                ? "border-[#06424B] text-[#06424B]"
-                : "border-transparent text-[#789094] hover:text-[#06424B]"
-            }`}
-          >
-            <Eye size={15} />
-            Output
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={copyCode}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-[#526D71] transition hover:bg-white"
-        >
-          {copied ? (
-            <Check size={14} className="text-[#34866E]" />
-          ) : (
-            <Copy size={14} />
-          )}
-
-          {copied ? "Copied" : "Copy Code"}
-        </button>
-      </div>
-
-      {/* Playground Workspace */}
-      <div
-        className={`grid min-h-[390px] lg:grid-cols-2 ${
-          isFullscreen ? "min-h-0 flex-1" : ""
-        }`}
-      >
-
-        {/* Code Editor */}
-        <div
-          className={`flex min-w-0 flex-col ${
-            activeTab === "preview" ? "hidden lg:flex" : ""
-          }`}
-        >
-          <div className="flex items-center justify-between border-b border-white/10 bg-[#173A42] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#FFAB0B]" />
-
-              <span className="text-[11px] font-bold text-white/80">
-                index.html
-              </span>
-            </div>
-
-            <span className="text-[10px] text-white/45">
-              Editable
-            </span>
-          </div>
-
-          <div
-            className={`min-h-[340px] flex-1 overflow-auto bg-[#102E36] ${
-              isFullscreen ? "min-h-0" : ""
-            }`}
-          >
-            <CodeMirror
-              value={code}
-              height={isFullscreen ? "100%" : "390px"}
-              minHeight="340px"
-              extensions={editorExtensions}
-              theme="dark"
-              basicSetup={{
-                lineNumbers: true,
-                foldGutter: true,
-                highlightActiveLine: true,
-                highlightActiveLineGutter: true,
-                autocompletion: true,
-                bracketMatching: true,
-                closeBrackets: true,
-                searchKeymap: true,
-                indentOnInput: true,
-              }}
-              onChange={(value) => setCode(value)}
-              aria-label="HTML code editor"
-            />
-          </div>
-
-          <div className="border-t border-white/10 bg-[#173A42] px-4 py-2.5">
-            <p className="text-[10px] text-white/45">
-              Edit the HTML code and watch your output update.
-            </p>
-          </div>
-        </div>
-
-        {/* Live Output */}
-        <div
-          className={`flex min-w-0 flex-col border-[#DCE5E7] lg:border-l ${
-            activeTab === "editor" ? "hidden lg:flex" : ""
-          }`}
-        >
-          <div className="flex items-center justify-between border-b border-[#E7EEEE] bg-white px-4 py-3">
-
-            <div className="flex items-center gap-2">
-              <Eye size={15} className="text-[#06424B]" />
-
-              <span className="text-xs font-extrabold text-[#123B43]">
-                Live Preview
-              </span>
-            </div>
-
-            <span className="flex items-center gap-1.5 rounded-full bg-[#EAF5EF] px-2.5 py-1 text-[10px] font-bold text-[#34866E]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#34866E]" />
-              Live
-            </span>
-          </div>
-
-          <iframe
-            title="HTML live output"
-            sandbox="allow-scripts"
-            srcDoc={preview}
-            className={`min-h-[340px] w-full flex-1 border-0 bg-white ${
-              isFullscreen ? "min-h-0" : ""
-            }`}
-          />
-        </div>
-      </div>
-
-      {/* Playground Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E5ECEC] bg-[#F7F9F9] px-4 py-4">
-
-        <button
-          type="button"
-          onClick={resetCode}
-          className="flex items-center gap-2 rounded-lg border border-[#DCE5E7] bg-white px-4 py-2.5 text-xs font-bold text-[#526D71] transition hover:bg-[#EEF3F4]"
-        >
-          <RotateCcw size={14} />
-          Reset
-        </button>
-
-        <div className="flex items-center gap-3">
-          <span className="hidden text-[10px] text-[#789094] sm:block">
-            Output updates automatically
-          </span>
-
-          <button
-            type="button"
-            onClick={runCode}
-            className="flex items-center gap-2 rounded-lg bg-[#FFAB0B] px-6 py-2.5 text-xs font-extrabold text-[#123B43] shadow-sm transition hover:bg-[#F3A000] active:scale-[0.98]"
-          >
-            <Play size={15} fill="currentColor" />
-            Run Code
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ======================================================
-   STATIC CODE EXAMPLE
-====================================================== */
-
-function CodeBlock({ code, language }) {
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopied(false);
-    }
-  };
-
-  return (
-    <div className="mt-5 overflow-hidden rounded-2xl border border-[#173A42] bg-[#102E36]">
-
-      <div className="flex items-center justify-between border-b border-white/10 bg-[#173A42] px-4 py-3">
-
-        <div className="flex items-center gap-2">
-          <Code2 size={15} className="text-[#FFAB0B]" />
-
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#FFAB0B]">
-            {language || "Code Example"}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={copy}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white/75 transition hover:bg-white/10"
-        >
-          {copied ? <Check size={13} /> : <Copy size={13} />}
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
-
-      <pre className="overflow-x-auto p-5 text-[13px] leading-7 text-[#E5F3F0]">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-}
-
-/* ======================================================
-   LOCKED TOPIC NOTICE
-====================================================== */
-
-function LockedTopicNotice({ courseName, topicName, step, total, backTo, previousTo }) {
-  return (
-    <Card className="overflow-hidden border-[#DCE7E5] p-0 shadow-[0_12px_34px_rgba(6,66,75,0.07)]">
-      <div className="relative overflow-hidden bg-[#06424B] px-6 py-7 sm:px-8">
-        <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full border-[22px] border-white/[0.06]" />
-        <div className="relative flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]">
-            <LockKeyhole size={21} />
-          </span>
-          <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFCF70]">Learning sequence</p>
-            <h1 className="mt-1 text-2xl font-extrabold text-white sm:text-[28px]">Complete the previous topic first</h1>
-          </div>
-        </div>
-        <p className="relative mt-4 max-w-3xl text-sm leading-7 text-white/75">
-          This topic is locked until the previous topic's 10-question quiz is submitted. There is no minimum score for these topic quizzes.
-        </p>
-      </div>
-
-      <div className="p-6 sm:p-8">
-        <div className="flex flex-col gap-4 rounded-2xl border border-[#E4ECEB] bg-[#F7F9F9] p-5 sm:flex-row sm:items-center">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-lg font-extrabold text-[#06424B] shadow-sm">
-            {String(step).padStart(2, "0")}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A9B9D]">{courseName} · Topic {step} of {total}</p>
-            <h2 className="mt-1 text-lg font-extrabold text-[#06424B]">{topicName}</h2>
-            <p className="mt-1 text-sm leading-6 text-[#5A7478]">Finish the previous topic's lesson and submit all 10 quiz questions. Your score will not block the next topic.
-            </p>
-          </div>
-          <span className="inline-flex items-center gap-2 self-start rounded-full bg-[#FFF1D1] px-3 py-2 text-[11px] font-extrabold text-[#94650C] sm:self-center">
-            <LockKeyhole size={13} /> Locked
-          </span>
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <LinkButton to={backTo} variant="gold" icon={ArrowLeft}>
-            Back to {courseName} in My Learning
-          </LinkButton>
-          {previousTo && (
-            <LinkButton to={previousTo} variant="outline" icon={PlayCircle}>
-              Open Previous Topic
-            </LinkButton>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-/* ======================================================
-   MAIN LESSON PAGE
-====================================================== */
-
-function TechnologyLessonContent() {
-  const { technologySlug, topicId } = useParams();
-  const progress = useProgress();
-
-  const technology =
-    technologies.find((item) => item.id === technologySlug) ||
-    technologies[0];
-
-  const topicIndex = Math.max(
-    0,
-    technology.topics.findIndex((item) => item.id === topicId)
-  );
-
-  const topic = technology.topics[topicIndex];
-
-  const prev = technology.topics[topicIndex - 1];
-  const next = technology.topics[topicIndex + 1];
-
-  const quiz = getQuizForTopic(technology.id, topic.id);
-
-  const done = Boolean(
-    progress.completed[`${technology.id}/${topic.id}`]
-  );
-  const lessonRead = hasReadLesson(progress, technology.id, topic.id) || done;
-
-  useEffect(() => {
-    rememberLastTopic(technology.id, topic.id);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [technology.id, topic.id]);
-
-  const previousTopicComplete = !prev || Boolean(progress.completed[`${technology.id}/${prev.id}`]);
-  const learningWorkspacePath = myLearningCoursePath(null, technology.id);
-  if (!previousTopicComplete) {
-    return (
-      
-        <PageShell max="max-w-[980px]">
-          <LockedTopicNotice
-            courseName={technology.name}
-            topicName={topic.title}
-            step={topicIndex + 1}
-            total={technology.topics.length}
-            backTo={learningWorkspacePath}
-            previousTo={prev ? `/student/topics/${technology.id}/topic/${prev.id}` : null}
-          />
-        </PageShell>
-      
-    );
+  const payload = response.data ?? response;
+  if (!payload?.course?.id || !Array.isArray(payload.modules)) {
+    throw new Error("The Learning Path API returned an unexpected response.");
   }
 
-  return (
-    
-      <PageShell max="max-w-[1500px]">
-
-        <StudentPageHeader
-          title="Learning Tutorial"
-          subtitle={`${technology.name} / ${topic.title}`}
-        />
-
-        {/* Breadcrumb */}
-        <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
-
-          <Link
-            to="/student/my-learning"
-            className="!text-[#526D71] !no-underline hover:!text-[#06424B]"
-          >
-            My Learning
-          </Link>
-
-          <ChevronRight size={14} />
-
-          <Link
-            to={learningWorkspacePath}
-            className="!text-[#526D71] !no-underline hover:!text-[#06424B]"
-          >
-            {technology.name}
-          </Link>
-
-          <ChevronRight size={14} />
-
-          <span className="text-[#06424B]">
-            {topic.title}
-          </span>
-        </nav>
-
-        <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)] 2xl:grid-cols-[250px_minmax(0,1fr)_220px]">
-
-          {/* LEFT: TOPIC NAVIGATION */}
-          <aside className="lg:sticky lg:top-5 lg:h-fit">
-
-            <Card className="overflow-hidden">
-
-              <div className="bg-[#123B43] px-5 py-5">
-
-                <div className="mb-3 flex items-center gap-2">
-                  <BookOpen size={15} className="text-[#FFAB0B]" />
-
-                  <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">
-                    Learning Path
-                  </span>
-                </div>
-
-                <h2 className="text-xl font-extrabold text-white">
-                  {technology.name}
-                </h2>
-
-                <p className="mt-1 text-xs text-white/55">
-                  Step-by-step tutorials
-                </p>
-              </div>
-
-              <nav className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
-
-                {technology.topics.map((item, i) => {
-                  const active = item.id === topic.id;
-
-                  const complete = Boolean(
-                    progress.completed[
-                      `${technology.id}/${item.id}`
-                    ]
-                  );
-
-                  return (
-                    <Link
-                      key={item.id}
-                      to={`/student/topics/${technology.id}/topic/${item.id}`}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] !no-underline transition ${
-                        active
-                          ? "bg-[#E9F0EF] font-bold !text-[#06424B] ring-1 ring-[#06424B]/10"
-                          : "font-medium !text-[#526D71] hover:bg-[#F4F7F7]"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${
-                          complete
-                            ? "bg-[#06424B] text-white"
-                            : active
-                            ? "bg-[#FFAB0B] text-[#123B43]"
-                            : "bg-[#EEF3F4] text-[#526D71]"
-                        }`}
-                      >
-                        {complete ? (
-                          <CheckCircle2 size={15} />
-                        ) : (
-                          i + 1
-                        )}
-                      </span>
-
-                      <span className="min-w-0 flex-1 leading-5">
-                        {item.title}
-                      </span>
-
-                      {active && (
-                        <ChevronRight
-                          size={15}
-                          className="shrink-0 text-[#06424B]"
-                        />
-                      )}
-                    </Link>
-                  );
-                })}
-
-                {quiz && (
-                  <div className="mt-3 border-t border-[#E9EEEE] px-3 py-4">
-                    {done ? (
-                      <p className="inline-flex items-center gap-2 text-xs font-extrabold text-[#28765E]">
-                        <CheckCircle2 size={17} /> {topic.title} quiz completed
-                      </p>
-                    ) : lessonRead ? (
-                      <Link
-                        to={`/student/quiz/${quiz.slug}`}
-                        className="flex items-center gap-3 rounded-xl bg-[#FFF7E6] px-3 py-3 text-xs font-bold !text-[#06424B] !no-underline transition hover:bg-[#FFF0CA]"
-                      >
-                        <ClipboardCheck size={18} className="text-[#C18B1C]" />
-                        Open this topic's 10-question quiz
-                      </Link>
-                    ) : (
-                      <p className="inline-flex items-center gap-2 text-xs font-semibold text-[#87989A]">
-                        <LockKeyhole size={15} /> Read this lesson to unlock its quiz
-                      </p>
-                    )}
-                  </div>
-                )}
-              </nav>
-            </Card>
-          </aside>
-
-          {/* CENTRE: LESSON */}
-          <article className="min-w-0 space-y-6">
-
-            {/* Topic Introduction */}
-            <Card className="p-6 sm:p-8">
-
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">
-                  Topic {String(topicIndex + 1).padStart(2, "0")}
-                </span>
-
-                <span className="text-xs font-semibold text-[#789094]">
-                  {technology.name}
-                </span>
-              </div>
-
-              <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">
-                {topic.title}
-              </h1>
-
-              <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">
-                {topic.summary}
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-
-                {prev && (
-                  <LinkButton
-                    to={`/student/topics/${technology.id}/topic/${prev.id}`}
-                    variant="outline"
-                    size="sm"
-                    icon={ArrowLeft}
-                  >
-                    Previous
-                  </LinkButton>
-                )}
-
-                {next && (
-                  <LinkButton
-                    to={`/student/topics/${technology.id}/topic/${next.id}`}
-                    size="sm"
-                    iconRight={ArrowRight}
-                  >
-                    Next: {next.title}
-                  </LinkButton>
-                )}
-              </div>
-            </Card>
-
-            {/* Lesson Items */}
-            {topic.lessonItems.map((lesson, index) => {
-
-              const language = (
-                lesson.language || ""
-              ).toLowerCase();
-
-              const isHtml =
-                lesson.live ||
-                ["html", "htm"].includes(language);
-
-              return (
-                <Card
-                  key={`${topic.id}-${index}`}
-                  id={`lesson-${index + 1}`}
-                  className="scroll-mt-6 p-6 sm:p-8"
-                >
-
-                  {/* Lesson Heading */}
-                  <div className="flex items-start gap-4">
-
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1D1] text-sm font-extrabold text-[#94650C]">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-
-                    <div className="min-w-0">
-                      <h2 className="text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">
-                        {lesson.title}
-                      </h2>
-
-                      <p className="mt-1 text-xs text-[#789094]">
-                        {technology.name} Tutorial
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Explanation */}
-                  <div className="mt-5">
-                    <p className="text-[15px] leading-8 text-[#405D61]">
-                      {lesson.text}
-                    </p>
-                  </div>
-
-                  {/* Learning Points */}
-                  {lesson.points?.length > 0 && (
-                    <div className="mt-6 rounded-xl border border-[#E4ECEB] bg-[#F7F9F9] p-5">
-
-                      <h3 className="mb-4 text-xs font-extrabold uppercase tracking-wider text-[#123B43]">
-                        What you will learn
-                      </h3>
-
-                      <ul className="space-y-3">
-                        {lesson.points.map((point, pointIndex) => (
-                          <li
-                            key={pointIndex}
-                            className="flex items-start gap-3 text-sm leading-6 text-[#405D61]"
-                          >
-                            <CheckCircle2
-                              size={17}
-                              className="mt-0.5 shrink-0 text-[#34866E]"
-                            />
-
-                            <span>{point}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* HTML Compiler / Code Example */}
-                  {isHtml ? (
-                    <TryItYourself initial={lesson.code} />
-                  ) : (
-                    <>
-                      <div className="mt-7">
-                        <h3 className="flex items-center gap-2 text-sm font-extrabold text-[#123B43]">
-                          <Code2
-                            size={17}
-                            className="text-[#C18B1C]"
-                          />
-                          Example
-                        </h3>
-
-                        <CodeBlock
-                          code={lesson.code}
-                          language={lesson.language}
-                        />
-                      </div>
-
-                      {lesson.output && (
-                        <div className="mt-4 overflow-hidden rounded-xl border border-[#DCE8E6]">
-
-                          <div className="flex items-center gap-2 bg-[#EAF3F1] px-4 py-3">
-                            <Eye
-                              size={15}
-                              className="text-[#34866E]"
-                            />
-
-                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#245D53]">
-                              Expected Output
-                            </span>
-                          </div>
-
-                          <pre className="whitespace-pre-wrap bg-white p-5 font-mono text-[13px] leading-6 text-[#405D61]">
-                            {lesson.output}
-                          </pre>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </Card>
-              );
-            })}
-
-            {/* Learning Tip */}
-            <div className="flex items-start gap-4 rounded-2xl border border-[#F1DFB6] bg-[#FFFAEE] p-5 sm:p-6">
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0C9]">
-                <Lightbulb size={21} className="text-[#B07A06]" />
-              </div>
-
-              <div>
-                <h3 className="text-sm font-extrabold text-[#805C17]">
-                  Learning Tip
-                </h3>
-
-                <p className="mt-2 text-sm leading-7 text-[#765E2E]">
-                  {topic.tip}
-                </p>
-              </div>
-            </div>
-
-            {/* Completion Card */}
-            <Card className="p-5 sm:p-6">
-              {!lessonRead && (
-                <div className="mb-5 flex flex-col gap-3 rounded-xl border border-[#DCE9E7] bg-[#F7FAF9] p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-extrabold text-[#123B43]">Finished reading this lesson?</p>
-                    <p className="mt-1 text-xs leading-5 text-[#71878A]">Review the lesson sections and examples above, then mark this topic as read to unlock its 10-question quiz.</p>
-                  </div>
-                  <button type="button" onClick={() => markLessonRead(technology.id, topic.id)} className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0A515C]">
-                    <CheckCircle2 size={15} /> Mark as read
-                  </button>
-                </div>
-              )}
-              {lessonRead && !done && (
-                <p className="mb-5 inline-flex items-center gap-2 rounded-lg bg-[#EAF5EF] px-3 py-2 text-xs font-bold text-[#28765E]">
-                  <CheckCircle2 size={14} /> Lesson marked as read · Quiz unlocked
-                </p>
-              )}
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-base font-extrabold text-[#123B43]">
-                    {done ? "Topic quiz completed" : "Complete this topic"}
-                  </h3>
-                  <p className="mt-1 text-xs leading-5 text-[#789094]">
-                    {done
-                      ? "Your topic progress has been saved. You can review the lesson or continue to the next topic."
-                      : "Take the 10-question topic quiz. Answer all 10 questions. Each answer shows immediate feedback, and the next topic unlocks regardless of your score."}
-                  </p>
-                </div>
-                {done ? (
-                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#EAF5EF] px-4 py-3 text-xs font-extrabold text-[#28765E]">
-                    <CheckCircle2 size={15} /> Quiz completed
-                  </span>
-                ) : quiz && lessonRead ? (
-                  <LinkButton to={`/student/quiz/${quiz.slug}`} variant="gold" icon={ClipboardCheck}>
-                    Take Topic Quiz · 10 Questions
-                  </LinkButton>
-                ) : quiz ? (
-                  <span className="inline-flex items-center gap-2 rounded-xl bg-[#F2F5F5] px-4 py-3 text-xs font-bold text-[#839597]">
-                    <LockKeyhole size={14} /> Mark this lesson as read to unlock the quiz
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-3 border-t border-[#E9EEEE] pt-5">
-                <LinkButton to="/student/resources" variant="outline" icon={FileText}>
-                  Resources
-                </LinkButton>
-                {next && done && (
-                  <LinkButton to={`/student/topics/${technology.id}/topic/${next.id}`} iconRight={ArrowRight}>
-                    Next Topic
-                  </LinkButton>
-                )}
-                {!next && done && (
-                  <LinkButton to={myLearningCoursePath(null, technology.id)} iconRight={ArrowRight}>
-                    Back to IT Courses in My Learning
-                  </LinkButton>
-                )}
-              </div>
-            </Card>
-
-            {/* Reference */}
-            <a
-              href={technology.reference}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-xs font-semibold !text-[#526D71] !no-underline transition hover:!text-[#06424B]"
-            >
-              <ExternalLink size={14} />
-              Explore more {technology.name} tutorials
-            </a>
-          </article>
-
-          {/* RIGHT: ON THIS PAGE */}
-          <aside className="hidden 2xl:block">
-
-            <div className="sticky top-5 rounded-2xl border border-[#E1E9E9] bg-white p-5">
-
-              <div className="flex items-center gap-2">
-                <BookOpen
-                  size={16}
-                  className="text-[#C18B1C]"
-                />
-
-                <h3 className="text-sm font-extrabold text-[#123B43]">
-                  On This Page
-                </h3>
-              </div>
-
-              <p className="mt-2 text-[11px] text-[#789094]">
-                Jump to a section
-              </p>
-
-              <ul className="mt-5 space-y-1 border-l-2 border-[#E8EEEE]">
-
-                {topic.lessons.map((title, i) => (
-                  <li key={title}>
-                    <a
-                      href={`#lesson-${i + 1}`}
-                      className="-ml-[2px] block border-l-2 border-transparent py-2 pl-3 text-xs font-medium leading-5 !text-[#71878A] !no-underline transition hover:border-[#FFAB0B] hover:!text-[#06424B]"
-                    >
-                      {title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-6 rounded-xl bg-[#F4F7F7] p-4">
-                <p className="text-[11px] font-bold text-[#123B43]">
-                  Practice makes progress
-                </p>
-
-                <p className="mt-2 text-[11px] leading-5 text-[#789094]">
-                  Try editing the examples and running your code to understand each concept.
-                </p>
-              </div>
-            </div>
-          </aside>
-
-        </div>
-      </PageShell>
-    
+  const modules = payload.modules
+    .filter((module) => module && module.id !== undefined && module.id !== null)
+    .map((module) => ({
+      ...module,
+      position: Number(module.position) || 0,
+      contentsCount: Math.max(0, Number(module.contentsCount) || 0),
+      isRead: module.isRead === true,
+      assessmentPassed: module.assessmentPassed === true,
+      isUnlocked: module.isUnlocked === true,
+      status: String(module.status || "LOCKED").toUpperCase(),
+    }))
+    .sort((a, b) => a.position - b.position);
+
+  return {
+    course: payload.course,
+    progress: payload.progress || {},
+    modules,
+    finalAssessment: payload.finalAssessment || null,
+  };
+};
+
+// The Learning Path API owns progress/status; the content API owns lesson text.
+// Merge by module ID without allowing content data to overwrite progress flags.
+const mergeContentWithLearningPath = (contentModules, progressModules) => {
+  const contentById = new Map(
+    contentModules.map((module) => [String(module.id), module])
   );
-}
 
-/* ======================================================
-   API COURSE MODULE CONTENT
-   GET /api/courses/{course_id}/content
-   POST /api/modules/{module_id}/complete
-====================================================== */
+  return progressModules.map((progressModule) => {
+    const contentModule = contentById.get(String(progressModule.id));
+    return {
+      ...(contentModule || {}),
+      ...progressModule,
+      contents: contentModule?.contents || [],
+      contentsCount: Math.max(
+        0,
+        Number(progressModule.contentsCount ?? contentModule?.contents?.length) || 0
+      ),
+    };
+  });
+};
 
-const MODULE_PROGRESS_STORAGE_PREFIX = "skillnext:course-module-progress:";
-
-function readApiModuleProgress(courseId) {
-  if (typeof window === "undefined") return [];
-  try {
-    const saved = JSON.parse(
-      window.localStorage.getItem(`${MODULE_PROGRESS_STORAGE_PREFIX}${courseId}`) || "{}"
-    );
-    return Array.isArray(saved.completedModuleIds)
-      ? saved.completedModuleIds.map(Number).filter(Number.isFinite)
-      : [];
-  } catch {
-    return [];
+const normalizeAssessments = (response) => {
+  const payload = response;
+  if (!payload || payload.success === false) {
+    throw new Error("We couldn't load your assessment. Please try again.");
   }
-}
 
-function isApiModuleComplete(module) {
-  const status = String(module?.status || module?.completionStatus || "").toLowerCase();
-  return (
-    module?.completed === true ||
-    module?.isCompleted === true ||
-    status === "completed" ||
-    Number(module?.percentage) >= 100
-  );
-}
+  const data = payload.data ?? payload;
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.assessments)
+      ? data.assessments
+      : Array.isArray(data?.items)
+        ? data.items
+        : data?.assignment
+          ? [data.assignment]
+          : [];
 
-function markdownBodyToBlocks(body) {
-  if (!body || typeof body !== "string") return [];
+  return list.filter((assessment) => assessment && assessment.visible !== false && assessment.id !== undefined);
+};
 
+const parseTextBlocks = (body) => {
+  if (typeof body !== "string" || !body.trim()) return [];
   const blocks = [];
-  let paragraphLines = [];
+  let paragraph = [];
   let listItems = [];
   let listType = null;
 
   const flushParagraph = () => {
-    if (paragraphLines.length) {
-      blocks.push({ type: "paragraph", text: paragraphLines.join(" ").trim() });
-      paragraphLines = [];
+    if (paragraph.length) {
+      blocks.push({ type: "paragraph", text: paragraph.join(" ").trim() });
+      paragraph = [];
     }
   };
-
   const flushList = () => {
     if (listItems.length) {
       blocks.push({ type: listType, items: [...listItems] });
@@ -1067,18 +147,15 @@ function markdownBodyToBlocks(body) {
     }
 
     const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+
     if (heading) {
       flushParagraph();
       flushList();
-      blocks.push({
-        type: heading[1].length === 1 ? "heading" : "subheading",
-        text: heading[2],
-      });
+      blocks.push({ type: heading[1].length === 1 ? "heading" : "subheading", text: heading[2] });
       return;
     }
-
-    const bullet = line.match(/^[-*]\s+(.+)$/);
-    const numbered = line.match(/^\d+[.)]\s+(.+)$/);
     if (bullet || numbered) {
       flushParagraph();
       const nextType = bullet ? "bullet_list" : "numbered_list";
@@ -1087,27 +164,502 @@ function markdownBodyToBlocks(body) {
       listItems.push((bullet || numbered)[1]);
       return;
     }
-
     flushList();
-    paragraphLines.push(line);
+    paragraph.push(line);
   });
 
   flushParagraph();
   flushList();
   return blocks;
+};
+
+
+// Load Pyodide once and reuse the browser-side Python runtime across code examples.
+// Python runs in the learner's browser; code is not sent to the LMS API.
+let pyodidePromise = null;
+
+const PYODIDE_VERSION = "v0.27.7";
+const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/`;
+const PYODIDE_LOAD_TIMEOUT_MS = 60000;
+
+const loadPyodideRuntime = () => {
+  if (pyodidePromise) return pyodidePromise;
+
+  pyodidePromise = new Promise((resolve, reject) => {
+    let settled = false;
+    let timeoutId;
+
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+      callback(value);
+    };
+
+    const fail = (message) => {
+      pyodidePromise = null;
+      finish(reject, new Error(message));
+    };
+
+    const initialize = async () => {
+      try {
+        if (typeof window.loadPyodide !== "function") {
+          throw new Error("Python runtime script loaded, but the Python engine was not found. Please refresh and try again.");
+        }
+
+        const runtime = await window.loadPyodide({ indexURL: PYODIDE_BASE_URL });
+        finish(resolve, runtime);
+      } catch (error) {
+        pyodidePromise = null;
+        finish(reject, error);
+      }
+    };
+
+    timeoutId = window.setTimeout(
+      () => fail("Python is taking too long to load. Check your internet connection and try again."),
+      PYODIDE_LOAD_TIMEOUT_MS
+    );
+
+    if (typeof window.loadPyodide === "function") {
+      initialize();
+      return;
+    }
+
+    const downloadError = "Could not download the Python runtime. Check your internet connection.";
+    let script = document.querySelector('script[data-skillnext-pyodide="true"]');
+
+    if (script) {
+      // A previous script may already have finished before this component mounted.
+      if (script.dataset.loaded === "true") {
+        initialize();
+        return;
+      }
+
+      script.addEventListener("load", initialize, { once: true });
+      script.addEventListener("error", () => fail(downloadError), { once: true });
+      return;
+    }
+
+    script = document.createElement("script");
+    script.src = `${PYODIDE_BASE_URL}pyodide.js`;
+    script.async = true;
+    script.dataset.skillnextPyodide = "true";
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      initialize();
+    };
+    script.onerror = () => {
+      script.remove(); // allow a clean retry on the next run
+      fail(downloadError);
+    };
+    document.head.appendChild(script);
+  });
+
+  return pyodidePromise;
+};
+
+function CodingPlayground({ block }) {
+  const language = String(block?.language || "python").toLowerCase();
+  const originalCode = String(
+    block?.starterCode ?? block?.starter_code ?? block?.code ?? block?.example ?? ""
+  );
+  const normalizedLanguage = ({
+    js: "javascript",
+    jsx: "react",
+    ts: "javascript",
+    tsx: "react",
+    vanilla_js: "javascript",
+    "c++": "cpp",
+    html5: "html",
+    css3: "css",
+  })[language] || language;
+
+  const supportedBrowserLanguages = ["html", "css", "javascript", "react"];
+  const isPython = normalizedLanguage === "python";
+  const isBrowserLanguage = supportedBrowserLanguages.includes(normalizedLanguage);
+  const isRunnable = block?.runnable !== false && (isPython || isBrowserLanguage);
+
+  const [code, setCode] = useState(originalCode);
+  const [output, setOutput] = useState("");
+  const [programInput, setProgramInput] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasCopied, setHasCopied] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState("");
+  const editorRef = useRef(null);
+  const iframeRef = useRef(null);
+  const runIdRef = useRef(0);
+
+  useEffect(() => {
+    setCode(originalCode);
+    setProgramInput("");
+    setOutput("");
+    setPreviewDoc("");
+  }, [originalCode, block?.title]);
+
+  useEffect(() => {
+    if (!isExpanded) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape" && !isRunning) setIsExpanded(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isExpanded, isRunning]);
+
+  // Only accept messages coming from THIS playground's own preview iframe,
+  // so several code blocks on one page never receive each other's console output.
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data?.source !== "skillnext-code-preview") return;
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
+
+      const prefix = event.data.type === "error" ? "Error: " : "";
+      if (event.data.type === "console" || event.data.type === "error") {
+        setOutput((previous) => `${previous}${previous ? "\n" : ""}${prefix}${event.data.value}`);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  const makePreviewDocument = () => {
+    const bridge = `
+      <script>
+        (function () {
+          const send = (type, value) => parent.postMessage({
+            source: "skillnext-code-preview", type, value: String(value)
+          }, "*");
+          ["log", "info", "warn", "error"].forEach((method) => {
+            const original = console[method];
+            console[method] = (...args) => {
+              send(method === "error" ? "error" : "console",
+                args.map((item) => {
+                  if (typeof item === "object") {
+                    try { return JSON.stringify(item); } catch (_) { return String(item); }
+                  }
+                  return String(item);
+                }).join(" "));
+              original.apply(console, args);
+            };
+          });
+          window.addEventListener("error", (event) => send("error", event.message));
+          window.addEventListener("unhandledrejection", (event) => send("error", event.reason));
+          window.addEventListener("load", () => send("console", "Preview loaded successfully."));
+        })();
+      </script>`;
+
+    const meta = `<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">`;
+    const suppliedHtml = String(block?.previewHtml || block?.html || "");
+    const suppliedCss = String(block?.css || "");
+    const suppliedJs = String(block?.javascript || block?.js || "");
+
+    if (normalizedLanguage === "html") {
+      const html = code || suppliedHtml || "<h1>Hello Skill Next!</h1><p>Your HTML preview is ready.</p>";
+      const cssTag = suppliedCss ? `<style>${suppliedCss}</style>` : "";
+      const jsTag = suppliedJs ? `<script>${suppliedJs.replace(/<\/script/gi, "<\\/script")}</script>` : "";
+      if (/<html[\s>]/i.test(html) || /<!doctype/i.test(html)) {
+        return html.replace(/<\/head>/i, `${bridge}${cssTag}</head>`)
+          .replace(/<\/body>/i, `${jsTag}</body>`);
+      }
+      return `<!doctype html><html><head>${meta}${bridge}${cssTag}</head><body>${html}${jsTag}</body></html>`;
+    }
+
+    if (normalizedLanguage === "css") {
+      const previewMarkup = suppliedHtml || `
+        <main class="sn-preview">
+          <span class="sn-tag">SKILL NEXT · CSS PLAYGROUND</span>
+          <h1>Design your first page</h1>
+          <p>Edit the CSS and run it to see your styles here.</p>
+          <button class="sn-button">Explore course</button>
+          <div class="sn-card"><strong>Live preview</strong><br><span>Your CSS changes appear in this card.</span></div>
+        </main>`;
+      return `<!doctype html><html><head>${meta}
+        <style>
+          *{box-sizing:border-box}body{margin:0;padding:24px;font-family:Inter,Arial,sans-serif;color:#183C42;background:#fff}
+          .sn-preview{max-width:640px;margin:0 auto;padding:24px;border:1px solid #DCE7E5;border-radius:18px;background:#F8FAFA}
+          .sn-tag{font-size:10px;letter-spacing:1.2px;font-weight:800;color:#A8791B}
+          .sn-preview h1{font-size:28px;margin:14px 0 8px;color:#06424B}
+          .sn-preview p{line-height:1.7;color:#526D71}
+          .sn-button{border:0;border-radius:9px;padding:11px 16px;background:#FFAB0B;color:#06424B;font-weight:800}
+          .sn-card{margin-top:18px;padding:18px;border:1px solid #DCE7E5;border-radius:12px;background:white;line-height:1.8}
+          ${code}
+        </style>${bridge}</head><body>${previewMarkup}</body></html>`;
+    }
+
+    if (normalizedLanguage === "react") {
+      return `<!doctype html><html><head>${meta}
+        <style>body{font-family:Arial,sans-serif;padding:20px;color:#06424B}button{padding:9px 14px;border:0;border-radius:8px;background:#FFAB0B;color:#06424B;cursor:pointer}</style>
+        ${bridge}
+        <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+        <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+        <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+      </head><body><div id="root"></div>
+        <script type="text/babel" data-presets="env,react">
+          try {
+            ${code}
+          } catch (error) {
+            console.error(error);
+          }
+        </script>
+      </body></html>`;
+    }
+
+    return `<!doctype html><html><head>${meta}${bridge}</head><body>
+      <div id="app"></div>
+      <script>
+        try {
+          ${code}
+        } catch (error) {
+          console.error(error);
+        }
+      </script>
+    </body></html>`;
+  };
+
+  const handleRun = async () => {
+    if (!isRunnable || isRunning) return;
+
+    const currentRunId = ++runIdRef.current;
+    setIsRunning(true);
+    setOutput("");
+    setPreviewDoc("");
+
+    try {
+      if (isPython) {
+        setOutput("Loading Python runtime...");
+        const pyodide = await loadPyodideRuntime();
+        if (currentRunId !== runIdRef.current) return;
+
+        const outputLines = [];
+        const inputLines = programInput.replace(/\r\n/g, "\n").split("\n");
+        let inputIndex = 0;
+
+        pyodide.setStdin({
+          stdin: () => inputIndex < inputLines.length ? inputLines[inputIndex++] : null,
+        });
+        pyodide.setStdout({
+          batched: (message) => outputLines.push(String(message)),
+        });
+        pyodide.setStderr({
+          batched: (message) => outputLines.push(String(message)),
+        });
+
+        setOutput("Running Python code...");
+
+        // Fresh globals for every run so variables never leak between runs or code blocks.
+        const globals = pyodide.globals.get("dict")();
+        try {
+          await pyodide.runPythonAsync(code, { globals });
+        } finally {
+          globals.destroy();
+        }
+
+        if (currentRunId === runIdRef.current) {
+          setOutput(outputLines.join("\n").trimEnd() || "Code executed successfully. No output was produced.");
+        }
+      } else {
+        setOutput("Preparing live preview...");
+        const documentHtml = makePreviewDocument();
+        setPreviewDoc(documentHtml);
+        setOutput(
+          normalizedLanguage === "html" || normalizedLanguage === "css" || normalizedLanguage === "react"
+            ? "Preview is ready. See the live result below."
+            : "JavaScript is running in the preview frame. Console output will appear here."
+        );
+      }
+    } catch (error) {
+      if (currentRunId === runIdRef.current) {
+        setOutput(`Execution error:\n${error?.message || String(error)}`);
+      }
+    } finally {
+      if (currentRunId === runIdRef.current) setIsRunning(false);
+    }
+  };
+
+  const handleReset = () => {
+    if (isRunning) return;
+    runIdRef.current += 1;
+    setCode(originalCode);
+    setProgramInput("");
+    setOutput("");
+    setPreviewDoc("");
+    editorRef.current?.focus();
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setHasCopied(true);
+      window.setTimeout(() => setHasCopied(false), 1600);
+    } catch {
+      setOutput("Clipboard access is unavailable. Select the code and copy it manually.");
+    }
+  };
+
+  const handleEditorKeyDown = (event) => {
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const element = event.currentTarget;
+      const start = element.selectionStart;
+      const end = element.selectionEnd;
+      setCode(`${code.slice(0, start)}    ${code.slice(end)}`);
+      window.requestAnimationFrame(() => {
+        element.selectionStart = element.selectionEnd = start + 4;
+      });
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      handleRun();
+    }
+  };
+
+  const isPreviewLanguage = isBrowserLanguage;
+  const languageLabel = normalizedLanguage === "react" ? "React / JSX" : normalizedLanguage.toUpperCase();
+
+  const editor = (
+    <div className="overflow-hidden rounded-2xl border border-[#DCE7E5] bg-white shadow-[0_12px_36px_rgba(6,66,75,0.08)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5ECEB] bg-[#F4F7F7] px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><Code2 size={19} /></span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold text-[#06424B]">{block?.title || "Coding practice"}</p>
+            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[1.2px] text-[#789094]">{languageLabel} coding workspace</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={handleCopy} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7]"><Copy size={13} /> {hasCopied ? "Copied" : "Copy"}</button>
+          <button type="button" onClick={handleReset} disabled={isRunning} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7] disabled:opacity-40"><RotateCcw size={13} /> Reset</button>
+          <button type="button" onClick={() => setIsExpanded(false)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7]"><Minimize2 size={14} /> Close</button>
+        </div>
+      </div>
+
+      <div className="grid min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.85fr)]">
+        <div className="min-w-0 border-b border-[#E5ECEB] lg:border-b-0 lg:border-r">
+          <div className="flex items-center justify-between border-b border-[#E5ECEB] bg-white px-4 py-2.5">
+            <span className="text-[10px] font-extrabold uppercase tracking-[1.2px] text-[#526D71]">Code editor</span>
+            <span className="text-[10px] text-[#829596]">{languageLabel} · Editable</span>
+          </div>
+          <div className="relative bg-white">
+            <div className="pointer-events-none absolute bottom-0 left-0 top-0 flex w-11 flex-col items-center overflow-hidden border-r border-[#E8EEEE] bg-[#F8FAFA] pt-4 font-mono text-[12px] leading-[25px] text-[#9AAEAF]">
+              {code.split("\n").map((_, index) => <span key={index}>{index + 1}</span>)}
+            </div>
+            <textarea
+              ref={editorRef}
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              onKeyDown={handleEditorKeyDown}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+              aria-label={`${languageLabel} code editor`}
+              className="block min-h-[340px] max-h-[55vh] w-full resize-y border-0 bg-white py-4 pl-[58px] pr-5 font-mono text-[13px] leading-[25px] text-[#183C42] caret-[#B88736] outline-none selection:bg-[#FFF0C9] focus:ring-0"
+              style={{ tabSize: 4 }}
+            />
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E5ECEB] bg-[#F4F7F7] px-4 py-3">
+            <p className="text-[10px] text-[#718486]">
+              {isRunnable ? "Edit the code and run it. Shortcut: Ctrl + Enter." : "This language needs a configured compiler service to execute."}
+            </p>
+            <button type="button" onClick={handleRun} disabled={!isRunnable || isRunning} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#06424B] transition hover:bg-[#FFC13C] disabled:cursor-not-allowed disabled:opacity-50">
+              {isRunning ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
+              {isRunning ? "Running..." : "Run Code"}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex min-h-[340px] min-w-0 flex-col bg-white">
+          {isPython && (
+            <div className="border-b border-[#E5ECEB] px-4 py-3">
+              <label className="block text-[11px] font-extrabold text-[#06424B]" htmlFor={`code-input-${block?.id || block?.title || "editor"}`}>
+                Program input <span className="font-medium text-[#829596]">(optional · one value per line)</span>
+              </label>
+              <textarea id={`code-input-${block?.id || block?.title || "editor"}`} value={programInput} onChange={(event) => setProgramInput(event.target.value)} rows={3} spellCheck={false} placeholder="Input for input() goes here" className="mt-2 w-full resize-y rounded-lg border border-[#DCE7E5] bg-[#F8FAFA] px-3 py-2.5 font-mono text-xs leading-5 text-[#183C42] outline-none placeholder:text-[#A3B3B4] focus:border-[#B88736]" />
+            </div>
+          )}
+          <div className="flex items-center gap-2 border-b border-[#E5ECEB] bg-[#F8FAFA] px-4 py-3">
+            <Terminal size={15} className="text-[#B88736]" />
+            <span className="text-[11px] font-extrabold uppercase tracking-[1.2px] text-[#06424B]">{isPreviewLanguage ? "Live preview / console" : "Output"}</span>
+            {isRunning && <span className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#94650C]"><RefreshCw size={11} className="animate-spin" /> Executing</span>}
+          </div>
+          {previewDoc ? (
+            <iframe ref={iframeRef} title={`${languageLabel} live preview`} sandbox="allow-scripts" srcDoc={previewDoc} className="min-h-[260px] w-full flex-1 bg-white" />
+          ) : (
+            <pre aria-live="polite" className="min-h-[220px] flex-1 whitespace-pre-wrap break-words bg-white px-4 py-4 font-mono text-[12px] leading-6 text-[#35575B]">
+              {output || "Your program output will appear here after you click Run Code."}
+            </pre>
+          )}
+          {output && previewDoc && <pre aria-live="polite" className="max-h-28 overflow-auto whitespace-pre-wrap break-words border-t border-[#E5ECEB] bg-[#F8FAFA] px-4 py-3 font-mono text-[11px] leading-5 text-[#526D71]">{output}</pre>}
+          <div className="border-t border-[#E5ECEB] px-4 py-2.5 text-[10px] text-[#829596]">
+            {isPreviewLanguage ? "Preview runs in an isolated browser frame." : "Execution result and errors appear here."}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <section className="my-7 rounded-2xl border border-[#DCE7E5] bg-[#F4F7F7] p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><Code2 size={20} /></span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-[1.3px] text-[#B88736]">Practice workspace</p>
+              <h4 className="mt-1 text-base font-extrabold text-[#06424B]">{block?.title || "Try it yourself"}</h4>
+              <p className="mt-1 text-xs leading-5 text-[#607A7D]">Edit, run your code and view the result in a focused workspace.</p>
+            </div>
+          </div>
+          <button type="button" onClick={() => setIsExpanded(true)} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-xs font-extrabold text-white transition hover:bg-[#0B5962]"><Maximize2 size={15} /> Open Coding Workspace</button>
+        </div>
+      </section>
+
+      {isExpanded && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-[#EEF3F4]/95 p-3 sm:p-6" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !isRunning) setIsExpanded(false);
+        }}>
+          <section role="dialog" aria-modal="true" aria-label={`${block?.title || languageLabel} coding workspace`} className="my-auto flex max-h-[94vh] w-full max-w-[1320px] flex-col">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B88736]">Skill Next · Practice workspace</p>
+                <h3 className="mt-1 text-lg font-extrabold text-[#06424B]">{block?.title || `${languageLabel} Coding Workspace`}</h3>
+              </div>
+              <span className="rounded-full border border-[#DCE7E5] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#526D71]">{languageLabel}</span>
+            </div>
+            {editor}
+          </section>
+        </div>
+      )}
+    </>
+  );
 }
 
 function ApiContentBlocks({ content }) {
   const blocks = Array.isArray(content?.blocks) && content.blocks.length
     ? content.blocks
-    : markdownBodyToBlocks(content?.body);
+    : parseTextBlocks(content?.body || content?.text || content?.content);
+
+  if (!blocks.length && content?.code) {
+    return (
+      <CodingPlayground
+        block={{
+          type: "code",
+          title: content.title || "Try this code",
+          language: content.language || "python",
+          code: content.code,
+          runnable: content.runnable !== false,
+        }}
+      />
+    );
+  }
 
   if (!blocks.length) {
-    return (
-      <p className="text-sm leading-7 text-[#718486]">
-        Learning content has not been published for this item yet.
-      </p>
-    );
+    return <p className="text-sm leading-7 text-[#718486]">No learning content is available for this item yet.</p>;
   }
 
   return (
@@ -1118,176 +670,154 @@ function ApiContentBlocks({ content }) {
         const items = Array.isArray(block?.items) ? block.items : [];
 
         if (type === "heading") {
-          return (
-            <h2 key={index} className="pt-2 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">
-              {text}
-            </h2>
-          );
+          return <h3 key={index} className="pt-2 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{text}</h3>;
         }
-
         if (type === "subheading") {
-          return (
-            <h3 key={index} className="pt-1 text-base font-extrabold leading-6 text-[#123B43] sm:text-lg">
-              {text}
-            </h3>
-          );
+          return <h4 key={index} className="pt-1 text-base font-extrabold leading-6 text-[#123B43] sm:text-lg">{text}</h4>;
         }
-
+        if (["code", "code_example", "code_practice"].includes(type)) {
+          return <CodingPlayground key={index} block={block} />;
+        }
         if (type === "bullet_list" || type === "numbered_list") {
           const ListTag = type === "numbered_list" ? "ol" : "ul";
           return (
-            <ListTag
-              key={index}
-              className={`${type === "numbered_list" ? "list-decimal" : "list-disc"} ml-6 space-y-2.5 text-sm leading-7 text-[#405D61] marker:text-[#B88736]`}
-            >
-              {items.map((item, itemIndex) => (
-                <li key={itemIndex} className="pl-1">{item}</li>
-              ))}
+            <ListTag key={index} className={`${type === "numbered_list" ? "list-decimal" : "list-disc"} ml-6 space-y-2.5 text-sm leading-7 text-[#405D61] marker:text-[#B88736]`}>
+              {items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{item}</li>)}
             </ListTag>
           );
         }
-
-        return (
-          <p key={index} className="text-sm leading-7 text-[#405D61] sm:text-[15px]">
-            {text}
-          </p>
-        );
+        return <p key={index} className="whitespace-pre-wrap text-sm leading-7 text-[#405D61] sm:text-[15px]">{text}</p>;
       })}
     </div>
   );
 }
 
-function CourseModuleLoading() {
-  return (
-    <PageShell max="max-w-[1180px]">
-      <section
-        role="status"
-        aria-live="polite"
-        aria-label="Loading course lesson"
-        className="mx-auto w-full"
-      >
-        <div className="mb-6 flex items-center gap-4 rounded-2xl border border-[#E1E9E9] bg-white px-5 py-4 shadow-[0_8px_28px_rgba(6,66,75,0.05)]">
-          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3F4]">
-            <span className="absolute inset-0 rounded-2xl border-2 border-[#DCE7E5]" />
-            <span className="absolute inset-0 animate-spin rounded-2xl border-2 border-transparent border-t-[#FFAB0B]" />
-            <BookOpen size={20} className="relative text-[#06424B]" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-extrabold text-[#06424B]">
-              Preparing your learning space
-            </p>
-            <p className="mt-1 text-xs leading-5 text-[#718486]">
-              Loading course modules and lesson content...
-            </p>
-          </div>
-          <span className="ml-auto hidden h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#FFAB0B] sm:block" />
-        </div>
+function LessonContent() {
+  const { technologySlug: courseId, topicId: moduleId } = useParams();
+  const location = useLocation();
 
-        <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
-          <div className="hidden space-y-3 lg:block">
-            <div className="h-40 animate-pulse rounded-2xl bg-[#DCE7E5]" />
-            <div className="space-y-2 rounded-2xl border border-[#E5ECEB] bg-white p-4">
-              {[0, 1, 2, 3, 4].map((item) => (
-                <div
-                  key={item}
-                  className="h-10 animate-pulse rounded-xl bg-[#F0F4F3]"
-                />
-              ))}
-            </div>
-          </div>
+  // Restart route state is used only for the one-time notice, never as progress data.
+  const restartedModuleId = location.state?.restartedModuleId;
+  const isRestartedModule =
+    restartedModuleId !== undefined &&
+    restartedModuleId !== null &&
+    String(restartedModuleId) === String(moduleId);
 
-          <div className="min-w-0 space-y-5">
-            <div className="rounded-2xl border border-[#E5ECEB] bg-white p-6 sm:p-8">
-              <div className="h-6 w-32 animate-pulse rounded-lg bg-[#FFF1D1]" />
-              <div className="mt-5 h-9 w-3/4 animate-pulse rounded-lg bg-[#DCE7E5]" />
-              <div className="mt-4 h-4 w-full animate-pulse rounded bg-[#E8EFED]" />
-              <div className="mt-2 h-4 w-5/6 animate-pulse rounded bg-[#E8EFED]" />
-            </div>
-            <div className="space-y-4 rounded-2xl border border-[#E5ECEB] bg-white p-6 sm:p-8">
-              <div className="h-6 w-2/5 animate-pulse rounded-lg bg-[#DCE7E5]" />
-              <div className="h-4 w-full animate-pulse rounded bg-[#E8EFED]" />
-              <div className="h-4 w-full animate-pulse rounded bg-[#E8EFED]" />
-              <div className="h-4 w-4/5 animate-pulse rounded bg-[#E8EFED]" />
-              <div className="mt-6 h-28 animate-pulse rounded-xl bg-[#F0F4F3]" />
-            </div>
-          </div>
-        </div>
-        <span className="sr-only">Please wait while the lesson loads.</span>
-      </section>
-    </PageShell>
-  );
-}
-
-function ApiCourseModuleLesson({ courseId, moduleId }) {
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
-  const [completedModuleIds, setCompletedModuleIds] = useState(() => readApiModuleProgress(courseId));
+  const [assessments, setAssessments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [completionError, setCompletionError] = useState("");
-  const [completionMessage, setCompletionMessage] = useState("");
-  const [completionSummary, setCompletionSummary] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [isMarkingRead, setIsMarkingRead] = useState(false);
+  const [isAssessmentsLoading, setIsAssessmentsLoading] = useState(false);
+  const [assessmentError, setAssessmentError] = useState("");
+  const [showReadConfirmation, setShowReadConfirmation] = useState(false);
+  const [apiError, setApiError] = useState(null);
+  const [restartNotice, setRestartNotice] = useState("");
 
-  useEffect(() => {
-    let active = true;
+  const contentModulesRef = useRef([]);
+  const contentCourseRef = useRef(null);
+  const assessmentSectionRef = useRef(null);
+  const assessmentRequestRef = useRef(0);
+  const loadRequestRef = useRef(0);
 
-    const loadContent = async () => {
-      setIsLoading(true);
-      setError("");
-      try {
-        const response = await getCourseContent(courseId);
-        if (!response || response.success === false) {
-          throw new Error(response?.message || "Course content could not be loaded.");
-        }
+  const reportApiError = useCallback((error, title, fallbackMessage, retryAction) => {
+    if (error?.response?.status === 401) {
+      setApiError(null);
+      return;
+    }
 
-        const payload = response.data || {};
-        if (!payload.course?.id) {
-          throw new Error("The course content response is missing course details.");
-        }
+    const message = error?.response || error?.request
+      ? getApiErrorMessage(error, fallbackMessage)
+      : error?.message || fallbackMessage;
 
-        const visibleModules = (Array.isArray(payload.modules) ? payload.modules : [])
-          .filter((item) => item && item.visible !== false)
-          .map((item) => ({
-            ...item,
-            contents: Array.isArray(item.contents)
-              ? item.contents.filter((content) => content && content.visible !== false)
-              : [],
-          }))
-          .sort((a, b) => Number(a.position || 0) - Number(b.position || 0));
+    setApiError({
+      title,
+      message,
+      onRetry: retryAction || null,
+    });
+  }, []);
 
-        if (active) {
-          setCourse(payload.course);
-          setModules(visibleModules);
-          const apiDoneIds = visibleModules.filter(isApiModuleComplete).map((item) => Number(item.id));
-          setCompletedModuleIds((current) => [...new Set([
-            ...current,
-            ...readApiModuleProgress(courseId),
-            ...apiDoneIds,
-          ])]);
-        }
-      } catch (requestError) {
-        console.error("Course Content API Error:", requestError);
-        if (active) {
-          const backend = requestError?.response?.data;
-          const message = backend?.message || backend?.detail || requestError?.message;
-          setError(typeof message === "string" ? message : "We couldn't load this module's learning content. Please try again.");
-        }
-      } finally {
-        if (active) setIsLoading(false);
+  // Fetch full content once per course. getCourseContent is in-memory cached in
+  // course.api.js, while Learning Path supplies the authoritative progress flags.
+  // moduleId is deliberately NOT a dependency: moving between modules in this
+  // course must not re-fetch the complete course content.
+  const loadCourse = useCallback(async ({ forceRefresh = false } = {}) => {
+    const requestId = ++loadRequestRef.current;
+
+    if (!/^\d+$/.test(String(courseId || ""))) {
+      setLoadError("This course link isn't valid. Please open it again from My Learning.");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setLoadError("");
+    setApiError(null);
+
+    try {
+      const [contentResponse, learningPathResponse] = await Promise.all([
+        getCourseContent(courseId, { forceRefresh }),
+        getCourseLearningPath(courseId, { forceRefresh }),
+      ]);
+
+      if (!contentResponse || contentResponse.success === false) {
+        throw new Error(contentResponse?.message || "We couldn't load this lesson. Please try again.");
       }
-    };
 
-    loadContent();
-    return () => { active = false; };
-  }, [courseId]);
+      const contentPayload = contentResponse.data ?? contentResponse;
+      const contentCourse = contentPayload?.course;
+      if (!contentCourse?.id) {
+        throw new Error("This course isn't available right now. Please try again later.");
+      }
+
+      const contentModules = normalizeModules(contentPayload);
+      const learningPath = normalizeLearningPath(learningPathResponse);
+      const mergedModules = mergeContentWithLearningPath(contentModules, learningPath.modules);
+
+      if (requestId !== loadRequestRef.current) return;
+
+      contentModulesRef.current = contentModules;
+      contentCourseRef.current = contentCourse;
+      setCourse({ ...contentCourse, ...learningPath.course });
+      setModules(mergedModules);
+    } catch (error) {
+      if (requestId !== loadRequestRef.current) return;
+      console.error("Lesson / Learning Path API Error:", error);
+      setLoadError("We couldn't load this lesson. Please try again.");
+      reportApiError(
+        error,
+        "Unable to Load Lesson",
+        "We couldn't load this lesson. Please try again.",
+        () => loadCourse({ forceRefresh: true })
+      );
+    } finally {
+      if (requestId === loadRequestRef.current) {
+        setIsLoading(false);
+      }
+    }
+  }, [courseId, reportApiError]);
 
   useEffect(() => {
-    setCompletedModuleIds(readApiModuleProgress(courseId));
-    setCompletionError("");
-    setCompletionMessage("");
-    setCompletionSummary(null);
-  }, [courseId, moduleId]);
+    loadCourse();
+    return () => {
+      loadRequestRef.current += 1;
+      assessmentRequestRef.current += 1;
+    };
+  }, [loadCourse]);
+
+  // Module navigation only resets module-specific UI; it does not fetch course content.
+  useEffect(() => {
+    setAssessments([]);
+    setAssessmentError("");
+    setShowReadConfirmation(false);
+    setApiError(null);
+    setRestartNotice(
+      isRestartedModule
+        ? location.state?.restartMessage || "Module restarted. Read it again and mark it as read to unlock its assessment."
+        : ""
+    );
+  }, [courseId, moduleId, location.key, isRestartedModule, location.state?.restartMessage]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1297,87 +827,189 @@ function ApiCourseModuleLesson({ courseId, moduleId }) {
   const module = moduleIndex >= 0 ? modules[moduleIndex] : null;
   const previousModule = moduleIndex > 0 ? modules[moduleIndex - 1] : null;
   const nextModule = moduleIndex >= 0 ? modules[moduleIndex + 1] || null : null;
-  const completedSet = new Set(completedModuleIds.map(String));
-  const isCompleted = Boolean(module && (completedSet.has(String(module.id)) || isApiModuleComplete(module)));
-  const isUnlocked = Boolean(module && (isCompleted || !previousModule || completedSet.has(String(previousModule.id))));
-  const learningPath = `/student/my-learning?course=${encodeURIComponent(courseId)}`;
 
-  const handleCompleteModule = async () => {
-    if (!module || isCompleting || isCompleted) return;
+  // These values always come from the most recent backend Learning Path response.
+  const passedModuleIds = useMemo(
+    () => modules.filter((item) => item.assessmentPassed === true).map((item) => item.id),
+    [modules]
+  );
+  const readModuleIds = useMemo(
+    () => modules.filter((item) => item.isRead === true).map((item) => item.id),
+    [modules]
+  );
+  const passedSet = useMemo(() => new Set(passedModuleIds.map(String)), [passedModuleIds]);
+  const readSet = useMemo(() => new Set(readModuleIds.map(String)), [readModuleIds]);
 
-    setIsCompleting(true);
-    setCompletionError("");
-    setCompletionMessage("");
+  const isPassed = Boolean(module && module.assessmentPassed === true);
+  const isRead = Boolean(module && (module.isRead === true || isPassed));
+  const isUnlocked = Boolean(module && module.isUnlocked === true);
+  const contentCount = Math.max(0, Number(module?.contentsCount ?? module?.contents?.length) || 0);
+  const learningPath = `/student/my-learning?course=${encodeURIComponent(courseId || "")}`;
+  const courseName = course?.fullName || course?.shortName || "Course";
+  const courseClassification = [
+    course?.fullName,
+    course?.shortName,
+    course?.name,
+    course?.category,
+    course?.categoryName,
+    course?.track,
+    course?.courseType,
+  ].map((value) => typeof value === "string" ? value : value?.name || "").join(" ");
+  const isITCourse = /python|programming|software|web development|web technology|javascript|react|java|html|css|computer science|information technology|\bit\b/i.test(courseClassification);
+
+  // Shared navigation helpers (used by every link to a module / back to the course).
+  const moduleHref = (id) => `/student/topics/${courseId}/topic/${id}`;
+  const courseLinkState = { courseId: Number(courseId), passedModuleIds };
+  const moduleLinkState = { ...courseLinkState, readModuleIds: [...readSet] };
+
+  // Refresh only the small progress endpoint after a write. Do not re-fetch lesson content.
+  const refreshLearningPath = useCallback(async () => {
+    const response = await getCourseLearningPath(courseId, { forceRefresh: true });
+    const learningPathData = normalizeLearningPath(response);
+    const mergedModules = mergeContentWithLearningPath(
+      contentModulesRef.current,
+      learningPathData.modules
+    );
+
+    setCourse({
+      ...(contentCourseRef.current || {}),
+      ...learningPathData.course,
+    });
+    setModules(mergedModules);
+    return learningPathData;
+  }, [courseId]);
+
+  const loadModuleAssessments = useCallback(async (targetModuleId) => {
+    if (!targetModuleId) return;
+
+    const requestId = ++assessmentRequestRef.current;
+    setIsAssessmentsLoading(true);
+    setAssessmentError("");
+    setApiError(null);
+    setAssessments([]);
+
+    try {
+      const response = await getModuleAssessments(targetModuleId);
+      const items = normalizeAssessments(response);
+      if (requestId === assessmentRequestRef.current) {
+        setAssessments(items);
+      }
+      return items;
+    } catch (error) {
+      console.error("Module Assessments API Error:", error);
+      if (requestId === assessmentRequestRef.current) {
+        setAssessmentError("We couldn't load your assessment. Please try again.");
+        reportApiError(
+          error,
+          "Unable to Load Assessment",
+          "We could not load this module assessment. Please try again.",
+          () => loadModuleAssessments(targetModuleId)
+        );
+      }
+      return null;
+    } finally {
+      if (requestId === assessmentRequestRef.current) {
+        setIsAssessmentsLoading(false);
+      }
+    }
+  }, [reportApiError]);
+
+  useEffect(() => {
+    if (!module || !isRead || isPassed || !isUnlocked) {
+      assessmentRequestRef.current += 1;
+      setAssessments([]);
+      setAssessmentError("");
+      setIsAssessmentsLoading(false);
+      return undefined;
+    }
+
+    loadModuleAssessments(module.id);
+    return () => {
+      assessmentRequestRef.current += 1;
+    };
+  }, [module?.id, isRead, isPassed, isUnlocked, loadModuleAssessments]);
+
+  const handleReadConfirmationAction = () => {
+    if (isAssessmentsLoading) return;
+    if (assessmentError) {
+      loadModuleAssessments(module.id);
+      return;
+    }
+
+    setShowReadConfirmation(false);
+    window.requestAnimationFrame(() => {
+      assessmentSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  };
+
+  const handleMarkAsRead = async () => {
+    if (!module || isMarkingRead || isRead || contentCount === 0) return;
+
+    setIsMarkingRead(true);
+    setAssessmentError("");
 
     try {
       const response = await completeModule(module.id);
       if (!response || response.success === false) {
-        throw new Error(response?.message || "The module could not be marked as completed.");
+        throw new Error(response?.message || "We couldn't save your progress. Please try again.");
       }
 
-      const progressData = response.data || {};
-      const returnedModules = Array.isArray(progressData.modules) ? progressData.modules : [];
-      const returnedDoneIds = returnedModules
-        .filter(isApiModuleComplete)
-        .map((item) => Number(item.moduleId ?? item.id))
-        .filter(Number.isFinite);
-      const nextCompletedIds = [...new Set([
-        ...readApiModuleProgress(courseId),
-        ...completedModuleIds,
-        ...returnedDoneIds,
-        Number(module.id),
-      ])];
-
-      try {
-        window.localStorage.setItem(
-          `${MODULE_PROGRESS_STORAGE_PREFIX}${courseId}`,
-          JSON.stringify({
-            completedModuleIds: nextCompletedIds,
-            apiProgress: progressData,
-          })
-        );
-      } catch (storageError) {
-        console.warn("Module progress could not be saved in this browser:", storageError);
-      }
-
-      setCompletedModuleIds(nextCompletedIds);
-      setCompletionSummary(progressData);
-      setCompletionMessage(
-        response.message || `${module.name || "This module"} has been marked as completed. The next module is now unlocked.`
+      const refreshedPath = await refreshLearningPath();
+      const refreshedModule = refreshedPath.modules.find(
+        (item) => String(item.id) === String(module.id)
       );
-    } catch (requestError) {
-      console.error("Complete Module API Error:", requestError);
-      const backend = requestError?.response?.data;
-      const message = backend?.message || backend?.detail || requestError?.message;
-      setCompletionError(typeof message === "string" ? message : "We couldn't complete this module. Please try again.");
+
+      // Do not claim that the lesson is read until the backend confirms it.
+      if (!refreshedModule?.isRead) {
+        throw new Error(
+          "The completion request was accepted, but the Learning Path API still reports this module as not read. Please verify that all visible learning items are marked finished in the backend."
+        );
+      }
+
+      setRestartNotice("");
+      setShowReadConfirmation(true);
+    } catch (error) {
+      console.error("Mark Lesson as Read / Progress Refresh Error:", error);
+      reportApiError(
+        error,
+        "Unable to Confirm Lesson Progress",
+        "We could not confirm that your lesson progress was saved. Please try again.",
+        () => handleMarkAsRead()
+      );
     } finally {
-      setIsCompleting(false);
+      setIsMarkingRead(false);
     }
   };
 
- if (isLoading) {
-  return (
-    <Loader
-      open={isLoading}
-      text="Loading course content..."
+  // One shared error modal, rendered by every screen state below.
+  const apiErrorModal = apiError ? (
+    <ApiErrorModal
+      title={apiError.title}
+      message={apiError.message}
+      onRetry={apiError.onRetry ? () => {
+        const retry = apiError.onRetry;
+        setApiError(null);
+        retry();
+      } : undefined}
+      onClose={() => setApiError(null)}
     />
-  );
-}
+  ) : null;
 
-  if (error || !course || !module) {
+  if (isLoading) return <Loader open={isLoading} text="Loading course lesson..." />;
+
+  if (loadError || !course || !module) {
     return (
       <PageShell max="max-w-[980px]">
         <Card className="p-8">
-          <h1 className="text-xl font-extrabold text-[#06424B]">
-            {module ? "Unable to load module content" : "Module not found"}
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-[#5A7478]">
-            {error || "This module is not part of the selected course."}
-          </p>
-          <LinkButton to={learningPath} variant="gold" className="mt-5" icon={ArrowLeft}>
-            Back to My Learning
-          </LinkButton>
+          <AlertCircle size={25} className="text-[#94650C]" />
+          <h1 className="mt-3 text-xl font-extrabold text-[#06424B]">{module ? "Unable to load lesson" : "Lesson not found"}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#5A7478]">{loadError || "This lesson isn't available in your course."}</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button type="button" onClick={() => loadCourse({ forceRefresh: true })} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-sm font-bold text-[#06424B]"><RefreshCw size={14} /> Retry</button>
+            <LinkButton to={learningPath} variant="outline" icon={ArrowLeft}>Back to My Learning</LinkButton>
+          </div>
         </Card>
+        {apiErrorModal}
       </PageShell>
     );
   }
@@ -1388,289 +1020,356 @@ function ApiCourseModuleLesson({ courseId, moduleId }) {
         <Card className="overflow-hidden border-[#DCE7E5] p-0">
           <div className="bg-[#06424B] px-6 py-7 text-white sm:px-8">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]">
-                <LockKeyhole size={21} />
-              </span>
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><LockKeyhole size={21} /></span>
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFCF70]">Learning sequence</p>
-                <h1 className="mt-1 text-2xl font-extrabold">Complete the previous module first</h1>
+                <h1 className="mt-1 text-2xl font-extrabold">Previous assessment required</h1>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-7 text-white/75">
-              This module stays locked until the previous module is marked as completed.
-            </p>
+            <p className="mt-4 text-sm leading-7 text-white/75">This module is locked. Pass the previous module's assessment to unlock it.</p>
           </div>
           <div className="p-6 sm:p-8">
             <p className="text-sm font-bold text-[#06424B]">Previous module: {previousModule?.name || "Previous module"}</p>
-            <LinkButton to={`/student/topics/${courseId}/topic/${previousModule?.id}`} variant="gold" icon={PlayCircle} className="mt-5">
-              Open Previous Module
-            </LinkButton>
+            <Link to={moduleHref(previousModule?.id)} state={moduleLinkState} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]"><PlayCircle size={15} /> Open Previous Module</Link>
           </div>
         </Card>
+        {apiErrorModal}
       </PageShell>
     );
   }
 
-  const courseName = course.fullName || course.shortName || "Course";
-  const totalContents = modules.reduce((total, item) => total + (item.contents?.length || 0), 0);
-  const contentCount = module.contents?.length || 0;
+  const passedCount = modules.filter((item) => passedSet.has(String(item.id))).length;
+  const moduleProgress = modules.length ? Math.round((passedCount / modules.length) * 100) : 0;
+  const routeState = {
+    courseId: Number(courseId),
+    moduleId: Number(module.id),
+    nextModuleId: nextModule?.id ?? null,
+    passedModuleIds,
+    readModuleIds: [...new Set([...readSet, String(module.id)])].map(Number),
+  };
+  const canGoNext = isPassed && nextModule?.isUnlocked === true;
+
+  // Roadmap step (IT courses): numbered circle + connector line + label underneath.
+  const renderRoadmapStep = (item, index) => {
+    const itemPassed = passedSet.has(String(item.id));
+    const itemUnlocked = item.isUnlocked === true;
+    const active = String(item.id) === String(module.id);
+    const isLast = index === modules.length - 1;
+
+    const circleClass = active
+      ? "border-[#FFAB0B] bg-[#FFAB0B] text-[#123B43] ring-4 ring-[#FFAB0B]/25"
+      : itemPassed
+        ? "border-[#06424B] bg-[#06424B] text-white"
+        : itemUnlocked
+          ? "border-[#06424B]/30 bg-white text-[#06424B] group-hover:border-[#06424B]"
+          : "border-[#DCE7E5] bg-[#F4F7F7] text-[#9AAEAF]";
+    const labelClass = active
+      ? "font-extrabold text-[#06424B]"
+      : itemUnlocked
+        ? "font-semibold text-[#405D61] group-hover:text-[#06424B]"
+        : "font-medium text-[#9AAEAF]";
+
+    const stepBody = (
+      <>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-bold transition ${circleClass}`}>
+          {itemPassed ? <CheckCircle2 size={17} /> : itemUnlocked ? index + 1 : <LockKeyhole size={14} />}
+        </span>
+        <span className="mt-2.5 text-[10px] font-bold uppercase tracking-[1.2px] text-[#B88736]">Module {String(index + 1).padStart(2, "0")}</span>
+        <span className={`mt-1 line-clamp-2 text-[12px] leading-4 ${labelClass}`}>{item.name || "Untitled module"}</span>
+      </>
+    );
+    const stepClass = "group relative z-10 flex w-full flex-col items-center px-2 text-center !no-underline";
+
+    return (
+      <li key={item.id} className="relative flex w-[150px] shrink-0 grow justify-center">
+        {!isLast && (
+          <span aria-hidden="true" className={`absolute left-1/2 top-[18px] h-[3px] w-full -translate-y-1/2 rounded-full ${itemPassed ? "bg-[#06424B]" : "bg-[#DCE7E5]"}`} />
+        )}
+        {itemUnlocked
+          ? <Link to={moduleHref(item.id)} state={moduleLinkState} aria-current={active ? "step" : undefined} className={stepClass}>{stepBody}</Link>
+          : <div aria-disabled="true" className={`${stepClass} cursor-not-allowed`}>{stepBody}</div>}
+      </li>
+    );
+  };
+
+  // Sidebar item (non-IT courses): unchanged list style.
+  const renderSidebarItem = (item, index) => {
+    const itemPassed = passedSet.has(String(item.id));
+    const itemUnlocked = item.isUnlocked === true;
+    const active = String(item.id) === String(module.id);
+    const className = `flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-[13px] !no-underline transition w-full ${active ? "border-[#06424B]/20 bg-[#E9F0EF] font-bold !text-[#06424B] ring-1 ring-[#06424B]/10" : itemUnlocked ? "font-medium !text-[#526D71] hover:bg-[#F4F7F7]" : "cursor-not-allowed font-medium !text-[#9AAEAF]"}`;
+    const itemLabel = (
+      <>
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${itemPassed ? "bg-[#06424B] text-white" : active ? "bg-[#FFAB0B] text-[#123B43]" : "bg-[#EEF3F4] text-[#526D71]"}`}>
+          {itemPassed ? <CheckCircle2 size={15} /> : itemUnlocked ? index + 1 : <LockKeyhole size={13} />}
+        </span>
+        <span className="min-w-0 flex-1 leading-5">{item.name || "Untitled module"}</span>
+      </>
+    );
+    return itemUnlocked
+      ? <Link key={item.id} to={moduleHref(item.id)} state={moduleLinkState} className={className}>{itemLabel}</Link>
+      : <div key={item.id} aria-disabled="true" className={className}>{itemLabel}</div>;
+  };
+
+  const backToCourseClass = "inline-flex h-10 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] !no-underline hover:bg-[#F4F7F7]";
 
   return (
     <PageShell max="max-w-[1500px]">
       <StudentPageHeader title={courseName} subtitle={`${course.shortName || "Course curriculum"} / ${module.name}`} />
 
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
-        <Link to="/student/my-learning" className="!text-[#526D71] !no-underline hover:!text-[#06424B]">My Learning</Link>
+        <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">My Learning</Link>
         <ChevronRight size={14} />
-        <Link to={learningPath} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{courseName}</Link>
+        <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{courseName}</Link>
         <ChevronRight size={14} />
         <span className="text-[#06424B]">{module.name}</span>
       </nav>
 
-      <div className="grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-5 lg:h-fit">
-          <Card className="overflow-hidden">
-            <div className="bg-[#123B43] px-5 py-5">
-              <div className="mb-3 flex items-center gap-2">
-                <BookOpen size={15} className="text-[#FFAB0B]" />
-                <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">Course Modules</span>
+      <div className={`w-full ${isITCourse ? "flex flex-col gap-6" : "grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]"}`}>
+        <aside className={`w-full min-w-0 ${isITCourse ? "order-1" : "sticky top-5 h-fit"}`}>
+          <Card className={`w-full overflow-hidden border border-[#DCE7E5] bg-white p-0 shadow-[0_8px_28px_rgba(6,66,75,0.07)] ${isITCourse ? "rounded-2xl" : ""}`}>
+            <div className={`${isITCourse ? "flex flex-wrap items-center justify-between gap-3 bg-[#06424B] px-5 py-3.5 sm:px-6" : "bg-[#06424B] px-5 py-5"}`}>
+              <div className={`${isITCourse ? "flex min-w-0 items-center gap-3" : ""}`}>
+                <div className="mb-1 flex items-center gap-2"><BookOpen size={15} className="text-[#FFAB0B]" /><span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">{isITCourse ? "Course Roadmap" : "Course Modules"}</span></div>
+                {!isITCourse && <h2 className="text-xl font-extrabold text-white">{courseName}</h2>}
               </div>
-              <h2 className="text-xl font-extrabold text-white">{courseName}</h2>
-              <p className="mt-1 text-xs text-white/55">{modules.length} structured modules</p>
+              <p className={`${isITCourse ? "shrink-0 text-xs font-semibold text-white/75" : "mt-1 text-xs text-white/55"}`}>{modules.length} modules · {moduleProgress}% passed</p>
             </div>
 
-            <nav className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
-              {modules.map((item, index) => {
-                const itemComplete = completedSet.has(String(item.id)) || isApiModuleComplete(item);
-                const prev = modules[index - 1];
-                const itemUnlocked = itemComplete || !prev || completedSet.has(String(prev.id));
-                const active = String(item.id) === String(module.id);
-                const itemClass = `flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] !no-underline transition ${
-                  active
-                    ? "bg-[#E9F0EF] font-bold !text-[#06424B] ring-1 ring-[#06424B]/10"
-                    : itemUnlocked
-                      ? "font-medium !text-[#526D71] hover:bg-[#F4F7F7]"
-                      : "cursor-not-allowed font-medium !text-[#9AAEAF]"
-                }`;
-                const label = (
-                  <>
-                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${itemComplete ? "bg-[#06424B] text-white" : active ? "bg-[#FFAB0B] text-[#123B43]" : "bg-[#EEF3F4] text-[#526D71]"}`}>
-                      {itemComplete ? <CheckCircle2 size={15} /> : itemUnlocked ? index + 1 : <LockKeyhole size={13} />}
-                    </span>
-                    <span className="min-w-0 flex-1 leading-5">{item.name}</span>
-                    {active && <ChevronRight size={15} className="shrink-0 text-[#06424B]" />}
-                  </>
-                );
-                return itemUnlocked ? (
-                  <Link key={item.id} to={`/student/topics/${courseId}/topic/${item.id}`} className={itemClass}>
-                    {label}
-                  </Link>
-                ) : (
-                  <div key={item.id} aria-disabled="true" className={itemClass}>
-                    {label}
-                  </div>
-                );
-              })}
-            </nav>
+            {isITCourse ? (
+              <nav aria-label="Course roadmap" className="overflow-x-auto">
+                <ol className="flex w-max min-w-full items-start px-4 py-6 sm:px-6">
+                  {modules.map(renderRoadmapStep)}
+                </ol>
+              </nav>
+            ) : (
+              <nav aria-label="Course module navigation" className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
+                {modules.map(renderSidebarItem)}
+              </nav>
+            )}
           </Card>
         </aside>
 
-        <article className="min-w-0 space-y-6">
-          <Card className="p-6 sm:p-8">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">
-                Module {String(moduleIndex + 1).padStart(2, "0")} of {modules.length}
-              </span>
-              <span className="rounded-lg bg-[#EEF3F4] px-3 py-1.5 text-[10px] font-bold text-[#526D71]">
-                {contentCount} {contentCount === 1 ? "learning item" : "learning items"}
-              </span>
-              {isCompleted && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#E1F2EC] px-3 py-1 text-[10px] font-bold text-[#28765E]">
-                  <CheckCircle2 size={13} /> Module completed
-                </span>
-              )}
+        <article className={`w-full min-w-0 space-y-6 ${isITCourse ? "order-2 mx-auto max-w-[1120px] self-center" : ""}`}>
+          {restartNotice && (
+            <div role="status" className="flex items-start gap-3 rounded-2xl border border-[#F3E2B8] bg-[#FFFAEE] px-5 py-4 text-sm leading-6 text-[#805C17]">
+              <RefreshCw size={17} className="mt-0.5 shrink-0" />
+              <span>{restartNotice}</span>
             </div>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">
-              {module.name}
-            </h1>
-            <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">
-              {module.summary || "Read the learning items below and review the key concepts in this module."}
-            </p>
+          )}
+
+          <Card className={`p-6 sm:p-8 ${isITCourse ? "w-full" : ""}`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">Module {String(moduleIndex + 1).padStart(2, "0")} of {modules.length}</span>
+              <span className="rounded-lg bg-[#EEF3F4] px-3 py-1.5 text-[10px] font-bold text-[#526D71]">{contentCount} {contentCount === 1 ? "learning item" : "learning items"}</span>
+              {isPassed && <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF4F2] px-3 py-1 text-[10px] font-bold text-[#06424B]"><CheckCircle2 size={13} /> Assessment passed</span>}
+            </div>
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">{module.name}</h1>
+            {module.summary && <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">{module.summary}</p>}
             <div className="mt-6 flex flex-wrap gap-3">
-              <LinkButton to={learningPath} variant="outline" size="sm" icon={ArrowLeft}>
-                Back to Course
-              </LinkButton>
-              {previousModule && (
-                <LinkButton to={`/student/topics/${courseId}/topic/${previousModule.id}`} variant="outline" size="sm">
-                  Previous Module
-                </LinkButton>
-              )}
-              {isCompleted && nextModule && (
-                <LinkButton to={`/student/topics/${courseId}/topic/${nextModule.id}`} size="sm" iconRight={ArrowRight}>
-                  Next Module
-                </LinkButton>
-              )}
+              <Link to={learningPath} state={courseLinkState} className={backToCourseClass}><ArrowLeft size={15} /> Back to Course</Link>
+              {previousModule && <Link to={moduleHref(previousModule.id)} state={moduleLinkState} className={backToCourseClass}>Previous Module</Link>}
+              {canGoNext && <Link to={moduleHref(nextModule.id)} state={moduleLinkState} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-xs font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]">Next Module <ArrowRight size={15} /></Link>}
             </div>
           </Card>
 
-          {contentCount > 0 ? (
-            module.contents.map((content, index) => (
-              <Card key={content.id ?? `${module.id}-content-${index}`} className="p-6 sm:p-8">
-                <div className="mb-6 flex items-start gap-4 border-b border-[#E7EEEE] pb-5">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1D1] text-sm font-extrabold text-[#94650C]">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">
-                      {String(content.contentType || content.content_type || "learning content").replace(/[_-]+/g, " ")}
-                    </p>
-                    <h2 className="mt-1 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">
-                      {content.title || "Learning content"}
-                    </h2>
-                  </div>
+          {contentCount > 0 ? module.contents.map((content, index) => (
+            <Card key={content.id ?? `${module.id}-content-${index}`} className="p-6 sm:p-8">
+              <div className="mb-6 flex items-start gap-4 border-b border-[#E7EEEE] pb-5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1D1] text-sm font-extrabold text-[#94650C]">{String(index + 1).padStart(2, "0")}</span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">{String(content.contentType || content.content_type || "learning content").replace(/[_-]+/g, " ")}</p>
+                  <h2 className="mt-1 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{content.title || "Learning content"}</h2>
                 </div>
-
-                <ApiContentBlocks content={content} />
-
-                {(content.url || content.previewUrl || content.downloadUrl) && (
-                  <div className="mt-7 flex flex-wrap gap-3 border-t border-[#E7EEEE] pt-5">
-                    {(content.url || content.previewUrl) && (
-                      <a
-                        href={content.previewUrl || content.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#F4F7F7]"
-                      >
-                        <BookOpen size={15} /> Open resource
-                      </a>
-                    )}
-                    {content.downloadUrl && (
-                      <a
-                        href={content.downloadUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#EEF3F4] px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#E2EBEC]"
-                      >
-                        <ExternalLink size={15} /> Download {content.fileName || "file"}
-                      </a>
-                    )}
-                  </div>
-                )}
-              </Card>
-            ))
-          ) : (
-            <Card className="p-7">
-              <p className="text-sm leading-7 text-[#718486]">
-                This module has been published, but its learning content has not been added yet.
-              </p>
+              </div>
+              <ApiContentBlocks content={content} />
+              {(content.url || content.previewUrl || content.downloadUrl) && (
+                <div className="mt-7 flex flex-wrap gap-3 border-t border-[#E7EEEE] pt-5">
+                  {(content.previewUrl || content.url) && <a href={content.previewUrl || content.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#F4F7F7]"><BookOpen size={15} /> Open resource</a>}
+                  {content.downloadUrl && <a href={content.downloadUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#EEF3F4] px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#E2EBEC]"><ExternalLink size={15} /> Download {content.fileName || "resource"}</a>}
+                </div>
+              )}
             </Card>
+          )) : (
+            <Card className="p-7"><p className="text-sm leading-7 text-[#718486]">No learning content is available for this module yet.</p></Card>
           )}
 
           <Card className="p-5 sm:p-6">
-            {isCompleted ? (
-              <div className="rounded-xl border border-[#CFE5DB] bg-[#F3FAF6] p-4">
-                <p className="inline-flex items-center gap-2 text-sm font-extrabold text-[#28765E]">
-                  <CheckCircle2 size={17} /> Module completed
-                </p>
-                <p className="mt-1 text-xs leading-5 text-[#55786A]">
-                  {completionMessage || "This module has been marked as completed. The next module is available in your learning path."}
-                </p>
-                {completionSummary?.percentage !== undefined && (
-                  <p className="mt-2 text-xs font-bold text-[#28765E]">
-                    Course module completion: {Math.round(Number(completionSummary.percentage) || 0)}%
-                  </p>
-                )}
+            {isPassed ? (
+              <div className="rounded-xl border border-[#CFE2E0] bg-[#F4F7F7] p-4">
+                <p className="inline-flex items-center gap-2 text-sm font-extrabold text-[#06424B]"><CheckCircle2 size={17} /> Module assessment passed</p>
+                <p className="mt-1 text-xs leading-5 text-[#526D71]">Great work! You've passed this module's assessment.</p>
               </div>
-            ) : (
+            ) : !isRead ? (
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#123B43]">Finished this module?</h3>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-[#789094]">
-                    Review all learning items, then mark this module as complete. The completion API will update your course progress and release the next module.
-                  </p>
+                  <h3 className="text-base font-extrabold text-[#123B43]">Finished reading this module?</h3>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-[#789094]">Mark this lesson as read to open its assessment. Pass the assessment to unlock the next module.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCompleteModule}
-                  disabled={isCompleting}
-                  aria-busy={isCompleting}
-                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-xs font-extrabold text-[#06424B] shadow-[0_6px_16px_rgba(255,171,11,0.18)] transition hover:-translate-y-0.5 hover:bg-[#FFC13C] hover:shadow-[0_9px_20px_rgba(255,171,11,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-y-0"
-                >
-                  {isCompleting ? (
-                    <>
-                      <RefreshCw size={15} className="animate-spin" />
-                      Saving completion...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 size={15} />
-                      Mark Module Complete
-                    </>
-                  )}
+                <button type="button" onClick={handleMarkAsRead} disabled={isMarkingRead || contentCount === 0} aria-busy={isMarkingRead} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-xs font-extrabold text-[#06424B] shadow-[0_7px_18px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC13C] disabled:cursor-not-allowed disabled:opacity-60">
+                  {isMarkingRead ? <><RefreshCw size={15} className="animate-spin" /> Saving read status...</> : <><CheckCircle2 size={15} /> Mark as Read</>}
                 </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#CFE2E0] bg-[#F4F7F7] p-4"><CheckCircle2 size={17} className="text-[#06424B]" /><p className="text-sm font-extrabold text-[#06424B]">Lesson marked as read</p><span className="text-xs text-[#526D71]">Your assessment is ready below.</span></div>
+                <div id="module-assessment-panel" ref={assessmentSectionRef} className="mt-5 scroll-mt-8">
+                  <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-base font-extrabold text-[#123B43]">Module assessment</h3><p className="mt-1 text-xs text-[#789094]">Pass this assessment to unlock the next module.</p></div><button type="button" onClick={() => loadModuleAssessments(module.id)} disabled={isAssessmentsLoading} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE6E4] bg-white px-3 text-xs font-bold text-[#06424B] hover:bg-[#F4F7F7] disabled:opacity-60"><RefreshCw size={13} className={isAssessmentsLoading ? "animate-spin" : ""} /> Refresh</button></div>
+                  {isAssessmentsLoading ? (
+                    <div role="status" aria-live="polite" className="mt-4 flex items-center gap-3 rounded-2xl border border-[#E3EBE9] bg-[#F8FAFA] px-4 py-5">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#06424B] shadow-sm">
+                        <RefreshCw size={18} className="animate-spin" />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-extrabold text-[#06424B]">Preparing your assessment</span>
+                        <span className="mt-1 block text-xs leading-5 text-[#718486]">Getting your assessment ready...</span>
+                      </span>
+                    </div>
+                  ) : assessmentError ? (
+                    <div role="alert" className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#EADBC8] bg-[#F8F6F2] p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#8A573D]" />
+                        <div>
+                          <p className="text-sm font-extrabold text-[#6B2D1A]">Assessment couldn't be loaded</p>
+                          <p className="mt-1 text-xs leading-5 text-[#795D4E]">Please try again in a moment.</p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => loadModuleAssessments(module.id)} disabled={isAssessmentsLoading} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#DCC9B9] bg-white px-4 text-xs font-extrabold text-[#6B2D1A] transition hover:bg-[#FFFDFC] disabled:cursor-wait disabled:opacity-60">
+                        <RefreshCw size={14} className={isAssessmentsLoading ? "animate-spin" : ""} /> Try again
+                      </button>
+                    </div>
+                  ) : assessments.length ? (
+                    <div className="mt-4 grid gap-3">
+                      {assessments.map((assignment) => (
+                        <div key={assignment.id} className="flex flex-col gap-4 rounded-2xl border border-[#E3EBE9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            {/* Keep the assessment card concise. The API description may contain the full assignment brief and is intentionally not rendered here. */}
+                            <h4 className="font-extrabold text-[#06424B]">{assignment.title || "Module Assessment"}</h4>
+                            <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold text-[#718486]">
+                              {assignment.questionCount !== undefined && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.questionCount} questions</span>}
+                              {Number(assignment.timeLimitMinutes) > 0 && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.timeLimitMinutes} min</span>}
+                              {Number(assignment.passPercentage) > 0 && <span className="rounded-full bg-[#FFF3D8] px-2.5 py-1">{assignment.passPercentage}% to pass</span>}
+                              {Number(assignment.maxAttempts) > 0 && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.maxAttempts} attempts</span>}
+                            </div>
+                          </div>
+                          <Link to={`/student/assessments/${assignment.id}?course=${encodeURIComponent(courseId)}&module=${encodeURIComponent(module.id)}${nextModule ? `&next=${encodeURIComponent(nextModule.id)}` : ""}`} state={routeState} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#06424B] !no-underline transition hover:bg-[#FFC13C]"><ClipboardCheck size={15} /> Start Assessment <ArrowRight size={15} /></Link>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-2xl border border-dashed border-[#DCE6E4] bg-[#F8FAFA] p-5">
+                      <div className="flex items-start gap-3">
+                        <ClipboardCheck size={19} className="mt-0.5 shrink-0 text-[#8A9B9D]" />
+                        <div>
+                          <p className="text-sm font-extrabold text-[#526D71]">No assessment available yet</p>
+                          <p className="mt-1 text-xs leading-5 text-[#829596]">Your lesson is marked as read. An assessment will appear here when one is available for this module.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {isCompleting && (
-              <p role="status" aria-live="polite" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#F3E2B8] bg-[#FFFAEE] px-4 py-3 text-xs font-semibold text-[#805C17]">
-                <RefreshCw size={14} className="animate-spin" />
-                Saving your module progress securely...
-              </p>
-            )}
-
-            {completionError && (
-              <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-red-700">
-                {completionError}
-              </p>
-            )}
+            {isMarkingRead && <p role="status" aria-live="polite" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#F3E2B8] bg-[#FFFAEE] px-4 py-3 text-xs font-semibold text-[#805C17]"><RefreshCw size={14} className="animate-spin" /> Saving your progress...</p>}
 
             <div className="mt-5 flex flex-wrap gap-3 border-t border-[#E9EEEE] pt-5">
-              <LinkButton to={learningPath} variant="outline">All Course Modules</LinkButton>
-              {isCompleted && nextModule && (
-                <LinkButton to={`/student/topics/${courseId}/topic/${nextModule.id}`} variant="gold" iconRight={ArrowRight}>
-                  Continue to Next Module
-                </LinkButton>
-              )}
-              {isCompleted && !nextModule && (
-                <span className="inline-flex items-center gap-2 rounded-xl bg-[#EAF5EF] px-4 py-3 text-xs font-extrabold text-[#28765E]">
-                  <CheckCircle2 size={15} /> All modules completed
-                </span>
-              )}
+              <Link to={learningPath} state={courseLinkState} className={backToCourseClass}>All Course Modules</Link>
+              {canGoNext && <Link to={moduleHref(nextModule.id)} state={moduleLinkState} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]">Continue to Next Module <ArrowRight size={16} /></Link>}
+              {isPassed && !nextModule && <span className="inline-flex items-center gap-2 rounded-xl bg-[#FFF3D8] px-4 py-3 text-xs font-extrabold text-[#94650C]"><CheckCircle2 size={15} /> All module assessments passed</span>}
             </div>
           </Card>
         </article>
       </div>
+
+      {showReadConfirmation && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#0B252B]/55 p-4 backdrop-blur-sm" role="presentation">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lesson-read-dialog-title"
+            aria-describedby="lesson-read-dialog-description"
+            className="relative w-full max-w-[470px] overflow-hidden rounded-[28px] border border-white/70 bg-white p-6 shadow-[0_28px_90px_rgba(4,33,38,0.28)] sm:p-8"
+          >
+            <button
+              type="button"
+              onClick={() => setShowReadConfirmation(false)}
+              aria-label="Close confirmation"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-[#829596] transition hover:bg-[#F1F5F4] hover:text-[#06424B]"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF4F2] text-[#06424B]">
+              <CheckCircle2 size={29} />
+            </div>
+            <p className="mt-5 text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B88736]">Learning progress saved</p>
+            <h2 id="lesson-read-dialog-title" className="mt-2 text-2xl font-extrabold tracking-tight text-[#06424B]">Lesson marked as read</h2>
+            <p id="lesson-read-dialog-description" className="mt-2 text-sm leading-7 text-[#627C7F]">
+              Your progress has been saved. We're getting your assessment ready.
+            </p>
+
+            <div className="mt-5 rounded-2xl border border-[#E5ECEB] bg-[#F8FAFA] p-4" aria-live="polite">
+              {isAssessmentsLoading ? (
+                <div className="flex items-center gap-3">
+                  <RefreshCw size={18} className="shrink-0 animate-spin text-[#B88736]" />
+                  <div>
+                    <p className="text-xs font-extrabold text-[#06424B]">Loading module assessment</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">Please wait a moment...</p>
+                  </div>
+                </div>
+              ) : assessmentError ? (
+                <div className="flex items-start gap-3">
+                  <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#8A573D]" />
+                  <div>
+                    <p className="text-xs font-extrabold text-[#6B2D1A]">Assessment is temporarily unavailable</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#795D4E]">Please try again in a moment.</p>
+                  </div>
+                </div>
+              ) : assessments.length > 0 ? (
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF4F2] text-[#06424B]"><ClipboardCheck size={18} /></span>
+                  <div>
+                    <p className="text-xs font-extrabold text-[#06424B]">Assessment ready</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">{assessments.length} {assessments.length === 1 ? "assessment is" : "assessments are"} ready for this module.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <ClipboardCheck size={18} className="shrink-0 text-[#829596]" />
+                  <div>
+                    <p className="text-xs font-extrabold text-[#526D71]">No assessment available yet</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">Your progress is saved. An assessment will appear here once it's available.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowReadConfirmation(false)}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#DCE6E4] bg-white px-5 text-sm font-bold text-[#526D71] transition hover:bg-[#F4F7F7]"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={handleReadConfirmationAction}
+                disabled={isAssessmentsLoading}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] shadow-[0_7px_18px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC13C] disabled:cursor-wait disabled:opacity-60"
+              >
+                {isAssessmentsLoading ? <RefreshCw size={15} className="animate-spin" /> : assessmentError ? <RefreshCw size={15} /> : <ArrowRight size={16} />}
+                {isAssessmentsLoading ? "Loading assessment..." : assessmentError ? "Retry loading" : assessments.length ? "Continue to Assessment" : "View Lesson Status"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {apiErrorModal}
     </PageShell>
   );
-}
-
-function LessonContent() {
-  const { technologySlug, topicId } = useParams();
-
-  // Numeric route values are backend course IDs (for example /topics/5/topic/26).
-  // Non-numeric values continue to use the existing technology learning path.
-  if (/^\d+$/.test(String(technologySlug || ""))) {
-    return <ApiCourseModuleLesson courseId={technologySlug} moduleId={topicId} />;
-  }
-
-  const technology = technologies.find((item) => item.id === technologySlug);
-  const technologyTopic = technology?.topics.find((item) => item.id === topicId);
-
-  if (!technology || !technologyTopic) {
-    return (
-      <PageShell max="max-w-[900px]">
-        <Card className="p-8">
-          <h1 className="text-xl font-extrabold text-[#06424B]">Lesson not found</h1>
-          <p className="mt-2 text-sm leading-6 text-[#5A7478]">
-            The requested learning topic is unavailable. Return to Explore Courses and select a valid topic.
-          </p>
-          <LinkButton to="/student/topics" className="mt-5">Explore Courses</LinkButton>
-        </Card>
-      </PageShell>
-    );
-  }
-
-  return <TechnologyLessonContent />;
 }
 
 export default LessonContent;

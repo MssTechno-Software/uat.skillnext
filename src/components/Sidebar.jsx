@@ -32,8 +32,10 @@ import {
 } from "lucide-react";
 
 import { getUserRole, clearAuthSession } from "../services/authSession";
+import { clearCourseApiCache } from "../api/course.api";
 import { useEnrolledCourses } from "../data/studentCourseEnrollment";
 import { useTeacherData } from "../data/teacherMockData";
+import StudentProfileMenu from "./student/StudentProfileMenu";
 
 const EXPANDED_STORAGE_KEY = "skillnext_sidebar_expanded";
 const SCROLL_STORAGE_KEY = "skillnext_sidebar_scroll";
@@ -548,19 +550,24 @@ function Sidebar({ children }) {
     setMobileSidebar(false);
   };
 
-  const handleLogout = () => {
-    closeMobileSidebar();
+ const handleLogout = () => {
+  closeMobileSidebar();
 
-    try {
-      sessionStorage.removeItem(SCROLL_STORAGE_KEY);
-      sessionStorage.removeItem(EXPANDED_STORAGE_KEY);
-    } catch {
-      // Ignore.
-    }
+  try {
+    sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+    sessionStorage.removeItem(EXPANDED_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors.
+  }
 
-    clearAuthSession();
-    navigate("/login", { replace: true });
-  };
+  // Clear cached course and learning progress data first.
+  clearCourseApiCache();
+
+  // Clear authentication session.
+  clearAuthSession();
+
+  navigate("/login", { replace: true });
+};
 
   // Course lessons opened from My Learning use the shared topic route:
   // /student/topics/:courseId/topic/:moduleId
@@ -572,6 +579,12 @@ function Sidebar({ children }) {
 
   const routeCourseId = topicRouteMatch?.[1] || null;
   const isStudentModuleContentRoute = /^\/student\/topics\/[^/]+\/topic\/[^/]+(?:\/|$)/.test(
+    location.pathname
+  );
+
+  // Keep My Learning highlighted while the student is taking a module assessment
+  // or viewing its result, even though those pages use separate routes.
+  const isStudentAssessmentRoute = /^\/student\/(?:assessments\/[^/]+|assessment-result)(?:\/|$)/.test(
     location.pathname
   );
 
@@ -808,7 +821,7 @@ function Sidebar({ children }) {
                   const activeOverride =
                     !isTeacher &&
                     ((item.path === "/student/my-learning" &&
-                      isEnrolledCourseRoute) ||
+                      (isEnrolledCourseRoute || isStudentAssessmentRoute)) ||
                       (item.path === "/student/topics" &&
                         Boolean(routeCourseId && !isEnrolledCourseRoute)));
 
@@ -929,7 +942,7 @@ function Sidebar({ children }) {
         {/* MOBILE HEADER */}
         <header
           className="
-            sticky top-0 z-30
+            relative sticky top-0 z-[70]
             flex h-[68px]
             items-center justify-between
             border-b border-[#E5EBEB]
@@ -953,20 +966,11 @@ function Sidebar({ children }) {
             <Menu size={20} />
           </button>
 
-          <p className="text-[13px] font-semibold text-[#06424B]">
+          <p className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[13px] font-semibold text-[#06424B]">
             {portalTitle}
           </p>
 
-          <div
-            className="
-              flex h-9 w-9
-              items-center justify-center
-              rounded-xl bg-[#06424B]
-              text-[11px] font-semibold text-white
-            "
-          >
-            {isTeacher ? "TE" : "ST"}
-          </div>
+          <StudentProfileMenu className="shrink-0 lg:hidden" />
         </header>
 
         <main className="min-h-dvh">{children}</main>

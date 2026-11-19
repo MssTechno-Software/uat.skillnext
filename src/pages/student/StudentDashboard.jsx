@@ -11,6 +11,7 @@ import {
   SectionHeading,
 } from "../../components/student/ui";
 import Loader from "../../components/Loader";
+import ApiErrorModal from "../../components/ApiErrorModal";
 import { learningFlow } from "../../data/studentLearningData";
 import { getStudentDashboard } from "../../api/dashboard.api";
 import { getApiErrorMessage } from "../../utils/apiErrorHandler";
@@ -26,7 +27,6 @@ import {
   Rocket,
   Trophy,
   TrendingUp,
-  RefreshCw,
   BookOpen,
   Clock3,
   FileText,
@@ -467,23 +467,14 @@ function DashboardLoadingState() {
   );
 }
 
-function DashboardError({ message, onRetry }) {
+function DashboardError({ message, onRetry, onClose }) {
   return (
-    <Card className="mt-6 border border-[#F0D9D5] p-5 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-extrabold text-[#9E5148]">Unable to load dashboard data</p>
-          <p className="mt-1 text-xs leading-5 text-[#718486]">{message}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#0A515B]"
-        >
-          <RefreshCw size={14} /> Try again
-        </button>
-      </div>
-    </Card>
+    <ApiErrorModal
+      title="Unable to load dashboard data"
+      message={message}
+      onRetry={onRetry}
+      onClose={onClose}
+    />
   );
 }
 
@@ -717,7 +708,13 @@ function StudentDashboard() {
           subtitle="Build skills, practise and grow. Your learning activity and next steps, all in one place."
         />
 
-        {error && <DashboardError message={error} onRetry={loadDashboard} />}
+        {error && (
+          <DashboardError
+            message={error}
+            onRetry={loadDashboard}
+            onClose={() => setError("")}
+          />
+        )}
 
         <section className="relative overflow-hidden rounded-[24px] bg-[#06424B] px-6 py-5 text-white shadow-[0_12px_30px_rgba(6,66,75,0.14)] sm:px-8 sm:py-6">
           <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full border-[18px] border-[#FFAB0B]/10" />

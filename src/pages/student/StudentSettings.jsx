@@ -21,7 +21,8 @@ import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, IconBadge, PageShell } from "../../components/student/ui";
 import Loader from "../../components/Loader";
 
-import { getProfile, updateProfile } from "../../api/profile.api";
+import { updateProfile } from "../../api/profile.api";
+import { useProfile } from "../../components/ProfileProvider";
 import { getUserRole } from "../../services/authSession";
 import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 
@@ -113,16 +114,9 @@ const EMPTY_PROFILE = {
   email: "",
 };
 
-const ALL_PROFILE_KEYS = Object.keys(EMPTY_PROFILE).filter(
-  (key) => key !== "email"
-);
-
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
-
-const toSnakeCase = (key) =>
-  key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 
 // "First Name" -> "First name"
 const toSentenceCase = (text) =>
@@ -135,51 +129,6 @@ const getInitials = ({ firstName, lastName }) =>
     .filter(Boolean)
     .map((part) => part.trim().charAt(0).toUpperCase())
     .join("") || "U";
-
-// Read the profile from any supported API response shape and
-// map backend fields (camelCase or snake_case) to the form shape.
-const normalizeProfileResponse = (response) => {
-  let data = response?.data ?? response;
-
-  if (data?.success === false) {
-    throw new Error(data.message || "Unable to load your profile.");
-  }
-
-  if (data && typeof data === "object" && data.data != null) {
-    data = data.data;
-  }
-
-  if (data?.profile && typeof data.profile === "object") {
-    data = data.profile;
-  } else if (data?.user && typeof data.user === "object") {
-    data = data.user;
-  }
-
-  if (typeof data === "string") {
-    try {
-      data = JSON.parse(data);
-    } catch {
-      throw new Error("The profile API returned an unexpected response.");
-    }
-  }
-
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("The profile API returned an invalid response.");
-  }
-
-  const profile = { ...EMPTY_PROFILE };
-
-  ALL_PROFILE_KEYS.forEach((key) => {
-    const value = data[key] ?? data[toSnakeCase(key)];
-    profile[key] = value == null ? "" : String(value);
-  });
-
-  profile.email = String(
-    data.email ?? data.emailAddress ?? data.email_address ?? ""
-  );
-
-  return profile;
-};
 
 // Single source of error text: the shared API error handler.
 // Errors thrown locally (no HTTP response) keep their own message.
@@ -478,17 +427,32 @@ function StudentSettings() {
     [profileFields]
   );
 
-  // profile stays null until the first load finishes, so nothing flashes
-  const [profile, setProfile] = useState(null);
+  // Profile data is shared with the header through ProfileProvider.
+  const {
+    profile,
+    isProfileLoading: isLoading,
+    profileError: loadError,
+    refreshProfile,
+    updateProfileData,
+  } = useProfile();
+
   const [draftProfile, setDraftProfile] = useState(EMPTY_PROFILE);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [loadError, setLoadError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [dialog, setDialog] = useState(null);
 
   const saved = profile ?? EMPTY_PROFILE;
+
+  // Keep the local form draft in sync with the shared profile when not editing.
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftProfile(profile ?? EMPTY_PROFILE);
+    }
+  }, [profile, isEditing]);
+  const hasProfileData = Object.values(saved).some(
+    (value) => trimmed(value) !== ""
+  );
   const fullName = [saved.firstName, saved.lastName].filter(Boolean).join(" ");
   const initials = getInitials(saved);
 
@@ -496,6 +460,7 @@ function StudentSettings() {
   const isDirty = useMemo(
     () =>
       Boolean(profile) &&
+      isEditing &&
       profileFields.some(
         (field) =>
           trimmed(draftProfile[field.name]) !== trimmed(profile[field.name])
@@ -520,42 +485,24 @@ function StudentSettings() {
     }
   }, [dialog]);
 
-  // Load the profile. A first-load failure shows an inline error card;
-  // a failed refresh keeps the page and reports the error in the popup.
-  const loadProfile = useCallback(
-    async (isRefresh = false) => {
-      setIsLoading(true);
-      setLoadError("");
-
-      try {
-        const latestProfile = normalizeProfileResponse(await getProfile());
-        setProfile(latestProfile);
-        setDraftProfile(latestProfile);
-        setIsEditing(false);
-        setFieldErrors({});
-      } catch (error) {
-        console.error("Get Profile API Error:", error);
-
-        const message = getErrorMessage(
+  // Refresh the shared profile only when the user explicitly requests it.
+  const loadProfile = useCallback(async () => {
+    try {
+      const latestProfile = await refreshProfile(true);
+      setDraftProfile(latestProfile);
+      setIsEditing(false);
+      setFieldErrors({});
+    } catch (error) {
+      console.error("Get Profile API Error:", error);
+      showDialog(
+        "error",
+        getErrorMessage(
           error,
           "Unable to load your profile. Please try again."
-        );
-
-        if (isRefresh) {
-          showDialog("error", message);
-        } else {
-          setLoadError(message);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [showDialog]
-  );
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+        )
+      );
+    }
+  }, [refreshProfile, showDialog]);
 
   // Warn before leaving the page with unsaved changes
   useEffect(() => {
@@ -632,7 +579,7 @@ function StudentSettings() {
 
       // Show the new values immediately
       const updatedProfile = { ...saved, ...payload };
-      setProfile(updatedProfile);
+      updateProfileData(updatedProfile);
       setDraftProfile(updatedProfile);
       setIsEditing(false);
 
@@ -661,16 +608,6 @@ function StudentSettings() {
     // The loader has closed by now, so the popup is never covered
     showDialog(outcome.type, outcome.message, outcome.focusField);
 
-    // Silent sync with the backend; a failure does not undo the save
-    if (outcome.type === "success") {
-      try {
-        const latestProfile = normalizeProfileResponse(await getProfile());
-        setProfile(latestProfile);
-        setDraftProfile(latestProfile);
-      } catch (refreshError) {
-        console.warn("Profile saved, but syncing failed:", refreshError);
-      }
-    }
   };
 
   const scrollToSection = (id) =>
@@ -683,8 +620,8 @@ function StudentSettings() {
     { id: "account", title: "Account Information", icon: LockKeyhole },
   ];
 
-  const isFirstLoad = isLoading && !profile;
-  const showContent = Boolean(profile) && !loadError;
+  const isFirstLoad = isLoading && !hasProfileData;
+  const showContent = hasProfileData || (!isLoading && !loadError);
 
   // Same loader as the dashboard, with a message for each state
   const loaderText = isSaving

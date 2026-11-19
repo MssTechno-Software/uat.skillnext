@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowRight,
   Award,
   BarChart3,
@@ -13,7 +14,7 @@ import {
   GraduationCap,
   LockKeyhole,
   Mountain,
-  RotateCcw,
+  RefreshCw,
   Sparkles,
   Target,
   TrendingUp,
@@ -27,44 +28,92 @@ import {
   LinkButton,
   PageShell,
 } from "../../components/student/ui";
-import {
-  courseCategories,
-  myLearningCoursePath,
-  technologies,
-} from "../../data/studentLearningData";
-import { useEnrolledCourses } from "../../data/studentCourseEnrollment";
-import {
-  bestScore,
-  canAttemptFinalAssessment,
-  courseAssessmentSummary,
-  courseProgress,
-  getCourseCycle,
-  hasReadLesson,
-  useProgress,
-} from "../../data/studentProgress";
-import {
-  getFinalAssignmentForCourse,
-  getQuizForCourseModule,
-  getQuizForTopic,
-} from "../../data/quizData";
+import Loader from "../../components/Loader";
+import { getMyAnalytics } from "../../api/analytics.api";
+import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 
 /* -------------------------------------------------------------------------- */
 /*  Constants & helpers                                                       */
 /* -------------------------------------------------------------------------- */
 
-const MARKS = {
-  it: { topics: 30, coding: 20, final: 50 },
-  vocational: { topics: 50, final: 50 },
-};
-
 const round1 = (value) => Math.round((Number(value) || 0) * 10) / 10;
-const percentOf = (score, total) => (total > 0 ? Math.round((score / total) * 100) : 0);
+const optionalNumber = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+const percentOf = (score, total) =>
+  Number(total) > 0 ? Math.round((Number(score) / Number(total)) * 100) : 0;
 const pad2 = (n) => String(n).padStart(2, "0");
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
   typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const isTechnologyCourse = (categoryName = "") =>
+  /\b(it|technology|technical)\b/i.test(String(categoryName));
+
+const ATTEMPT_LABELS = {
+  attemptsUsed: "Attempts used",
+  attempts_used: "Attempts used",
+  attemptsRemaining: "Attempts remaining",
+  attempts_remaining: "Attempts remaining",
+  maxAttempts: "Maximum attempts",
+  max_attempts: "Maximum attempts",
+  attemptCount: "Total attempts",
+  attempt_count: "Total attempts",
+  totalAttempts: "Total attempts",
+  total_attempts: "Total attempts",
+  bestScore: "Best score",
+  best_score: "Best score",
+  lastAttemptAt: "Last attempt",
+  last_attempt_at: "Last attempt",
+  status: "Assessment status",
+};
+
+const formatAttemptLabel = (key) =>
+  ATTEMPT_LABELS[key] ||
+  String(key)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+const formatAttemptValue = (key, value) => {
+  if (value === null || value === undefined || value === "") return "Not available yet";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (key === "status") {
+    const status = String(value).toLowerCase().replace(/[_-]+/g, " ");
+    const labels = {
+      completed: "Completed",
+      passed: "Passed",
+      failed: "Not passed",
+      inprogress: "In progress",
+      "in progress": "In progress",
+      notstarted: "Not started",
+      "not started": "Not started",
+      submitted: "Submitted",
+      pending: "Pending review",
+    };
+    return labels[status] || status.replace(/\b\w/g, (character) => character.toUpperCase());
+  }
+  if (/date|time|At$/i.test(key)) {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+  if (/percentage|percent/i.test(key) && Number.isFinite(Number(value))) {
+    return `${round1(value)}%`;
+  }
+  return String(value);
+};
 
 /* -------------------------------------------------------------------------- */
 /*  Motion utilities                                                          */
@@ -192,11 +241,11 @@ function useCountUp(target, duration = 1100) {
   return value;
 }
 
-function AnimatedNumber({ value, suffix = "" }) {
+function AnimatedNumber({ value, suffix = "", decimals = 0 }) {
   const animated = useCountUp(value);
   return (
     <>
-      {Math.round(animated)}
+      {Number(animated).toFixed(decimals)}
       {suffix}
     </>
   );
@@ -207,7 +256,8 @@ function AnimatedNumber({ value, suffix = "" }) {
 /* -------------------------------------------------------------------------- */
 
 function ScoreRing({ value, label = "Overall", ariaLabel = "Overall course score", size = 86, dark = false, color }) {
-  const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
+  const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
+  const safeValue = hasValue ? Math.max(0, Math.min(100, Number(value))) : 0;
   const animated = useCountUp(safeValue, 1300);
   const inner = size - 16;
   return (
@@ -219,8 +269,8 @@ function ScoreRing({ value, label = "Overall", ariaLabel = "Overall course score
         background: `conic-gradient(${color || (dark ? "#F2C35B" : "#0B5960")} ${animated}%, ${dark ? "rgba(255,255,255,0.14)" : "#E8EFEE"} ${animated}% 100%)`,
       }}
       role="progressbar"
-      aria-label={ariaLabel}
-      aria-valuenow={safeValue}
+      aria-label={hasValue ? ariaLabel : `${ariaLabel} not available yet`}
+      aria-valuenow={hasValue ? safeValue : undefined}
       aria-valuemin={0}
       aria-valuemax={100}
     >
@@ -229,7 +279,7 @@ function ScoreRing({ value, label = "Overall", ariaLabel = "Overall course score
         style={{ width: inner, height: inner }}
       >
         <span className={`font-extrabold leading-none ${dark ? "text-white" : "text-[#123F45]"} ${size > 100 ? "text-3xl" : size > 72 ? "text-xl" : "text-[15px]"}`}>
-          {Math.round(animated)}%
+          {hasValue ? `${Math.round(animated)}%` : "—"}
         </span>
         {label && <span className={`mt-1 text-[9px] font-bold ${dark ? "text-[#9FC7C5]" : "text-[#829596]"}`}>{label}</span>}
       </div>
@@ -252,27 +302,53 @@ function StatusPill({ label, tone = "muted" }) {
   );
 }
 
-function MetricCard({ icon: Icon, label, value, suffix = "", fallback = "—", helper, tone = "teal", delay = 0 }) {
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  suffix = "",
+  fallback = "—",
+  helper,
+  tone = "teal",
+  delay = 0,
+}) {
   const tones = {
     teal: "bg-[#EAF3F2] text-[#0B5960]",
     gold: "bg-[#FFF5DE] text-[#9A6B0B]",
     green: "bg-[#EAF5EF] text-[#28765E]",
     slate: "bg-[#F0F3F3] text-[#617A7D]",
   };
+
   return (
-    <Reveal delay={delay}>
-      <Card className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold text-[#829596]">{label}</p>
-            <p className="mt-2 text-[27px] font-extrabold leading-none text-[#123F45]">
-              {value === null ? fallback : <AnimatedNumber value={value} suffix={suffix} />}
+    <Reveal delay={delay} className="h-full min-w-0">
+      <Card className="flex h-full min-h-[146px] flex-col p-4 sm:p-5">
+        <div className="flex h-full items-start justify-between gap-3">
+
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="text-[11px] font-bold text-[#829596]">
+              {label}
             </p>
-            <p className="mt-2 text-[11px] font-medium text-[#829596]">{helper}</p>
+
+            <p className="mt-2 text-[27px] font-extrabold leading-none text-[#123F45]">
+              {value === null || value === undefined ? (
+                fallback
+              ) : (
+                <AnimatedNumber value={value} suffix={suffix} />
+              )}
+            </p>
+
+            <p className="mt-2 min-h-[32px] line-clamp-2 text-[11px] font-medium leading-4 text-[#829596]">
+              {helper}
+            </p>
           </div>
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}>
+
+          <span
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}
+          >
             <Icon size={19} />
           </span>
+
         </div>
       </Card>
     </Reveal>
@@ -281,15 +357,24 @@ function MetricCard({ icon: Icon, label, value, suffix = "", fallback = "—", h
 
 function MarkRow({ label, earned, total, tone = "teal" }) {
   const [ref, shown] = useReveal();
-  const safeEarned = Math.max(0, Math.min(Number(total) || 0, Number(earned) || 0));
-  const fill = total > 0 ? (safeEarned / total) * 100 : 0;
+  const hasEarned = earned !== null && earned !== undefined && Number.isFinite(Number(earned));
+  const hasTotal = total !== null && total !== undefined && Number.isFinite(Number(total)) && Number(total) > 0;
+  const safeTotal = hasTotal ? Number(total) : 0;
+  const safeEarned = hasEarned ? Math.max(0, Math.min(safeTotal || Number(earned), Number(earned))) : 0;
+  const hasBreakdown = hasEarned && hasTotal;
+  const fill = hasBreakdown ? (safeEarned / safeTotal) * 100 : 0;
   const fillClass = tone === "gold" ? "bg-[#E8B33D]" : tone === "green" ? "bg-[#70A994]" : "bg-[#0B5960]";
+  const valueLabel = hasBreakdown
+    ? `${round1(safeEarned)} / ${round1(safeTotal)}`
+    : hasEarned
+      ? `${round1(Number(earned))} marks earned`
+      : "Awaiting results";
 
   return (
     <div ref={ref}>
       <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
         <span className="font-semibold text-[#60797C]">{label}</span>
-        <span className="font-extrabold tabular-nums text-[#234B50]">{round1(safeEarned)} / {total}</span>
+        <span className="font-extrabold tabular-nums text-[#234B50]">{valueLabel}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-[#EDF1F0]">
         <div
@@ -307,8 +392,8 @@ function JourneyLink({ to, children, muted = false }) {
       to={to}
       style={{ color: muted ? "#365B5F" : "#FFFFFF" }}
       className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-extrabold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E4B33E] ${muted
-          ? "border border-[#DCE6E4] bg-white hover:border-[#9CB8B5] hover:bg-[#F7FAF9]"
-          : "bg-[#0B5960] hover:bg-[#08484E]"
+        ? "border border-[#DCE6E4] bg-white hover:border-[#9CB8B5] hover:bg-[#F7FAF9]"
+        : "bg-[#0B5960] hover:bg-[#08484E]"
         }`}
     >
       {children}
@@ -345,200 +430,178 @@ function StepAction({ step }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Course model: all the derived data for one course in one place            */
+/*  Course progress adapter                                                  */
 /* -------------------------------------------------------------------------- */
 
-function buildCourseModel(course, progress) {
-  const isIT = course.track === "it";
-  const units = isIT ? course.topics || [] : course.modules || [];
-  const marks = isIT ? MARKS.it : MARKS.vocational;
-  const stats = courseProgress(progress, course);
-  const courseCycle = getCourseCycle(progress, course.id);
-  const assessment = courseAssessmentSummary(progress, course.id);
-  const finalQuiz = getFinalAssignmentForCourse(course.id);
-  const finalPath = finalQuiz ? `/student/quiz/${finalQuiz.slug}` : null;
-  const coding = isIT ? progress.assessments?.[course.id]?.coding || null : null;
-  const codingSubmitted = Boolean(coding);
-  const codingEvaluated = coding?.status === "evaluated";
-  const codingMarks = codingEvaluated ? Number(coding.score) || 0 : 0;
-  const isDone = (unit) => Boolean(progress.completed?.[`${course.id}/${unit.id}`]);
-  const allTopicsComplete = units.length > 0 && units.every(isDone);
-  const finalPermission = canAttemptFinalAssessment(progress, course.id);
-  const coursePassed = Boolean(progress.completedCourses?.[course.id]) || assessment.passed;
-  const topicPerUnit = units.length ? marks.topics / units.length : 0;
-  const topicPath = `/student/topics/${course.id}`;
-  const coursePath = isIT ? myLearningCoursePath(null, course.id) : myLearningCoursePath(course.id);
-  const codingPath = `/student/course-coding-assignment?course=${encodeURIComponent(course.id)}`;
+function buildCourseModel(chapter) {
+  const courseId = chapter?.courseId;
+  const course = {
+    id: courseId,
+    name: chapter?.courseName || "Course details coming soon",
+    category: chapter?.categoryName || "Course",
+  };
+  const isIT = isTechnologyCourse(chapter?.categoryName);
+  const stats = {
+    done: Math.max(0, Number(chapter?.topicsCompleted) || 0),
+    total: Math.max(0, Number(chapter?.totalTopics) || 0),
+  };
+  const performance = chapter?.performance || {};
+  const marksBreakdown = chapter?.marksBreakdown || {};
+  const topicBreakdown = marksBreakdown.topicQuizzes || {};
+  const finalBreakdown = marksBreakdown.finalAssessment || {};
+  const quizPerformance = Array.isArray(chapter?.quizPerformance)
+    ? chapter.quizPerformance
+    : [];
+  const apiNextStep = chapter?.nextStep || null;
+  // Use the stable My Learning route. Course metadata and learning data
+  // are sourced from the signed-in student's learning summary, not frontend seed data.
+  const coursePath = "/student/my-learning";
 
-  /* ---- Topic steps ---- */
-  const steps = units.map((unit, index) => {
-    const previous = units[index - 1];
-    const completed = isDone(unit);
-    const previousCompleted = !previous || isDone(previous);
-    const lessonRead = hasReadLesson(progress, course.id, unit.id) || completed;
-    const quiz = isIT ? getQuizForTopic(course.id, unit.id) : getQuizForCourseModule(course.id, unit.id);
-    const score = quiz ? bestScore(progress, quiz.slug) : null;
-    const state = completed ? "done" : previousCompleted ? "current" : "locked";
-    const lessonPath = `${topicPath}/topic/${unit.id}`;
+  const steps = (Array.isArray(chapter?.roadmap) ? chapter.roadmap : []).map(
+    (item, index) => {
+      const kindValue = String(item?.kind || "topic").toLowerCase();
+      const kind = kindValue.includes("final")
+        ? "final"
+        : kindValue.includes("coding")
+          ? "coding"
+          : "topic";
+      const stateValue = String(item?.state || "locked").toLowerCase();
+      const state = stateValue === "completed" || stateValue === "done"
+        ? "done"
+        : stateValue === "current" || stateValue === "in_progress"
+          ? "current"
+          : "locked";
+      const scoreRecord = quizPerformance.find(
+        (quiz) => String(quiz?.moduleId) === String(item?.moduleId)
+      );
+      const score = scoreRecord?.bestPercentage ?? null;
+      const scoreText = score === null || score === undefined
+        ? "Your quiz result will appear here once it is available."
+        : `Best score: ${round1(score)}%${scoreRecord?.passed === true ? " · Passed" : scoreRecord?.passed === false ? " · Not passed" : ""}`;
+      const moduleId = item?.moduleId;
+      const assignmentId = item?.assignmentId;
+      const isNextFromApi = Boolean(
+        apiNextStep &&
+        ((moduleId !== null && moduleId !== undefined && String(apiNextStep.moduleId) === String(moduleId)) ||
+          (assignmentId !== null && assignmentId !== undefined && String(apiNextStep.assignmentId) === String(assignmentId)))
+      );
 
-    // Students must read the lesson first; the quiz is started from inside the lesson page.
-    let cta = null;
-    let lockedText = null;
-    if (completed) cta = { to: lessonPath, label: "Review", icon: BookOpen, muted: true };
-    else if (!previousCompleted) lockedText = "Finish the previous step";
-    else cta = { to: lessonPath, label: lessonRead ? "Continue lesson" : "Open lesson", icon: BookOpen };
+      let itemPath = null;
+      let actionLabel = "Open";
+      let actionIcon = BookOpen;
 
-    const badge = completed
-      ? { label: "Completed", tone: "success" }
-      : !previousCompleted
-        ? { label: "Locked", tone: "muted" }
-        : lessonRead
-          ? { label: "Lesson read", tone: "active" }
-          : { label: "Read lesson", tone: "info" };
+      if (kind !== "topic" && assignmentId !== null && assignmentId !== undefined) {
+        itemPath = `/student/assessments/${encodeURIComponent(assignmentId)}`;
+        actionLabel = state === "done" ? "View result" : "Open assessment";
+        actionIcon = kind === "coding" ? FileCheck2 : Flag;
+      } else if (moduleId !== null && moduleId !== undefined) {
+        itemPath = `/student/topics/${encodeURIComponent(courseId)}/topic/${encodeURIComponent(moduleId)}`;
+        actionLabel = state === "done" ? "Review" : "Open lesson";
+      }
 
-    return {
-      key: unit.id,
-      kind: "topic",
-      number: index + 1,
-      state,
-      title: unit.title,
-      score,
-      description: `${quiz?.questions?.length || 10} questions${score !== null ? "" : " · Complete the lesson and quiz to record your score"
-        }`,
-      ring: {
-        value: score,
-        label: "Best score",
-        marks:
-          score !== null
-            ? `${round1((score / 100) * topicPerUnit)} / ${round1(topicPerUnit)} marks`
-            : `${round1(topicPerUnit)} marks available`,
-      },
-      badge,
-      cta,
-      lockedText,
-    };
-  });
+      const canOpenLesson = isNextFromApi && String(apiNextStep?.type || "").toLowerCase() === "lesson";
+      const canOpenAssignment = isNextFromApi && assignmentId !== null && assignmentId !== undefined;
+      const cta = state === "done" && itemPath
+        ? { to: itemPath, label: actionLabel, icon: actionIcon, muted: true }
+        : state === "current" && itemPath && (canOpenLesson || canOpenAssignment)
+          ? { to: itemPath, label: actionLabel, icon: actionIcon }
+          : null;
 
-  /* ---- Coding assignment (IT only) ---- */
-  if (isIT) {
-    const state = codingEvaluated ? "done" : codingSubmitted || allTopicsComplete ? "current" : "locked";
-    steps.push({
-      key: "coding-assignment",
-      kind: "coding",
-      icon: Code2,
-      state,
-      title: "Coding assignment",
-      description: codingEvaluated
-        ? `Evaluated score: ${codingMarks} / 20 marks`
-        : codingSubmitted
-          ? "Submission received · waiting for evaluator feedback and marks"
-          : "Submit your practical coding task after completing every topic quiz",
-      badge: codingEvaluated
-        ? { label: "Evaluated", tone: "success" }
-        : codingSubmitted
-          ? { label: "Submitted", tone: "info" }
-          : allTopicsComplete
-            ? { label: "Available", tone: "active" }
-            : { label: "Locked", tone: "muted" },
-      cta: codingEvaluated
-        ? { to: codingPath, label: "View submission", icon: FileCheck2, muted: true }
-        : codingSubmitted
-          ? null
-          : allTopicsComplete
-            ? { to: codingPath, label: "Submit coding task", icon: Code2 }
-            : null,
-      ring: codingEvaluated
-        ? { value: percentOf(codingMarks, marks.coding), label: "Evaluated", marks: `${codingMarks} / ${marks.coding} marks` }
-        : { value: null, label: "Pending", marks: `${marks.coding} marks available` },
-      pillInstead: codingSubmitted && !codingEvaluated ? { label: "Under review", tone: "info" } : null,
-      lockedText: !allTopicsComplete && !codingSubmitted ? "Complete every topic first" : null,
-    });
-  }
+      const badge = state === "done"
+        ? { label: "Completed", tone: "success" }
+        : state === "current"
+          ? { label: "Up next", tone: "active" }
+          : { label: "Locked", tone: "muted" };
 
-  /* ---- Final assessment ---- */
-  const finalState = coursePassed ? "done" : finalPermission.allowed ? "current" : "locked";
-  steps.push({
-    key: "final-assessment",
-    kind: "final",
-    icon: Flag,
-    state: finalState,
-    title: "Final assessment",
-    description: `15 questions · ${assessment.finalAttempts} of 3 attempts used · ${assessment.attemptsRemaining} remaining. Your final score combines with your topic${isIT ? " and coding" : ""} marks. You need 80% overall to pass.`,
-    badge: coursePassed
-      ? { label: "Course passed", tone: "success" }
-      : finalPermission.allowed
-        ? { label: assessment.finalAttempts ? "Retry available" : "Ready", tone: "active" }
-        : { label: "Locked", tone: "muted" },
-    cta:
-      !coursePassed && finalPermission.allowed && finalPath
-        ? { to: finalPath, label: assessment.finalAttempts ? "Continue assessment" : "Start assessment", icon: Flag }
-        : null,
-    ring: {
-      value: assessment.finalScore,
-      label: "Best score",
-      marks: `${round1(assessment.finalMarks)} / ${marks.final} marks`,
-    },
-    doneText: coursePassed ? "Completed" : null,
-    lockedText:
-      !coursePassed && !(finalPermission.allowed && finalPath)
-        ? finalPermission.reason === "coding-incomplete"
-          ? "Submit coding task first"
-          : "Complete previous steps first"
-        : null,
-  });
+      const marksLabel = score === null || score === undefined
+        ? "Result not available yet"
+        : `${round1(score)}% best score`;
 
-  const nextStep = coursePassed ? null : steps.find((step) => step.state === "current" && step.cta) || null;
+      return {
+        key: `${kind}-${moduleId ?? assignmentId ?? index}`,
+        moduleId,
+        assignmentId,
+        kind,
+        number: Number(item?.order) || index + 1,
+        state,
+        title: item?.title || `Learning step ${index + 1}`,
+        score: score === null || score === undefined ? null : Number(score),
+        description: scoreText,
+        ring: { value: score === null || score === undefined ? null : Number(score), label: "Best score", marks: marksLabel },
+        badge,
+        cta,
+        lockedText: state === "locked" ? "Complete the previous step first" : null,
+        icon: kind === "coding" ? Code2 : kind === "final" ? Flag : BookOpen,
+      };
+    }
+  );
+
+  const nextStep = steps.find((step) => step.state === "current" && step.cta) || null;
+  const coursePassed = performance?.isPassed === true;
 
   return {
     course,
     isIT,
-    marks,
+    status: chapter?.status || "not_started",
     stats,
-    courseCycle,
-    assessment,
-    coding: { marks: codingMarks },
+    marks: {
+      topics: optionalNumber(topicBreakdown?.outOf),
+      final: optionalNumber(finalBreakdown?.outOf),
+    },
+    assessment: {
+      topicMarks: optionalNumber(topicBreakdown?.marks),
+      finalMarks: optionalNumber(finalBreakdown?.marks),
+      totalMarks: optionalNumber(performance?.combinedMarks),
+      outOf: optionalNumber(performance?.outOf),
+      overallPercentage: optionalNumber(performance?.overallPercentage),
+      passMark: optionalNumber(performance?.passMark) ?? 80,
+      passed: coursePassed,
+    },
+    attemptTracker: chapter?.attemptTracker ?? null,
     coursePassed,
     coursePath,
     steps,
     nextStep,
-    overall: assessment.overallPercentage,
+    overall: optionalNumber(performance?.overallPercentage),
+    nextTopicName: chapter?.nextTopicName || null,
+    categoryName: chapter?.categoryName || "",
   };
 }
 
 /** One friendly sentence about where the student is in this chapter. */
 function chapterStory(model) {
-  const { coursePassed, stats, steps, nextStep, assessment } = model;
-  if (coursePassed) return "Chapter complete. You reached the 80% mark, and this course is yours.";
-  if (stats.done === 0) return "Your story starts here. Open the first lesson and take the first step.";
-  if (nextStep?.kind === "final") {
-    return assessment.finalAttempts
-      ? `You are close. ${assessment.attemptsRemaining} attempt${assessment.attemptsRemaining === 1 ? "" : "s"} left to reach 80%.`
-      : "Every topic is behind you. The final assessment is the last scene.";
-  }
-  if (nextStep?.kind === "coding") return "The lessons are done. Now show what you can build in the coding task.";
-  if (steps.some((s) => s.kind === "coding" && s.state === "current" && !s.cta)) {
-    return "Your code is with the evaluator. Marks will appear here once it is reviewed.";
-  }
-  return `${stats.done} of ${stats.total} topics done. Next up: ${nextStep?.title || "keep going"}.`;
+  if (model.coursePassed) return "Course completed. You have achieved the required overall score.";
+  if (model.stats.total === 0) return "You are enrolled in this course. Your lessons and learning activities will appear here once they are available.";
+  if (model.stats.done === 0) return "Start with the first available lesson to begin making progress in this course.";
+  if (model.nextStep) return `You have completed ${model.stats.done} of ${model.stats.total} topics. Next, continue with ${model.nextStep.title}.`;
+  return `You have completed ${model.stats.done} of ${model.stats.total} topics. Continue learning to make further progress.`;
 }
 
 /* -------------------------------------------------------------------------- */
 /*  Story hero                                                                */
 /* -------------------------------------------------------------------------- */
 
-function StoryHero({ models, completedUnits, totalUnits, passedCourses }) {
-  const journeyPercent = percentOf(completedUnits, totalUnits);
-  const focus = models.find((m) => m.nextStep) || null;
+function StoryHero({ models, completedUnits, totalUnits, passedCourses, focusCourseId, overallPercentage }) {
+  const hasJourneyPercentage =
+    overallPercentage !== null &&
+    overallPercentage !== undefined &&
+    Number.isFinite(Number(overallPercentage));
+  const journeyPercent = hasJourneyPercentage
+    ? Number(overallPercentage)
+    : percentOf(completedUnits, totalUnits);
+  const focus = models.find(
+    (model) => String(model.course.id) === String(focusCourseId) && model.nextStep
+  ) || models.find((model) => model.nextStep) || null;
   const allPassed = models.length > 0 && passedCourses === models.length;
 
-  let headline = "Your learning story is just beginning";
-  let sub = "Pick up your first lesson. Every topic you finish adds a new stop to your roadmap.";
+  let headline = "Your learning journey starts here";
+  let sub = "Begin with your first lesson. Your progress will grow as you complete topics and assessments.";
   if (allPassed) {
-    headline = "Every chapter complete. Well done.";
-    sub = `You passed ${passedCourses} course${passedCourses === 1 ? "" : "s"} with 80% or more. Scroll down to relive the journey.`;
+    headline = "You have completed all your courses. Well done!";
+    sub = `You have successfully completed ${passedCourses} course${passedCourses === 1 ? "" : "s"}. Review your results below or explore another course.`;
   } else if (completedUnits > 0) {
-    headline = `You are ${journeyPercent}% through your story`;
-    sub = `${completedUnits} of ${totalUnits} topics are behind you across ${models.length} course${models.length === 1 ? "" : "s"}. Here is where you stand and what comes next.`;
+    headline = `You are ${Math.round(journeyPercent)}% through your learning journey`;
+    sub = `You have completed ${completedUnits} of ${totalUnits} topics across ${models.length} course${models.length === 1 ? "" : "s"}. Review your progress and next steps below.`;
   }
 
   return (
@@ -557,13 +620,13 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses }) {
       <div className="relative grid gap-7 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)] lg:items-center">
         <div>
           <p className="sp-hero-1 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold text-[#F6D88B]">
-            <Sparkles size={13} /> Your learning story
+            <Sparkles size={13} /> Your learning overview
           </p>
           <h2 className="sp-hero-2 mt-4 max-w-xl text-2xl font-extrabold leading-tight sm:text-[34px] sm:leading-[1.15]">{headline}</h2>
           <p className="sp-hero-3 mt-3 max-w-lg text-sm leading-6 text-[#C6DEDC]">{sub}</p>
 
           <div className="sp-hero-4 mt-6">
-            <p className="text-[11px] font-bold text-[#9FC7C5]">Chapters on your map</p>
+            <p className="text-[11px] font-bold text-[#9FC7C5]">Your course progress</p>
             <ol className="mt-3 flex flex-wrap items-center gap-y-2">
               {models.map((m, index) => {
                 const state = m.coursePassed ? "done" : m.stats.done > 0 ? "current" : "locked";
@@ -572,10 +635,10 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses }) {
                     <span
                       title={m.course.name}
                       className={`flex h-8 max-w-[190px] items-center gap-2 rounded-full border px-3 text-[11px] font-bold ${state === "done"
-                          ? "border-[#F2C35B] bg-[#F2C35B] text-[#4A3305]"
-                          : state === "current"
-                            ? "sp-pulse border-[#F2C35B]/70 bg-[#F2C35B]/15 text-[#F6D88B]"
-                            : "border-white/15 bg-white/5 text-[#9FC7C5]"
+                        ? "border-[#F2C35B] bg-[#F2C35B] text-[#4A3305]"
+                        : state === "current"
+                          ? "sp-pulse border-[#F2C35B]/70 bg-[#F2C35B]/15 text-[#F6D88B]"
+                          : "border-white/15 bg-white/5 text-[#9FC7C5]"
                         }`}
                     >
                       {state === "done" ? <CheckCircle2 size={13} /> : <span>{pad2(index + 1)}</span>}
@@ -604,7 +667,7 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses }) {
           {focus ? (
             <div className="w-full rounded-2xl bg-[#FFF8E6] p-4 text-[#123F45] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-[#94650C]">
-                <Target size={13} /> Your next stop
+                <Target size={13} /> Your next learning step
               </p>
               <p className="mt-1.5 text-sm font-extrabold leading-snug">{focus.nextStep.title}</p>
               <p className="mt-0.5 truncate text-[11px] text-[#74898B]">in {focus.course.name}</p>
@@ -618,7 +681,7 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses }) {
             </div>
           ) : (
             <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-5 text-[#C6DEDC]">
-              {allPassed ? "Nothing left to do here. Explore a new course to start the next chapter." : "Open a course to begin your first chapter."}
+              {allPassed ? "You have completed your current courses. Explore another course to continue building your skills." : "Choose a course to view your progress and next learning steps."}
               <Link to="/student/topics" style={{ color: "#F6D88B" }} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-extrabold hover:underline">
                 Explore courses <ArrowRight size={13} />
               </Link>
@@ -846,7 +909,7 @@ function Roadmap({ steps, selectedKey, onSelect }) {
         <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#0B5960]" /> Completed</span>
         <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#E8B33D]" /> Up next</span>
         <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#DCE5E3]" /> Locked</span>
-        <span className="text-[#829596]">Tap any stop to see its details.</span>
+        <span className="text-[#829596]">Select a topic or assessment to view its details.</span>
       </div>
     </div>
   );
@@ -894,7 +957,7 @@ function StepDetail({ step }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[11px] font-extrabold text-[#A77916]">
-                {step.kind === "topic" ? `Stop ${step.number}` : step.kind === "coding" ? "Practical" : "Finish line"}
+                {step.kind === "topic" ? `Topic ${step.number}` : step.kind === "coding" ? "Practical assessment" : "Final assessment"}
               </p>
               <StatusPill label={step.badge.label} tone={step.badge.tone} />
               {hasScore && <StatusPill label={step.ring.marks} tone="info" />}
@@ -931,57 +994,90 @@ function TopicScoreChart({ steps }) {
         <TrendingUp size={18} className="text-[#0B5960]" />
       </div>
 
-      <div className="relative mt-4" style={{ height: maxH + 22 }}>
-        {/* 80% guide line */}
-        <div aria-hidden="true" className="absolute left-0 right-0 border-t border-dashed border-[#E0B85A]" style={{ bottom: 22 + maxH * 0.8 }}>
-          <span className="absolute -top-4 right-0 text-[9px] font-bold text-[#A77916]">80%</span>
+      {topics.length === 0 ? (
+        <div className="mt-4 flex h-[118px] items-center justify-center rounded-xl bg-[#F8FAFA] px-4 text-center text-[11px] text-[#829596]">
+          Complete a topic quiz to see your score here.
         </div>
-        <div className="absolute inset-x-0 bottom-0 flex items-end gap-1.5" style={{ height: maxH + 22 }}>
-          {topics.map((t, i) => {
-            const has = t.score !== null && t.score !== undefined;
-            const h = has ? Math.max(6, (t.score / 100) * maxH) : 6;
-            return (
-              <div key={t.key} className="flex min-w-0 flex-1 flex-col items-center justify-end" title={`${t.title}: ${has ? `${t.score}%` : "not attempted"}`} style={{ height: "100%" }}>
-                {has && <span className="mb-1 text-[9px] font-extrabold tabular-nums text-[#234B50]">{t.score}</span>}
-                <div
-                  className="w-full max-w-[26px] rounded-t-md"
-                  style={{
-                    height: shown ? h : 0,
-                    background: has ? (t.score >= 80 ? "#0B5960" : "#E8B33D") : "#E8EFEE",
-                    transition: `height .9s cubic-bezier(.2,.7,.2,1) ${i * 70}ms`,
-                  }}
-                />
-                <span className="mt-1.5 h-3 text-[9px] font-bold text-[#829596]">{i + 1}</span>
-              </div>
-            );
-          })}
+      ) : (
+        <div className="relative mt-4" style={{ height: maxH + 22 }}>
+          {/* 80% guide line */}
+          <div aria-hidden="true" className="absolute left-0 right-0 border-t border-dashed border-[#E0B85A]" style={{ bottom: 22 + maxH * 0.8 }}>
+            <span className="absolute -top-4 right-0 text-[9px] font-bold text-[#A77916]">80%</span>
+          </div>
+          <div className="absolute inset-x-0 bottom-0 flex items-end gap-1.5" style={{ height: maxH + 22 }}>
+            {topics.map((t, i) => {
+              const has = t.score !== null && t.score !== undefined;
+              const h = has ? Math.max(6, (t.score / 100) * maxH) : 6;
+              return (
+                <div key={t.key} className="flex min-w-0 flex-1 flex-col items-center justify-end" title={`${t.title}: ${has ? `${t.score}%` : "not attempted"}`} style={{ height: "100%" }}>
+                  {has && <span className="mb-1 text-[9px] font-extrabold tabular-nums text-[#234B50]">{t.score}</span>}
+                  <div
+                    className="w-full max-w-[26px] rounded-t-md"
+                    style={{
+                      height: shown ? h : 0,
+                      background: has ? (t.score >= 80 ? "#0B5960" : "#E8B33D") : "#E8EFEE",
+                      transition: `height .9s cubic-bezier(.2,.7,.2,1) ${i * 70}ms`,
+                    }}
+                  />
+                  <span className="mt-1.5 h-3 text-[9px] font-bold text-[#829596]">{i + 1}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
       <p className="mt-2 text-[10px] leading-5 text-[#829596]">
-        Teal bars are 80% or higher. Gold bars have room to grow. The 80% line is a guide; the pass mark uses your combined marks.
+        Teal bars show scores of 80% or higher. Gold bars show scores below 80%. The line is a guide; your course result is based on the overall marks above.
       </p>
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Chapter card                                                              */
+/*  Course card                                                               */
 /* -------------------------------------------------------------------------- */
 
-function CourseChapterCard({ model, chapterNumber }) {
-  const { course, isIT, marks, stats, courseCycle, assessment, coding, coursePassed, coursePath, steps, overall } = model;
-  const statusLabel = coursePassed ? "Course passed" : stats.done > 0 ? "In progress" : "Not started";
+function CourseChapterCard({ model, courseNumber }) {
+  const {
+    course,
+    isIT,
+    status,
+    stats,
+    marks,
+    assessment,
+    attemptTracker,
+    coursePassed,
+    coursePath,
+    steps,
+    overall,
+  } = model;
+  const statusLabel = coursePassed
+    ? "Course passed"
+    : status === "in_progress" || stats.done > 0
+      ? "In progress"
+      : "Not started";
   const statusTone = coursePassed ? "success" : stats.done > 0 ? "active" : "muted";
 
   const [pickedKey, setPickedKey] = useState(null);
   const defaultStep =
-    steps.find((s) => s.state === "current") || [...steps].reverse().find((s) => s.state === "done") || steps[0];
-  const selected = steps.find((s) => s.key === pickedKey) || defaultStep;
+    steps.find((step) => step.state === "current") ||
+    [...steps].reverse().find((step) => step.state === "done") ||
+    steps[0] ||
+    null;
+  const selected = steps.find((step) => step.key === pickedKey) || defaultStep;
+  const trackerEntries =
+    attemptTracker && typeof attemptTracker === "object" && !Array.isArray(attemptTracker)
+      ? Object.entries(attemptTracker).filter(
+        ([key, value]) =>
+          Object.prototype.hasOwnProperty.call(ATTEMPT_LABELS, key) &&
+          (value === null || ["string", "number", "boolean"].includes(typeof value))
+      )
+      : [];
+  const passMark = assessment.passMark ?? 80;
 
   return (
     <Reveal>
       <Card className="overflow-hidden border-[#E5ECEA] p-0 shadow-[0_8px_28px_rgba(21,57,58,0.045)]">
-        {/* Chapter header */}
         <div className="relative border-b border-[#E8EFED] bg-gradient-to-br from-[#FBFCFC] to-[#F4F9F8] px-5 py-5 sm:px-6">
           {coursePassed && <Sparkles aria-hidden="true" size={16} className="sp-spark absolute right-6 top-4 text-[#E4B33E]" />}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -992,7 +1088,7 @@ function CourseChapterCard({ model, chapterNumber }) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-[11px] font-extrabold text-[#A77916]">
-                    Chapter {chapterNumber} · {course.category || (isIT ? "IT course" : "Vocational course")}
+                    Course {courseNumber} · {course.category || "Course"}
                   </p>
                   <StatusPill label={statusLabel} tone={statusTone} />
                 </div>
@@ -1000,36 +1096,32 @@ function CourseChapterCard({ model, chapterNumber }) {
                 <p className="mt-1 max-w-md text-xs leading-5 text-[#60797C]">{chapterStory(model)}</p>
                 <p className="mt-1 text-[11px] text-[#829596]">
                   {stats.done} of {stats.total} topics completed
-                </p>              </div>
+                </p>
+              </div>
             </div>
             <div className="flex items-center justify-between gap-4 sm:justify-end">
               <div className="min-w-0 sm:text-right">
-                <p className="text-[11px] font-bold text-[#829596]">Combined performance</p>
-                <p className="mt-1 text-sm font-extrabold text-[#234B50]">{round1(assessment.totalMarks)} / 100 marks</p>
-                <p className="mt-0.5 text-[10px] text-[#829596]">Pass mark: 80%</p>
+                <p className="text-[11px] font-bold text-[#829596]">Overall course score</p>
+                <p className="mt-1 text-sm font-extrabold text-[#234B50]">
+                  {assessment.totalMarks === null ? "—" : round1(assessment.totalMarks)} / {assessment.outOf > 0 ? round1(assessment.outOf) : "—"} marks
+                </p>
+                <p className="mt-0.5 text-[10px] text-[#829596]">Pass mark: {passMark}% overall</p>
               </div>
               <ScoreRing value={overall} />
             </div>
           </div>
 
-          {courseCycle.lastOutcome?.type === "restarted" && (
-            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[#F0DDB0] bg-[#FFF9EA] px-3.5 py-3 text-[11px] leading-5 text-[#806018]">
-              <RotateCcw size={15} className="mt-0.5 shrink-0" />
-              <p>A new cycle has started. Your previous cycle ended below 80% after all three Final Assessment attempts, so this course restarted from Topic 1. Your earlier attempt history is kept.</p>
-            </div>
-          )}
           {coursePassed && (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#D8EAE1] bg-[#F0F8F4] px-3.5 py-3 text-[11px] font-bold text-[#28765E]">
-              <Award size={15} /> You reached the required 80% overall score for this course.
+              <Award size={15} /> Congratulations! You have passed this course.
             </div>
           )}
         </div>
 
         <div className="p-5 sm:p-6">
-          {/* Roadmap */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-extrabold text-[#A77916]">Your route through this chapter</p>
+              <p className="text-[11px] font-extrabold text-[#A77916]">Your learning journey</p>
               <h3 className="mt-1 text-base font-extrabold text-[#123F45]">Learning roadmap</h3>
             </div>
             <Link to={coursePath} style={{ color: "#0B5960" }} className="inline-flex items-center gap-1 text-[11px] font-extrabold hover:underline">
@@ -1037,30 +1129,42 @@ function CourseChapterCard({ model, chapterNumber }) {
             </Link>
           </div>
 
-          <Roadmap steps={steps} selectedKey={selected.key} onSelect={setPickedKey} />
-          <StepDetail step={selected} />
+          {steps.length > 0 ? (
+            <>
+              <Roadmap steps={steps} selectedKey={selected?.key} onSelect={setPickedKey} />
+              {selected && <StepDetail step={selected} />}
+            </>
+          ) : (
+            <div className="rounded-[18px] border border-dashed border-[#DCE7E5] bg-[#F8FAFA] px-4 py-7 text-center">
+              <BookOpen size={22} className="mx-auto text-[#829596]" />
+              <p className="mt-2 text-sm font-bold text-[#365B5F]">Your learning path will appear here</p>
+              <p className="mt-1 text-xs text-[#829596]">Your lessons and assessments are not available yet. Please check back soon.</p>
+            </div>
+          )}
 
-          {/* Analytics row */}
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
             <div className="rounded-[18px] border border-[#E7EEEC] bg-[#FBFCFC] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-extrabold text-[#A77916]">Score analytics</p>
+                  <p className="text-[11px] font-extrabold text-[#A77916]">Your results</p>
                   <h3 className="mt-1 text-sm font-extrabold text-[#123F45]">Marks breakdown</h3>
                 </div>
                 <BarChart3 size={18} className="text-[#0B5960]" />
               </div>
               <div className="mt-4 space-y-4">
                 <MarkRow label="Topic quizzes" earned={assessment.topicMarks} total={marks.topics} />
-                {isIT && <MarkRow label="Coding assignment" earned={coding.marks} total={marks.coding} tone="green" />}
                 <MarkRow label="Final assessment" earned={assessment.finalMarks} total={marks.final} tone="gold" />
               </div>
               <div className="mt-4 border-t border-[#E6EDEB] pt-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-[#60797C]">Overall score</span>
-                  <span className="text-base font-extrabold text-[#123F45]">{overall}%</span>
+                  <span className="text-base font-extrabold text-[#123F45]">{overall === null ? "—" : `${round1(overall)}%`}</span>
                 </div>
-                <p className="mt-1 text-[10px] leading-5 text-[#829596]">Passing needs 80% from all weighted course assessments combined. The Final Assessment has no separate 80% pass mark.</p>
+                <p className="mt-1 text-[10px] leading-5 text-[#829596]">
+                  {assessment.topicMarks !== null || assessment.finalMarks !== null
+                    ? "These results show the marks you have earned so far in this course."
+                    : "Your marks will appear here once your assessments have been reviewed."}
+                </p>
               </div>
             </div>
 
@@ -1072,24 +1176,26 @@ function CourseChapterCard({ model, chapterNumber }) {
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFF5DE] text-[#94650C]"><Target size={16} /></span>
                   <div>
                     <p className="text-[11px] font-extrabold text-[#A77916]">Final assessment</p>
-                    <h3 className="text-sm font-extrabold text-[#123F45]">Attempt tracker</h3>
+                    <h3 className="text-sm font-extrabold text-[#123F45]">Assessment attempts</h3>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center gap-2">
-                  {[0, 1, 2].map((i) => (
-                    <span key={i} className={`h-2.5 flex-1 rounded-full ${i < assessment.finalAttempts ? "bg-[#0B5960]" : "bg-[#E8EFEE]"}`} />
-                  ))}
-                </div>
-                <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-[#74898B]">
-                  <span>{assessment.finalAttempts} used</span>
-                  <span>{assessment.attemptsRemaining} remaining</span>
-                </div>
-                <p className="mt-3 text-[10px] leading-5 text-[#829596]">You get three attempts in each course cycle. If the combined result is still below 80%, the course restarts from the first topic.</p>
-                {assessment.finalScore !== null && (
-                  <div className="mt-3 rounded-lg bg-[#F5F8F7] px-3 py-2 text-[11px] font-bold text-[#365B5F]">
-                    Best final assessment score: {assessment.finalScore}%
+                {trackerEntries.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    {trackerEntries.map(([key, value]) => (
+                      <div key={key} className="flex items-center justify-between gap-3 border-b border-[#F0F3F2] pb-2 text-[10px] last:border-0">
+                        <span className="font-semibold text-[#74898B]">{formatAttemptLabel(key)}</span>
+                        <span className="font-extrabold text-[#234B50]">{formatAttemptValue(key, value)}</span>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  <p className="mt-4 rounded-xl bg-[#F7FAF9] px-3 py-3 text-[10px] leading-5 text-[#829596]">
+                    Your assessment attempt details are being prepared and will appear here once available.
+                  </p>
                 )}
+                <p className="mt-3 text-[10px] leading-5 text-[#829596]">
+                  Your final assessment score will appear here once your submission has been reviewed.
+                </p>
               </div>
 
               <LinkButton to={coursePath} variant="outline" icon={BookOpen} className="w-full">
@@ -1102,106 +1208,402 @@ function CourseChapterCard({ model, chapterNumber }) {
     </Reveal>
   );
 }
-function MyAnalytics() {
-  const progress = useProgress();
-  const { enrolledCourseIds } = useEnrolledCourses();
-  useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: "auto",
-    });
-  }, []);
 
+/* -------------------------------------------------------------------------- */
+/*  Loading skeleton — mirrors the MyLearning loading experience              */
+/* -------------------------------------------------------------------------- */
 
-  const enrolledCourses = useMemo(() => {
-    const vocationalCourses = courseCategories
-      .filter((course) => course.type === "vocational" && enrolledCourseIds.includes(course.id))
-      .map((course) => ({ ...course, track: "vocational" }));
-    const technologyCourses = technologies
-      .filter((technology) => enrolledCourseIds.includes(technology.id))
-      .map((technology) => ({ ...technology, track: "it" }));
-    return [...vocationalCourses, ...technologyCourses];
-  }, [enrolledCourseIds]);
-
-  const models = useMemo(
-    () => enrolledCourses.map((course) => buildCourseModel(course, progress)),
-    [enrolledCourses, progress]
+function MyAnalyticsLoading() {
+  const loadingIndicator = (
+    <div className="inline-flex items-center gap-2.5 rounded-full border border-[#E6ECEB] bg-white/90 px-3.5 py-2 text-[11px] font-semibold text-[#718486] shadow-[0_3px_12px_rgba(6,66,75,0.035)]">
+      <span
+        aria-hidden="true"
+        className="h-4 w-4 animate-spin rounded-full border-2 border-[#E8EFEE] border-t-[#FFAB0B]"
+      />
+      <span>Loading your learning progress...</span>
+    </div>
   );
 
-  const analytics = useMemo(() => {
-    const courseIds = new Set(enrolledCourses.map((course) => course.id));
-    const attempts = (progress.quizzes || []).filter((attempt) => courseIds.has(attempt.courseId));
-    const completedUnits = models.reduce((sum, m) => sum + m.stats.done, 0);
-    const totalUnits = models.reduce((sum, m) => sum + m.stats.total, 0);
-    const passedCourses = models.filter((m) => m.assessment.passed).length;
-    const average = attempts.length
-      ? Math.round(attempts.reduce((sum, attempt) => sum + percentOf(attempt.score, attempt.total), 0) / attempts.length)
-      : null;
-    return { attempts, completedUnits, totalUnits, passedCourses, average };
-  }, [enrolledCourses, models, progress]);
+  return (
+    <div
+      className="mx-auto w-full max-w-[1320px] space-y-6"
+      role="status"
+      aria-label="Loading your learning progress"
+      aria-busy="true"
+    >
+      {/* Page header skeleton + the same inline loading indicator as MyLearning. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full animate-pulse space-y-3">
+          <div className="h-7 w-48 rounded-lg bg-[#E9EFEE]" />
+          <div className="h-3 w-full max-w-[520px] rounded-full bg-[#EEF2F1]" />
+        </div>
+        {loadingIndicator}
+      </div>
+
+      {/* Story hero skeleton — keeps the dark analytics hero proportions. */}
+      <section className="animate-pulse overflow-hidden rounded-[26px] bg-gradient-to-br from-[#0B5960] via-[#0E4C52] to-[#123F45] p-6 shadow-[0_18px_50px_rgba(11,89,96,0.12)] sm:p-9">
+        <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)] lg:items-center">
+          <div className="space-y-4">
+            <div className="h-6 w-36 rounded-full bg-white/15" />
+            <div className="h-8 w-3/4 max-w-[460px] rounded-lg bg-white/20" />
+            <div className="h-3 w-full max-w-[600px] rounded-full bg-white/15" />
+            <div className="h-3 w-4/5 max-w-[500px] rounded-full bg-white/15" />
+            <div className="flex flex-wrap gap-3 pt-2">
+              <div className="h-10 w-32 rounded-xl bg-white/15" />
+              <div className="h-10 w-36 rounded-xl bg-white/15" />
+            </div>
+          </div>
+          <div className="grid gap-4 rounded-2xl border border-white/10 bg-white/[0.07] p-4 sm:grid-cols-[100px_minmax(0,1fr)] sm:items-center">
+            <div className="mx-auto h-[100px] w-[100px] rounded-full border-[10px] border-white/15 border-t-[#F2C35B] sm:mx-0" />
+            <div className="space-y-3">
+              <div className="h-3 w-28 rounded-full bg-white/20" />
+              <div className="h-7 w-32 rounded-lg bg-white/20" />
+              <div className="h-3 w-full rounded-full bg-white/15" />
+              <div className="h-10 w-full rounded-xl bg-[#F2C35B]/30" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Four metric cards — same responsive grid as the real page. */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="animate-pulse rounded-[22px] border border-[#E6ECEB] bg-white p-4 shadow-[0_6px_22px_rgba(6,66,75,0.025)] sm:p-5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 space-y-3">
+                <div className="h-3 w-28 rounded-full bg-[#EEF2F1]" />
+                <div className="h-8 w-20 rounded-lg bg-[#E9EFEE]" />
+                <div className="h-2.5 w-36 max-w-full rounded-full bg-[#F1F4F3]" />
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-[#EEF3F4]" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Roadmap heading skeleton. */}
+      <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-end sm:justify-between">
+        <div className="animate-pulse space-y-2">
+          <div className="h-3 w-28 rounded-full bg-[#F1E7D2]" />
+          <div className="h-5 w-48 rounded-md bg-[#E9EFEE]" />
+          <div className="h-3 w-full max-w-[480px] rounded-full bg-[#EEF2F1]" />
+        </div>
+        <div className="h-10 w-56 animate-pulse rounded-xl border border-[#E6ECEB] bg-white" />
+      </div>
+
+      {/* Course cards — the skeleton follows the real course-progress layout. */}
+      <div className="space-y-6">
+        {Array.from({ length: 2 }).map((_, courseIndex) => (
+          <section
+            key={courseIndex}
+            className="overflow-hidden rounded-[22px] border border-[#E5ECEA] bg-white shadow-[0_8px_28px_rgba(21,57,58,0.035)]"
+          >
+            <div className="animate-pulse border-b border-[#E8EFED] bg-[#F7FAF9] p-5 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <div className="h-11 w-11 shrink-0 rounded-[14px] bg-[#EAF3F2]" />
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="h-3 w-40 rounded-full bg-[#F1E7D2]" />
+                    <div className="h-5 w-2/3 max-w-[360px] rounded-md bg-[#E9EFEE]" />
+                    <div className="h-3 w-full max-w-[460px] rounded-full bg-[#EEF2F1]" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 sm:justify-end">
+                  <div className="space-y-2">
+                    <div className="h-3 w-28 rounded-full bg-[#E9EFEE]" />
+                    <div className="h-4 w-24 rounded-md bg-[#E9EFEE]" />
+                  </div>
+                  <div className="h-[86px] w-[86px] shrink-0 rounded-full border-[9px] border-[#EEF3F4] border-t-[#F5DDA6]" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="space-y-4">
+                <div className="animate-pulse space-y-2">
+                  <div className="h-3 w-44 rounded-full bg-[#F1E7D2]" />
+                  <div className="h-5 w-40 rounded-md bg-[#E9EFEE]" />
+                </div>
+                <div className="animate-pulse rounded-[22px] border border-[#E3ECEA] bg-[#F7FAF9] p-5">
+                  <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                    {Array.from({ length: 4 }).map((__, index) => (
+                      <div key={index} className="flex flex-col items-center gap-3">
+                        <div className="h-14 w-14 rounded-full border-[6px] border-[#E8EFEE] border-t-[#E8B33D]" />
+                        <div className="h-3 w-20 rounded-full bg-[#E9EFEE]" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {Array.from({ length: 2 }).map((__, index) => (
+                    <div key={index} className="animate-pulse rounded-[18px] border border-[#E7EEEC] bg-white p-4">
+                      <div className="h-3 w-28 rounded-full bg-[#F1E7D2]" />
+                      <div className="mt-2 h-4 w-36 rounded-md bg-[#E9EFEE]" />
+                      <div className="mt-5 space-y-4">
+                        <div className="h-2 rounded-full bg-[#EEF2F1]" />
+                        <div className="h-2 rounded-full bg-[#EEF2F1]" />
+                        <div className="h-2 rounded-full bg-[#EEF2F1]" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <aside className="animate-pulse space-y-4">
+                <div className="h-[170px] rounded-[18px] border border-[#E7EEEC] bg-[#F8FAFA] p-4">
+                  <div className="h-4 w-36 rounded-md bg-[#E9EFEE]" />
+                  <div className="mt-5 h-3 w-full rounded-full bg-[#EEF2F1]" />
+                  <div className="mt-3 h-3 w-4/5 rounded-full bg-[#EEF2F1]" />
+                  <div className="mt-6 h-9 w-full rounded-xl bg-[#EAF0EF]" />
+                </div>
+                <div className="h-24 rounded-[18px] border border-[#E7EEEC] bg-white p-4">
+                  <div className="h-3 w-32 rounded-full bg-[#E9EFEE]" />
+                  <div className="mt-4 h-3 w-full rounded-full bg-[#EEF2F1]" />
+                </div>
+              </aside>
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Error state — same inline retry pattern as MyLearning                      */
+/* -------------------------------------------------------------------------- */
+
+function AnalyticsErrorState({ title, message, onRetry }) {
+  return (
+    <Card className="mt-5 px-6 py-12 text-center sm:px-10">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1EE] text-[#A85A50]">
+        <AlertCircle size={25} />
+      </div>
+      <h2 className="mt-4 text-xl font-extrabold text-[#06424B]">{title}</h2>
+      <p className="mx-auto mt-2 max-w-[520px] text-sm leading-6 text-[#718486]">{message}</p>
+      {onRetry && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-bold text-[#06424B] transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
+          >
+            <RefreshCw size={15} /> Try again
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Main analytics page                                                      */
+/* -------------------------------------------------------------------------- */
+
+function MyAnalytics() {
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const requestControllerRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, []);
+
+  const loadAnalytics = useCallback(async () => {
+    // Cancel an earlier request before starting a retry/new request.
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await getMyAnalytics({ signal: controller.signal });
+      if (controller.signal.aborted) return;
+
+      // Support both the direct response body and the standard data envelope.
+      let payload = response?.data ?? response;
+      if (payload?.success === false) {
+        const responseError = new Error("The learning summary could not be prepared.");
+        responseError.code = "ANALYTICS_RESPONSE_ERROR";
+        throw responseError;
+      }
+      if (payload?.data && typeof payload.data === "object" && !Array.isArray(payload.data)) {
+        payload = payload.data;
+      }
+
+      if (!payload || typeof payload !== "object" || Array.isArray(payload) || !Array.isArray(payload.chapters)) {
+        const responseError = new Error("The learning summary is incomplete.");
+        responseError.code = "ANALYTICS_RESPONSE_ERROR";
+        throw responseError;
+      }
+
+      setAnalyticsData(payload);
+    } catch (requestError) {
+      // Ignore cancellation after retry, navigation or component unmount.
+      if (controller.signal.aborted || requestError?.code === "ERR_CANCELED") return;
+
+      // Keep the shared Axios interceptor responsible for session expiry.
+      // This page only renders the same inline error state used by MyLearning.
+      console.error("My Analytics loading error:", requestError);
+      // Use the existing centralized error handler. Do not duplicate HTTP
+      // status maps, network handling or timeout messages in this page.
+      setError(
+        getApiErrorMessage(
+          requestError,
+          "We couldn't load your learning progress right now. Please try again."
+        )
+      );
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        if (requestControllerRef.current === controller) {
+          requestControllerRef.current = null;
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAnalytics();
+    return () => {
+      requestControllerRef.current?.abort();
+    };
+  }, [loadAnalytics]);
+
+  const summary = analyticsData?.summary || {};
+  const chapters = Array.isArray(analyticsData?.chapters) ? analyticsData.chapters : [];
+
+  const models = useMemo(() => chapters.map(buildCourseModel), [chapters]);
+  const completedUnits = Number(summary.topicsCompleted) || 0;
+  const totalUnits = Number(summary.totalTopics) || 0;
+  const passedCourses = Number(summary.coursesPassed) || 0;
+  const focusCourseId = summary?.nextStep?.courseId ?? null;
+  const enrolledCourses = summary.enrolledCourses ?? chapters.length;
+  const assessmentAttempts = summary.assessmentAttempts ?? null;
+  const averageAssessmentScore = summary.averageAssessmentScore ?? null;
 
   return (
     <>
       <style>{MOTION_CSS}</style>
       <PageShell max="max-w-[1360px]">
         <div className="mx-auto w-full max-w-[1320px]">
-          <StudentPageHeader
-            title="My Analytics"
-            subtitle="Your learning roadmap: what you have finished, how you scored and what comes next."
-          />
-
-          {enrolledCourses.length === 0 ? (
-            <Card className="mt-5 p-6 sm:p-9">
-              <EmptyState
-                icon={BarChart3}
-                title="Your roadmap starts with your first course"
-                text="Enrol in a course and this page will turn into your roadmap: topic scores, coding marks, final assessment attempts and your overall result."
-                action={<LinkButton to="/student/topics" variant="gold" icon={BookOpen}>Explore courses</LinkButton>}
-              />
-            </Card>
+          {loading ? (
+            <>
+              <MyAnalyticsLoading />
+              <Loader open={loading} text="Loading your learning progress..." />
+            </>
           ) : (
             <>
-              <StoryHero
-                models={models}
-                completedUnits={analytics.completedUnits}
-                totalUnits={analytics.totalUnits}
-                passedCourses={analytics.passedCourses}
+              <StudentPageHeader
+                title="My Analytics"
+                subtitle="Review your course progress, assessment results and next learning steps."
               />
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <MetricCard icon={GraduationCap} label="Enrolled courses" value={enrolledCourses.length} helper="Your active learning tracks" tone="teal" />
-                <MetricCard icon={CheckCircle2} label="Topics completed" value={analytics.completedUnits} suffix={`/${analytics.totalUnits}`} helper="Across all enrolled courses" tone="green" delay={80} />
-                <MetricCard icon={ClipboardCheck} label="Assessment attempts" value={analytics.attempts.length} helper="Topic quizzes + final assessments" tone="gold" delay={160} />
-                <MetricCard icon={Trophy} label="Courses passed" value={analytics.passedCourses} helper="80% overall score achieved" tone="slate" delay={240} />
-              </div>
+              {error ? (
+                <AnalyticsErrorState
+                  title="We couldn't load your progress"
+                  message={error}
+                  onRetry={loadAnalytics}
+                />
+              ) : chapters.length === 0 ? (
+                <Card className="mt-5 p-6 sm:p-9">
+                  <EmptyState
+                    icon={BarChart3}
+                    title={Number(enrolledCourses) > 0 ? "Your course progress is getting ready" : "Your learning journey starts with a course"}
+                    text={Number(enrolledCourses) > 0
+                      ? "Your course details are still being prepared. Your lessons, assessments and progress will appear here once they are available."
+                      : "You haven't enrolled in a course yet. Explore the available courses and add one to your learning space. Your progress and assessment results will appear here as you learn."}
+                    action={<LinkButton to="/student/topics" variant="gold" icon={BookOpen}>Explore courses</LinkButton>}
+                  />
+                </Card>
+              ) : (
+                <>
+                  <StoryHero
+                    models={models}
+                    completedUnits={completedUnits}
+                    totalUnits={totalUnits}
+                    passedCourses={passedCourses}
+                    focusCourseId={focusCourseId}
+                    overallPercentage={summary.overallPercentage}
+                  />
 
-              <Reveal className="mt-9 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-extrabold text-[#A77916]">The chapters</p>
-                  <h2 className="mt-1 text-lg font-extrabold text-[#123F45]">Your course roadmaps</h2>
-                  <p className="mt-1 text-xs text-[#829596]">Each course is a chapter: lessons and quizzes first, then the coding task and the final assessment.</p>
-                </div>
-                <div className="flex items-center gap-2 rounded-xl border border-[#E3EBE9] bg-white px-3 py-2">
-                  <TrendingUp size={15} className="text-[#0B5960]" />
-                  <span className="text-[11px] font-bold text-[#60797C]">Average assessment score</span>
-                  <span className="text-sm font-extrabold text-[#123F45]">
-                    {analytics.average === null ? "—" : <AnimatedNumber value={analytics.average} suffix="%" />}
-                  </span>
-                </div>
-              </Reveal>
+                  <div className="mt-5 grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <MetricCard
+                      icon={GraduationCap}
+                      label="Enrolled courses"
+                      value={enrolledCourses}
+                      helper="Courses you have joined"
+                      tone="teal"
+                    />
+                    <MetricCard
+                      icon={CheckCircle2}
+                      label="Topics completed"
+                      value={summary.topicsCompleted ?? null}
+                      suffix={summary.totalTopics !== undefined ? `/${summary.totalTopics}` : ""}
+                      helper="Across your enrolled courses"
+                      tone="green"
+                      delay={80}
+                    />
+                    <MetricCard
+                      icon={ClipboardCheck}
+                      label="Assessment attempts"
+                      value={assessmentAttempts}
+                      helper="Quizzes and assessments you have taken"
+                      tone="gold"
+                      delay={160}
+                    />
+                    <MetricCard
+                      icon={Trophy}
+                      label="Courses passed"
+                      value={summary.coursesPassed ?? null}
+                      helper="Courses where you have met the passing requirement"
+                      tone="slate"
+                      delay={240}
+                    />
+                  </div>
 
-              <div className="mt-4 space-y-6">
-                {models.map((model, index) => (
-                  <CourseChapterCard key={model.course.id} model={model} chapterNumber={pad2(index + 1)} />
-                ))}
+                  <Reveal className="mt-9 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-extrabold text-[#A77916]">Your courses</p>
+                      <h2 className="mt-1 text-lg font-extrabold text-[#123F45]">Course progress and learning paths</h2>
+                      <p className="mt-1 text-xs text-[#829596]">Review each course to see completed topics, assessment results and your next learning step.</p>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl border border-[#E3EBE9] bg-white px-3 py-2">
+                      <TrendingUp size={15} className="text-[#0B5960]" />
+                      <span className="text-[11px] font-bold text-[#60797C]">Average assessment score</span>
+                      <span className="text-sm font-extrabold text-[#123F45]">
+                        {averageAssessmentScore === null || averageAssessmentScore === undefined
+                          ? "—"
+                          : <AnimatedNumber value={averageAssessmentScore} decimals={2} suffix="%" />}
+                      </span>
+                    </div>
+                  </Reveal>
+
+                  <div className="mt-4 space-y-6">
+                    {models.map((model, index) => (
+                      <CourseChapterCard
+                        key={model.course.id ?? model.course.name}
+                        model={model}
+                        courseNumber={pad2(index + 1)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#E4EBE9] pt-5">
+                <p className="text-[11px] text-[#829596]">Your progress is updated as you complete lessons and assessments.</p>
+                <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>Continue learning</LinkButton>
               </div>
             </>
           )}
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#E4EBE9] pt-5">
-            <p className="text-[11px] text-[#829596]">Analytics uses your current course-cycle scores.</p>
-            <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>Continue learning</LinkButton>
-          </div>
         </div>
       </PageShell>
     </>

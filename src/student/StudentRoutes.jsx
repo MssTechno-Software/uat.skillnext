@@ -1,4 +1,3 @@
-
 import { Navigate, Route, Routes } from "react-router-dom";
 
 // Common layout for all student pages
@@ -7,6 +6,7 @@ import StudentLayout from "../components/student/StudentLayout";
 // Dashboard and learning pages
 import StudentDashboard from "../pages/student/StudentDashboard";
 import MyLearning from "../pages/student/MyLearning";
+import FinalAssessmentPage from "../pages/student/FinalAssessmentPage";
 import CourseCodingAssignment from "../pages/student/CourseCodingAssignment";
 
 // Explore Topics and lesson pages
@@ -14,12 +14,12 @@ import ExploreTopics from "../pages/student/ExploreTopics";
 import TopicDetails from "../pages/student/TopicDetails";
 import LessonContent from "../pages/student/LessonContent";
 
+// API-based module assessment pages
+import QuizPage from "../pages/student/QuizPage";
+import AssessmentResultPage from "../pages/student/AssessmentResultPage";
+
 // Study Resources
 import StudyResources from "../pages/student/StudyResources";
-
-// Individual quiz functionality
-import QuizPage from "../pages/student/QuizPage";
-import QuizResult from "../pages/student/QuizResult";
 
 // Interview Preparation pages
 import AIPractice from "../pages/student/AIPractice";
@@ -44,24 +44,15 @@ function StudentRoutes() {
     <Routes>
       {/* All student routes share the same layout */}
       <Route element={<StudentLayout />}>
-
         {/* Redirect the default student route to Dashboard */}
-        <Route
-          index
-          element={<Navigate to="dashboard" replace />}
-        />
+        <Route index element={<Navigate to="dashboard" replace />} />
 
         {/* Student Dashboard */}
-        <Route
-          path="dashboard"
-          element={<StudentDashboard />}
-        />
+        <Route path="dashboard" element={<StudentDashboard />} />
 
-        {/* My Learning */}
-        <Route
-          path="my-learning"
-          element={<MyLearning />}
-        />
+        {/* My Learning - API enrolled courses and course modules */}
+        <Route path="my-learning" element={<MyLearning />} />
+
 
         {/* Course Coding Assignment */}
         <Route
@@ -70,46 +61,37 @@ function StudentRoutes() {
         />
 
         {/* Explore Topics */}
-        <Route
-          path="topics"
-          element={<ExploreTopics />}
-        />
+        <Route path="topics" element={<ExploreTopics />} />
 
         {/* Technology Details */}
-        <Route
-          path="topics/:technologySlug"
-          element={<TopicDetails />}
-        />
+        <Route path="topics/:technologySlug" element={<TopicDetails />} />
 
-        {/* Individual Topic Lesson */}
+        {/* Individual Module Lesson */}
         <Route
           path="topics/:technologySlug/topic/:topicId"
           element={<LessonContent />}
         />
 
-        {/* Study Resources */}
+        {/* API-based Module Assessment */}
         <Route
-          path="resources"
-          element={<StudyResources />}
-        />
-
-        {/* Individual Quiz */}
-        <Route
-          path="quiz/:quizSlug"
+          path="assessments/:assignmentId"
           element={<QuizPage />}
         />
 
-        {/* Quiz Result */}
+        {/* API-based Assessment Result */}
         <Route
-          path="quiz-result"
-          element={<QuizResult />}
+          path="assessment-result"
+          element={<AssessmentResultPage />}
         />
+        <Route
+          path="final-assessment"
+          element={<FinalAssessmentPage />}
+        />
+        {/* Study Resources */}
+        <Route path="resources" element={<StudyResources />} />
 
         {/* Interview Preparation */}
-        <Route
-          path="ai-practice"
-          element={<AIPractice />}
-        />
+        <Route path="ai-practice" element={<AIPractice />} />
 
         {/* Self Introduction Practice */}
         <Route
@@ -154,42 +136,23 @@ function StudentRoutes() {
         />
 
         {/* My Analytics */}
-        <Route
-          path="my-analytics"
-          element={<MyAnalytics />}
-        />
+        <Route path="my-analytics" element={<MyAnalytics />} />
 
         {/* Certificates */}
-        <Route
-          path="certificates"
-          element={<Certificates />}
-        />
+        <Route path="certificates" element={<Certificates />} />
 
         {/* Calendar */}
-        <Route
-          path="calendar"
-          element={<Calendar />}
-        />
+        <Route path="calendar" element={<Calendar />} />
 
         {/* Student Settings */}
-        <Route
-          path="settings"
-          element={<StudentSettings />}
-        />
+        <Route path="settings" element={<StudentSettings />} />
 
         {/* Help and Support */}
-        <Route
-          path="support"
-          element={<HelpSupport />}
-        />
-
+        <Route path="support" element={<HelpSupport />} />
       </Route>
 
       {/* Redirect invalid student routes to Dashboard */}
-      <Route
-        path="*"
-        element={<Navigate to="dashboard" replace />}
-      />
+      <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>
   );
 }

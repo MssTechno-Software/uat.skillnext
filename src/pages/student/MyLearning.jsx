@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
@@ -20,9 +20,8 @@ import {
   SectionHeading,
 } from "../../components/student/ui";
 import Loader from "../../components/Loader";
-import { getMyLearnings, getCourseContent } from "../../api/course.api";
-
-const STORAGE_PREFIX = "skillnext:course-module-progress:";
+import { getMyLearnings, getCourseLearningPath } from "../../api/course.api";
+import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 
 /* =====================================================
    API + PROGRESS HELPERS
@@ -30,21 +29,22 @@ const STORAGE_PREFIX = "skillnext:course-module-progress:";
 
 const getErrorMessage = (error, fallback) => {
   const backend = error?.response?.data;
-  if (typeof backend === "string" && backend.trim()) return backend;
-  if (typeof backend?.message === "string" && backend.message.trim()) return backend.message;
+  const detail = backend?.detail;
 
-  if (backend?.detail) {
-    if (typeof backend.detail === "string") return backend.detail;
-    if (Array.isArray(backend.detail)) {
-      const messages = backend.detail
-        .map((item) => item?.msg || item?.message || "")
-        .filter(Boolean);
-      if (messages.length) return messages.join(" ");
-    }
-  }
+  // Preserve a useful validation message returned by the service.
+  const backendMessage =
+    (typeof backend === "string" && backend.trim() ? backend : "") ||
+    (typeof backend?.message === "string" && backend.message.trim() ? backend.message : "") ||
+    (typeof detail === "string" && detail.trim() ? detail : "") ||
+    (Array.isArray(detail)
+      ? detail.map((item) => item?.msg || item?.message || "").filter(Boolean).join(" ")
+      : "");
 
+  // Preserve errors created by response normalization or local validation.
   if (!error?.response && !error?.request && error?.message) return error.message;
-  return fallback;
+
+  // Reuse the application's shared status, network and timeout messages.
+  return backendMessage || getApiErrorMessage(error, fallback);
 };
 
 const clampPercentage = (value) => {
@@ -77,7 +77,7 @@ const normalizeMyLearnings = (response) => {
     throw new Error(response?.message || "Your enrolled courses could not be loaded.");
   }
   if (!Array.isArray(response.data)) {
-    throw new Error("The My Learnings response does not contain a valid course list.");
+    throw new Error("Your enrolled courses are unavailable right now. Please try again.");
   }
 
   return response.data
@@ -89,39 +89,6 @@ const normalizeMyLearnings = (response) => {
       percentage: getEnrollmentPercentage(entry),
       status: entry.status || "not_started",
     }));
-};
-
-const isModuleCompleted = (module) => {
-  const status = String(module?.status || module?.completionStatus || "").toLowerCase();
-  return (
-    module?.completed === true ||
-    module?.isCompleted === true ||
-    status === "completed" ||
-    Number(module?.percentage) >= 100
-  );
-};
-
-const readStoredModuleProgress = (courseId) => {
-  if (typeof window === "undefined") return { completedModuleIds: [], apiProgress: null };
-  try {
-    const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${courseId}`);
-    if (!raw) return { completedModuleIds: [], apiProgress: null };
-    const parsed = JSON.parse(raw);
-    return {
-      completedModuleIds: Array.isArray(parsed?.completedModuleIds)
-        ? parsed.completedModuleIds.map(Number).filter(Number.isFinite)
-        : [],
-      apiProgress: parsed?.apiProgress || null,
-    };
-  } catch {
-    return { completedModuleIds: [], apiProgress: null };
-  }
-};
-
-const getCompletedModuleIds = (courseId, modules) => {
-  const stored = readStoredModuleProgress(courseId).completedModuleIds;
-  const returnedByContent = modules.filter(isModuleCompleted).map((module) => Number(module.id));
-  return [...new Set([...stored, ...returnedByContent].filter(Number.isFinite))];
 };
 
 const formatStatus = (status) => {
@@ -178,49 +145,214 @@ function CircularProgress({ value = 0, size = 68, label = "Course progress" }) {
   );
 }
 
-const normalizeCourseContent = (response) => {
+const normalizeCourseLearningPath = (response) => {
   if (!response || response.success === false) {
-    throw new Error(response?.message || "The course content could not be loaded.");
+    throw new Error(response?.message || "Your course learning path could not be loaded.");
   }
 
-  const payload = response.data;
+  const payload = response.data ?? response;
   const course = payload?.course;
   if (!course?.id) {
-    throw new Error("The course content response is missing course information.");
+    throw new Error("Course details are unavailable right now. Please try again.");
   }
 
   const modules = Array.isArray(payload.modules)
     ? payload.modules
-      .filter((module) => module && module.visible !== false)
-      .map((module) => ({
-        ...module,
-        contents: Array.isArray(module.contents)
-          ? module.contents.filter((item) => item && item.visible !== false)
-          : [],
-      }))
-      .sort((a, b) => Number(a.position || 0) - Number(b.position || 0))
+        .filter((module) => module && module.id !== undefined && module.id !== null)
+        .map((module) => ({
+          ...module,
+          position: Number(module.position) || 0,
+          contentsCount: Math.max(0, Number(module.contentsCount) || 0),
+          isRead: module.isRead === true,
+          assessmentPassed: module.assessmentPassed === true,
+          isUnlocked: module.isUnlocked === true,
+          status: String(module.status || "LOCKED").toUpperCase(),
+        }))
+        .sort((a, b) => a.position - b.position)
     : [];
 
-  return { course, modules };
+  const rawProgress = payload.progress || {};
+  const progress = {
+    ...rawProgress,
+    totalModules: Math.max(0, Number(rawProgress.totalModules ?? modules.length) || 0),
+    readModules: Math.max(
+      0,
+      Number(rawProgress.readModules ?? modules.filter((module) => module.isRead).length) || 0
+    ),
+    passedModules: Math.max(
+      0,
+      Number(rawProgress.passedModules ?? modules.filter((module) => module.assessmentPassed).length) || 0
+    ),
+    remainingModules: Math.max(
+      0,
+      Number(rawProgress.remainingModules ?? (modules.length - modules.filter((module) => module.assessmentPassed).length)) || 0
+    ),
+    completionPercentage: clampPercentage(rawProgress.completionPercentage),
+    finalAssessmentUnlocked: rawProgress.finalAssessmentUnlocked === true,
+  };
+
+  const finalAssessment = payload.finalAssessment || null;
+
+  return { course, progress, modules, finalAssessment };
 };
 
 /* =====================================================
    LOADING / ERROR STATES
 ===================================================== */
 
-function MyLearningLoading() {
+function MyLearningLoading({ variant = "list" }) {
+  const loadingIndicator = (
+    <div className="inline-flex items-center gap-2.5 rounded-full border border-[#E6ECEB] bg-white/90 px-3.5 py-2 text-[11px] font-semibold text-[#718486] shadow-[0_3px_12px_rgba(6,66,75,0.035)]">
+      <span
+        aria-hidden="true"
+        className="h-4 w-4 animate-spin rounded-full border-2 border-[#E8EFEE] border-t-[#FFAB0B]"
+      />
+      <span>Loading your learning space...</span>
+    </div>
+  );
+
+  if (variant === "workspace") {
+    return (
+      <div
+        className="mx-auto w-full max-w-[1250px] space-y-6"
+        role="status"
+        aria-label="Loading course learning path"
+        aria-busy="true"
+      >
+        <div className="flex justify-end">{loadingIndicator}</div>
+
+        <div className="animate-pulse space-y-3 rounded-[28px] border border-[#E7ECEB] bg-white p-6 shadow-[0_8px_24px_rgba(6,66,75,0.035)] sm:p-8">
+          <div className="h-2.5 w-32 rounded-full bg-[#F1E7D2]" />
+          <div className="h-7 w-2/3 max-w-[420px] rounded-lg bg-[#E9EFEE]" />
+          <div className="h-3 w-full max-w-[620px] rounded-full bg-[#EEF2F1]" />
+          <div className="h-3 w-4/5 max-w-[500px] rounded-full bg-[#EEF2F1]" />
+          <div className="flex flex-wrap gap-3 pt-3">
+            <div className="h-9 w-28 rounded-xl bg-[#F1F4F3]" />
+            <div className="h-9 w-32 rounded-xl bg-[#F1F4F3]" />
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <section className="space-y-4 animate-pulse">
+            <div className="space-y-2 pb-1">
+              <div className="h-5 w-44 rounded-md bg-[#E9EFEE]" />
+              <div className="h-3 w-3/4 max-w-[460px] rounded-full bg-[#EEF2F1]" />
+            </div>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="rounded-[22px] border border-[#E7ECEB] bg-white p-5 shadow-[0_5px_18px_rgba(6,66,75,0.025)]">
+                <div className="flex items-start gap-4">
+                  <div className="h-10 w-10 shrink-0 rounded-xl bg-[#EEF3F4]" />
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="h-2.5 w-20 rounded-full bg-[#F1E7D2]" />
+                    <div className="h-4 w-2/3 rounded-md bg-[#E9EFEE]" />
+                    <div className="h-3 w-full max-w-[440px] rounded-full bg-[#EEF2F1]" />
+                    <div className="h-3 w-28 rounded-full bg-[#EEF2F1]" />
+                    <div className="h-9 w-32 rounded-xl bg-[#F4F6F5]" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+          <aside className="animate-pulse space-y-4">
+            <div className="h-[300px] rounded-[22px] border border-[#E7ECEB] bg-white p-5">
+              <div className="h-4 w-36 rounded-md bg-[#E9EFEE]" />
+              <div className="mx-auto mt-8 h-28 w-28 rounded-full border-[9px] border-[#EEF3F4] border-t-[#F5DDA6]" />
+              <div className="mx-auto mt-5 h-3 w-36 rounded-full bg-[#EEF2F1]" />
+              <div className="mt-8 grid grid-cols-2 gap-3">
+                <div className="h-16 rounded-xl bg-[#F4F7F7]" />
+                <div className="h-16 rounded-xl bg-[#F4F7F7]" />
+              </div>
+            </div>
+            <div className="h-28 rounded-[22px] border border-[#E7ECEB] bg-white p-5">
+              <div className="h-4 w-40 rounded-md bg-[#E9EFEE]" />
+              <div className="mt-4 h-3 w-full rounded-full bg-[#EEF2F1]" />
+              <div className="mt-2 h-3 w-4/5 rounded-full bg-[#EEF2F1]" />
+            </div>
+          </aside>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto w-full max-w-[1250px] animate-pulse space-y-6">
-      <div className="h-8 w-56 rounded-lg bg-[#DCE7E5]" />
-      <div className="h-4 w-80 max-w-full rounded bg-[#E5ECEA]" />
-      <div className="grid gap-5 md:grid-cols-2">
-        <div className="h-64 rounded-[22px] bg-white" />
-        <div className="h-64 rounded-[22px] bg-white" />
+    <div
+      className="mx-auto w-full max-w-[1250px] space-y-6"
+      role="status"
+      aria-label="Loading your learning space"
+      aria-busy="true"
+    >
+      {/* Page header skeleton + a subtle inline loader */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full animate-pulse space-y-3">
+          <div className="h-7 w-48 rounded-lg bg-[#E9EFEE]" />
+          <div className="h-3 w-full max-w-[470px] rounded-full bg-[#EEF2F1]" />
+        </div>
+        {loadingIndicator}
+      </div>
+
+      {/* Hero banner skeleton */}
+      <section className="animate-pulse overflow-hidden rounded-[28px] border border-[#E6ECEB] bg-white px-6 py-7 shadow-[0_8px_24px_rgba(6,66,75,0.035)] sm:px-9 sm:py-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full max-w-2xl space-y-4">
+            <div className="h-6 w-36 rounded-full bg-[#F7F1E5]" />
+            <div className="h-7 w-3/4 max-w-[390px] rounded-lg bg-[#E9EFEE] sm:h-8" />
+            <div className="h-3 w-full max-w-[580px] rounded-full bg-[#EEF2F1]" />
+            <div className="h-3 w-4/5 max-w-[460px] rounded-full bg-[#EEF2F1]" />
+          </div>
+          <div className="h-11 w-40 shrink-0 rounded-xl bg-[#F5E9C9]" />
+        </div>
+      </section>
+
+      {/* Section heading skeleton */}
+      <div className="animate-pulse space-y-2 pt-1">
+        <div className="h-5 w-44 rounded-md bg-[#E9EFEE]" />
+        <div className="h-3 w-full max-w-[500px] rounded-full bg-[#EEF2F1]" />
+      </div>
+
+      {/* Course card skeletons retain the same two-column layout as the actual cards */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <div
+            key={index}
+            className="animate-pulse overflow-hidden rounded-[22px] border border-[#E6ECEB] bg-white shadow-[0_6px_22px_rgba(6,66,75,0.03)]"
+          >
+            <div className="h-1.5 bg-[#F1F4F3]" />
+            <div className="flex h-full flex-col p-5 sm:p-6">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 shrink-0 rounded-2xl bg-[#EEF3F4]" />
+                <div className="min-w-0 flex-1 space-y-2.5 pt-1">
+                  <div className="h-2.5 w-24 rounded-full bg-[#F1E7D2]" />
+                  <div className="h-4 w-3/4 rounded-md bg-[#E9EFEE]" />
+                  <div className="h-5 w-24 rounded-full bg-[#F2F5F4]" />
+                </div>
+                <div className="h-[68px] w-[68px] shrink-0 rounded-full border-[6px] border-[#EEF3F4] border-t-[#F5DDA6]" />
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <div className="h-3 w-full rounded-full bg-[#EEF2F1]" />
+                <div className="h-3 w-4/5 rounded-full bg-[#EEF2F1]" />
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#EDF1F0] bg-[#FAFBFB] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="h-3 w-28 rounded-full bg-[#E9EFEE]" />
+                  <div className="h-3 w-10 rounded-full bg-[#E9EFEE]" />
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#EEF2F1]" />
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="h-2.5 w-36 rounded-full bg-[#EEF2F1]" />
+                  <div className="h-2.5 w-12 rounded-full bg-[#EEF2F1]" />
+                </div>
+              </div>
+
+              <div className="mt-5 h-11 w-full rounded-xl bg-[#EAF0EF]" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
-
 function ErrorState({ title, message, onRetry, backToList = false }) {
   return (
     <Card className="px-6 py-12 text-center sm:px-10">
@@ -285,11 +417,11 @@ function EnrolledCourseList({ enrollments }) {
               <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
               Your learning space
             </span>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#06424B] sm:text-[38px] sm:leading-tight">
-              My Learning
-            </h1>
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-[#06424B] sm:text-[30px] sm:leading-tight">
+              Keep your learning moving
+            </h2>
             <p className="mt-2 max-w-[650px] text-sm leading-7 text-[#718486] sm:text-[15px]">
-              Pick up where you left off. Your courses, module progress and learning content are all in one place.
+              Continue your lessons or explore new courses and build your skills one module at a time.
             </p>
           </div>
 
@@ -423,23 +555,43 @@ function EnrolledCourseList({ enrollments }) {
 }
 
 /* =====================================================
-   COURSE CONTENT + SEQUENTIAL MODULE ACCESS
-   GET /api/courses/{course_id}/content
+   STUDENT LEARNING PATH + SEQUENTIAL MODULE ACCESS
+   GET /api/courses/{course_id}/learning-path/me
 ===================================================== */
 
-function CourseModulesWorkspace({ course, modules, onBack }) {
+function CourseModulesWorkspace({ learningPath, onBack }) {
+  const { course, progress, modules, finalAssessment } = learningPath;
   const courseId = course.id;
-  const completedIds = useMemo(() => getCompletedModuleIds(courseId, modules), [courseId, modules]);
-  const completedSet = useMemo(() => new Set(completedIds.map(String)), [completedIds]);
-  const completedCount = modules.filter((module) => completedSet.has(String(module.id))).length;
-  const percentage = modules.length ? Math.round((completedCount / modules.length) * 100) : 0;
-  const nextModuleIndex = modules.findIndex((module) => !completedSet.has(String(module.id)));
+
+  // These IDs are passed only as navigation context. Unlocking is always based
+  // on the backend's isUnlocked / assessmentPassed fields, not this route state.
+  const passedModuleIds = modules
+    .filter((module) => module.assessmentPassed)
+    .map((module) => Number(module.id));
+  const readModuleIds = modules
+    .filter((module) => module.isRead)
+    .map((module) => Number(module.id));
+
+  const totalModules = progress.totalModules;
+  const readCount = progress.readModules;
+  const passedCount = progress.passedModules;
+  const remainingCount = progress.remainingModules;
+  const percentage = progress.completionPercentage;
+  const finalAssessmentUnlocked = Boolean(
+    progress.finalAssessmentUnlocked || finalAssessment?.isUnlocked === true
+  );
+  const finalAssessmentTitle = finalAssessment?.title || "Final Course Assessment";
+  const routeState = {
+    courseId: Number(courseId),
+    passedModuleIds,
+    readModuleIds,
+  };
 
   return (
     <>
       <StudentPageHeader
         title={course.fullName || course.shortName || "Course"}
-        subtitle="Follow the course in order. Open the available module, review its learning content, and mark it complete to unlock the next module."
+        subtitle="Continue your lessons and track your module progress in one place."
       />
 
       <button
@@ -451,17 +603,17 @@ function CourseModulesWorkspace({ course, modules, onBack }) {
       </button>
 
       <Hero
-        eyebrow={course.shortName || "YOUR ENROLLED COURSE"}
+        eyebrow={course.categoryName || course.shortName || "YOUR ENROLLED COURSE"}
         title={course.fullName || course.shortName || "Continue learning"}
-        text={course.summary || "Start with the first module and progress through the course one step at a time."}
+        text={course.summary || "Continue through your course modules one step at a time."}
       >
         <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
           <BookOpen size={15} className="text-[#FFAB0B]" />
-          {modules.length} {modules.length === 1 ? "module" : "modules"}
+          {totalModules} {totalModules === 1 ? "module" : "modules"}
         </span>
         <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
           <GraduationCap size={15} className="text-[#FFAB0B]" />
-          {percentage}% modules completed
+          {percentage}% complete
         </span>
       </Hero>
 
@@ -469,28 +621,36 @@ function CourseModulesWorkspace({ course, modules, onBack }) {
         <section className="min-w-0">
           <SectionHeading
             title="Your learning path"
-            subtitle="Completed modules remain available for review. Only the next unfinished module is open."
+            subtitle="Your module availability and progress are synchronized with your learning account."
           />
 
           {modules.length === 0 ? (
             <Card className="p-6">
-              <p className="text-sm leading-6 text-[#718486]">No published modules are available for this course yet.</p>
+              <p className="text-sm leading-6 text-[#718486]">No modules are available for this course yet.</p>
             </Card>
           ) : (
             <ol className="space-y-3">
               {modules.map((module, index) => {
-                const isCompleted = completedSet.has(String(module.id));
-                const isUnlocked = isCompleted || index === 0 || completedSet.has(String(modules[index - 1]?.id));
-                const isCurrent = !isCompleted && index === nextModuleIndex;
-                const contentsCount = Array.isArray(module.contents) ? module.contents.length : 0;
+                const isPassed = module.assessmentPassed;
+                const isRead = module.isRead;
+                const isUnlocked = module.isUnlocked;
+                const isCurrent = isUnlocked && !isPassed;
+                const contentsCount = module.contentsCount;
                 const linkPath = `/student/topics/${courseId}/topic/${module.id}`;
+                const statusLabel = isPassed
+                  ? "ASSESSMENT PASSED"
+                  : !isUnlocked
+                    ? "LOCKED"
+                    : isRead
+                      ? "ASSESSMENT AVAILABLE"
+                      : "AVAILABLE NOW";
 
                 return (
                   <li key={module.id}>
-                    <Card className={`p-4 sm:p-5 ${isCurrent ? "border-[#FFAB0B] shadow-[0_10px_28px_rgba(255,171,11,0.12)]" : isCompleted ? "border-[#CFE5DB] bg-[#FBFDFC]" : "bg-[#FAFBFB]"}`}>
+                    <Card className={`p-4 sm:p-5 ${isCurrent ? "border-[#FFAB0B] shadow-[0_10px_28px_rgba(255,171,11,0.12)]" : isPassed ? "border-[#CFE5DB] bg-[#FBFDFC]" : "bg-[#FAFBFB]"}`}>
                       <div className="flex items-start gap-3 sm:gap-4">
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${isCompleted ? "bg-[#E5F3EC] text-[#28765E]" : isCurrent ? "bg-[#FFAB0B] text-[#06424B]" : "border border-[#DCE6E4] bg-[#EEF2F2] text-[#9AABAC]"}`}>
-                          {isCompleted ? <CheckCircle2 size={19} /> : isUnlocked ? <PlayCircle size={19} /> : <LockKeyhole size={17} />}
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${isPassed ? "bg-[#E5F3EC] text-[#28765E]" : isCurrent ? "bg-[#FFAB0B] text-[#06424B]" : "border border-[#DCE6E4] bg-[#EEF2F2] text-[#9AABAC]"}`}>
+                          {isPassed ? <CheckCircle2 size={19} /> : isUnlocked ? <PlayCircle size={19} /> : <LockKeyhole size={17} />}
                         </div>
 
                         <div className="min-w-0 flex-1">
@@ -503,8 +663,8 @@ function CourseModulesWorkspace({ course, modules, onBack }) {
                                 {module.name || "Untitled module"}
                               </h3>
                             </div>
-                            <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${isCompleted ? "bg-[#E5F3EC] text-[#28765E]" : isCurrent ? "bg-[#FFF2D8] text-[#8A650E]" : "bg-[#EEF2F2] text-[#829596]"}`}>
-                              {isCompleted ? "COMPLETED" : isCurrent ? "AVAILABLE NOW" : "LOCKED"}
+                            <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold ${isPassed ? "bg-[#E5F3EC] text-[#28765E]" : isCurrent ? "bg-[#FFF2D8] text-[#8A650E]" : "bg-[#EEF2F2] text-[#829596]"}`}>
+                              {statusLabel}
                             </span>
                           </div>
 
@@ -518,14 +678,15 @@ function CourseModulesWorkspace({ course, modules, onBack }) {
                           {isUnlocked ? (
                             <Link
                               to={linkPath}
-                              className={`mt-4 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-xs font-extrabold !no-underline transition ${isCompleted ? "border border-[#CFE5DB] bg-white text-[#28765E] hover:bg-[#F2F8F5]" : "bg-[#FFAB0B] text-[#06424B] hover:bg-[#FFC13C]"}`}
+                              state={routeState}
+                              className={`mt-4 inline-flex h-10 items-center gap-2 rounded-xl px-4 text-xs font-extrabold !no-underline transition ${isPassed ? "border border-[#CFE5DB] bg-white text-[#28765E] hover:bg-[#F2F8F5]" : "bg-[#FFAB0B] text-[#06424B] hover:bg-[#FFC13C]"}`}
                             >
-                              {isCompleted ? "Review Module" : "Open Module"}
+                              {isPassed ? "Review Module" : isRead ? "Continue Assessment" : "Open Module"}
                               <ArrowRight size={15} />
                             </Link>
                           ) : (
                             <p className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-[#91A1A2]">
-                              <LockKeyhole size={13} /> Complete the previous module to unlock this one.
+                              <LockKeyhole size={13} /> Complete the previous module requirements to unlock this one.
                             </p>
                           )}
                         </div>
@@ -536,35 +697,103 @@ function CourseModulesWorkspace({ course, modules, onBack }) {
               })}
             </ol>
           )}
+
+          {modules.length > 0 && (
+            <Card
+              className={`mt-5 overflow-hidden border p-5 shadow-[0_8px_24px_rgba(6,66,75,0.04)] sm:p-6 ${
+                finalAssessmentUnlocked
+                  ? "border-[#CFE5DB] bg-[#FBFDFC]"
+                  : "border-[#E2EAEA] bg-[#FAFBFB]"
+              }`}
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3.5">
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                      finalAssessmentUnlocked
+                        ? "bg-[#E5F3EC] text-[#28765E]"
+                        : "bg-[#EEF2F2] text-[#829596]"
+                    }`}
+                  >
+                    {finalAssessmentUnlocked ? <GraduationCap size={22} /> : <LockKeyhole size={20} />}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-extrabold text-[#06424B]">{finalAssessmentTitle}</h3>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
+                          finalAssessmentUnlocked
+                            ? "bg-[#E5F3EC] text-[#28765E]"
+                            : "bg-[#EEF2F2] text-[#829596]"
+                        }`}
+                      >
+                        {finalAssessmentUnlocked ? "UNLOCKED" : "LOCKED"}
+                      </span>
+                    </div>
+
+                    <p className="mt-1.5 text-sm leading-6 text-[#627C7F]">
+                      {finalAssessmentUnlocked
+                        ? "Your final course assessment is now available."
+                        : "Complete the required module learning to unlock your final course assessment."}
+                    </p>
+
+                    <p className="mt-2 text-[11px] font-semibold text-[#829596]">
+                      {readCount} of {totalModules} modules read · {passedCount} assessments passed
+                    </p>
+                  </div>
+                </div>
+
+                {finalAssessmentUnlocked ? (
+                  <Link
+                    to={`/student/final-assessment?course=${encodeURIComponent(courseId)}`}
+                    state={{ ...routeState, finalAssessmentId: finalAssessment?.id ?? null }}
+                    className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#06424B] !no-underline transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
+                  >
+                    Start Final Assessment
+                    <ArrowRight size={15} />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex h-11 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-5 text-xs font-bold text-[#91A1A2]"
+                  >
+                    <LockKeyhole size={14} /> Complete modules first
+                  </button>
+                )}
+              </div>
+            </Card>
+          )}
         </section>
 
         <aside className="space-y-4 lg:sticky lg:top-6 lg:h-fit">
           <Card className="overflow-hidden border border-[#E2EAEA] p-0 shadow-[0_10px_28px_rgba(6,66,75,0.05)]">
             <div className="border-b border-[#EAF0EF] bg-[#F8FAFA] px-5 py-4">
-              <h3 className="font-extrabold text-[#06424B]">Course progress</h3>
-              <p className="mt-1 text-[11px] text-[#829596]">Based on completed modules</p>
+              <h3 className="font-extrabold text-[#06424B]">Assessment progress</h3>
+              <p className="mt-1 text-[11px] text-[#829596]">Based on your saved learning progress</p>
             </div>
             <div className="flex flex-col items-center px-5 py-6">
-              <CircularProgress value={percentage} size={112} label="Course module completion" />
+              <CircularProgress value={percentage} size={112} label="Course completion" />
               <p className="mt-3 text-sm font-extrabold text-[#06424B]">
-                {percentage === 100 ? "Course modules completed" : percentage > 0 ? "You're making progress" : "Ready to get started"}
+                {percentage === 100 ? "Course requirements completed" : percentage > 0 ? "You're making progress" : "Ready to get started"}
               </p>
               <p className="mt-1 text-xs text-[#829596]">
-                {completedCount} of {modules.length} modules completed
+                {passedCount} of {totalModules} assessments passed
               </p>
               <div className="mt-5 grid w-full grid-cols-2 gap-2">
                 <div className="rounded-xl bg-[#F4F7F7] px-3 py-3 text-center">
-                  <p className="text-xl font-extrabold tabular-nums text-[#06424B]">{modules.length}</p>
+                  <p className="text-xl font-extrabold tabular-nums text-[#06424B]">{totalModules}</p>
                   <p className="mt-1 text-[10px] font-bold text-[#829596]">Total modules</p>
                 </div>
                 <div className="rounded-xl bg-[#F4F7F7] px-3 py-3 text-center">
-                  <p className="text-xl font-extrabold tabular-nums text-[#06424B]">{Math.max(0, modules.length - completedCount)}</p>
+                  <p className="text-xl font-extrabold tabular-nums text-[#06424B]">{remainingCount}</p>
                   <p className="mt-1 text-[10px] font-bold text-[#829596]">Remaining</p>
                 </div>
               </div>
-              {completedCount === modules.length && modules.length > 0 && (
+              {finalAssessmentUnlocked && (
                 <p className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#28765E]">
-                  <CheckCircle2 size={15} /> All course modules completed
+                  <CheckCircle2 size={15} /> Final assessment unlocked
                 </p>
               )}
             </div>
@@ -576,7 +805,7 @@ function CourseModulesWorkspace({ course, modules, onBack }) {
               <h3 className="text-sm font-extrabold">Sequential learning</h3>
             </div>
             <p className="mt-2 text-xs leading-6 text-[#718486]">
-              Finish the current module and select Mark Module Complete. The completion API confirms the module, and the next module then becomes available.
+              Finish the visible learning items and pass the required module assessments to continue through your course.
             </p>
           </Card>
         </aside>
@@ -590,25 +819,29 @@ function CourseModulesWorkspace({ course, modules, onBack }) {
 ===================================================== */
 
 function MyLearning() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const selectedCourseId = searchParams.get("course");
+  const navigate = useNavigate();
 
   const [enrollments, setEnrollments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [courseContent, setCourseContent] = useState(null);
-  const [isContentLoading, setIsContentLoading] = useState(false);
-  const [contentError, setContentError] = useState("");
+  const [learningPath, setLearningPath] = useState(null);
+  const [isLearningPathLoading, setIsLearningPathLoading] = useState(false);
+  const [learningPathError, setLearningPathError] = useState("");
+  const learningPathRequestIdRef = useRef(0);
 
   const selectedEnrollment = useMemo(
     () => enrollments.find((entry) => String(entry.course.id) === String(selectedCourseId)),
     [enrollments, selectedCourseId]
   );
+  const enrolledCourseId = selectedEnrollment?.course?.id;
 
   const loadMyLearnings = useCallback(async () => {
     setIsLoading(true);
     setError("");
+
     try {
       const response = await getMyLearnings();
       setEnrollments(normalizeMyLearnings(response));
@@ -621,22 +854,35 @@ function MyLearning() {
     }
   }, []);
 
-  const loadCourseContent = useCallback(async () => {
-    if (!selectedEnrollment?.course?.id) return;
-    setIsContentLoading(true);
-    setContentError("");
-    setCourseContent(null);
+  const loadCourseLearningPath = useCallback(async () => {
+    if (!enrolledCourseId) return;
+
+    const requestId = ++learningPathRequestIdRef.current;
+    setIsLearningPathLoading(true);
+    setLearningPathError("");
+    setLearningPath(null);
 
     try {
-      const response = await getCourseContent(selectedEnrollment.course.id);
-      setCourseContent(normalizeCourseContent(response));
+      const response = await getCourseLearningPath(enrolledCourseId);
+      const normalizedLearningPath = normalizeCourseLearningPath(response);
+
+      // Ignore an older response if the learner selected another course meanwhile.
+      if (requestId === learningPathRequestIdRef.current) {
+        setLearningPath(normalizedLearningPath);
+      }
     } catch (requestError) {
-      console.error("Course Content API Error:", requestError);
-      setContentError(getErrorMessage(requestError, "We couldn't load this course's content. Please try again."));
+      console.error("Course Learning Path API Error:", requestError);
+      if (requestId === learningPathRequestIdRef.current) {
+        setLearningPathError(
+          getErrorMessage(requestError, "We couldn't load your course learning path. Please try again.")
+        );
+      }
     } finally {
-      setIsContentLoading(false);
+      if (requestId === learningPathRequestIdRef.current) {
+        setIsLearningPathLoading(false);
+      }
     }
-  }, [selectedEnrollment]);
+  }, [enrolledCourseId]);
 
   useEffect(() => {
     loadMyLearnings();
@@ -644,24 +890,34 @@ function MyLearning() {
 
   useEffect(() => {
     if (isLoading) return;
+
     if (!selectedCourseId || !selectedEnrollment) {
-      setCourseContent(null);
-      setContentError("");
-      setIsContentLoading(false);
-      return;
+      learningPathRequestIdRef.current += 1;
+      setLearningPath(null);
+      setLearningPathError("");
+      setIsLearningPathLoading(false);
+      return undefined;
     }
-    loadCourseContent();
-  }, [isLoading, selectedCourseId, selectedEnrollment, loadCourseContent]);
+
+    loadCourseLearningPath();
+
+    return () => {
+      // Prevent a stale course response from updating this page after navigation.
+      learningPathRequestIdRef.current += 1;
+    };
+  }, [isLoading, selectedCourseId, selectedEnrollment, loadCourseLearningPath]);
 
   const returnToCourseList = () => {
-    setSearchParams({});
-    loadMyLearnings();
+    setLearningPath(null);
+    navigate("/student/my-learning");
   };
 
   if (isLoading) {
     return (
       <PageShell>
-        <MyLearningLoading />
+        <div className="mx-auto w-full max-w-[1250px]">
+          <MyLearningLoading />
+        </div>
         <Loader open={isLoading} text="Loading your learning space..." />
       </PageShell>
     );
@@ -670,6 +926,13 @@ function MyLearning() {
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-[1250px]">
+        {!selectedCourseId && (
+          <StudentPageHeader
+            title="My Learning"
+            subtitle="Pick up where you left off. Your enrolled courses and learning progress are all in one place."
+          />
+        )}
+
         {error ? (
           <ErrorState title="Unable to load My Learning" message={error} onRetry={loadMyLearnings} />
         ) : selectedCourseId ? (
@@ -679,22 +942,21 @@ function MyLearning() {
               message="This course is not listed in your enrolled courses. Return to My Learning and select one of your enrolled courses."
               backToList
             />
-          ) : isContentLoading ? (
+          ) : isLearningPathLoading ? (
             <>
-              <MyLearningLoading />
-              <Loader open={isContentLoading} text="Loading course content and modules..." />
+              <MyLearningLoading variant="workspace" />
+              <Loader open={isLearningPathLoading} text="Loading your course learning path..." />
             </>
-          ) : contentError ? (
+          ) : learningPathError ? (
             <ErrorState
-              title="Unable to load course content"
-              message={contentError}
-              onRetry={loadCourseContent}
+              title="Unable to load your learning path"
+              message={learningPathError}
+              onRetry={loadCourseLearningPath}
               backToList
             />
-          ) : courseContent ? (
+          ) : learningPath ? (
             <CourseModulesWorkspace
-              course={courseContent.course}
-              modules={courseContent.modules}
+              learningPath={learningPath}
               onBack={returnToCourseList}
             />
           ) : null
