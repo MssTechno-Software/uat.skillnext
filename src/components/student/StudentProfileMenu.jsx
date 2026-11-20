@@ -44,10 +44,8 @@ const PERSONAL_FIELDS = [
 
 const CONTACT_FIELDS = [
   { name: "phone", label: "Phone Number", type: "tel", autoComplete: "tel" },
-  { name: "countryCode", label: "Country Code", placeholder: "Example: +91" },
   { name: "country", label: "Country", autoComplete: "country-name" },
   { name: "state", label: "State", autoComplete: "address-level1" },
-  { name: "stateCode", label: "State Code" },
   { name: "city", label: "City", autoComplete: "address-level2" },
 ];
 
@@ -79,10 +77,8 @@ const EMPTY_PROFILE = {
   firstName: "",
   lastName: "",
   phone: "",
-  countryCode: "",
   country: "",
   state: "",
-  stateCode: "",
   city: "",
   institution: "",
   educationLevel: "",

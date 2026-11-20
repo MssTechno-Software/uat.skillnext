@@ -1440,7 +1440,7 @@ function Signup() {
 
                                                 <div>
                                                     <label htmlFor="studyYear" className={labelClass}>
-                                                        Academic Year{" "}
+                                                         Year of Pursuing{" "}
                                                         <span className="font-normal text-[#98A3A4]">
                                                             (optional)
                                                         </span>

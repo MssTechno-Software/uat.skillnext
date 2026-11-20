@@ -40,10 +40,8 @@ const PERSONAL_FIELDS = [
 
 const CONTACT_FIELDS = [
   { name: "phone", label: "Phone Number", type: "tel" },
-  { name: "countryCode", label: "Country Code", placeholder: "Example: +91" },
   { name: "country", label: "Country" },
   { name: "state", label: "State" },
-  { name: "stateCode", label: "State Code" },
   { name: "city", label: "City" },
 ];
 
@@ -99,10 +97,8 @@ const EMPTY_PROFILE = {
   firstName: "",
   lastName: "",
   phone: "",
-  countryCode: "",
   country: "",
   state: "",
-  stateCode: "",
   city: "",
   institution: "",
   educationLevel: "",

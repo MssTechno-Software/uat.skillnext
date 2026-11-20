@@ -14,10 +14,8 @@ const EMPTY_PROFILE = {
   firstName: "",
   lastName: "",
   phone: "",
-  countryCode: "",
   country: "",
   state: "",
-  stateCode: "",
   city: "",
   institution: "",
   educationLevel: "",
@@ -28,7 +26,6 @@ const EMPTY_PROFILE = {
   designation: "",
   email: "",
 };
-
 // Shared cache prevents repeated profile GET requests.
 let profileCache = null;
 let profileRequest = null;
