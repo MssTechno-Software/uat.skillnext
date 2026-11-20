@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -69,8 +70,11 @@ const getDashboardPayload = (response) => {
       data.average_assessment_score ??
       null,
     learnings: Array.isArray(data.learnings) ? data.learnings : [],
-    // These lists are rendered only when the backend actually returns records.
+
+    // Updated: Read actual recentAssignments API response.
     recentQuizzes: firstArray(
+      data.recentAssignments,
+      data.recent_assignments,
       data.recentQuizzes,
       data.recent_quizzes,
       data.recentQuizResults,
@@ -78,6 +82,7 @@ const getDashboardPayload = (response) => {
       data.quizAttempts,
       data.quiz_attempts
     ),
+
     upcomingActivities: firstArray(
       data.upcomingActivities,
       data.upcoming_activities,
@@ -147,7 +152,10 @@ const normalizeLearning = (item) => {
   );
 
   const totalItems = toNumber(
-    item?.totalItems ?? item?.total_items ?? course?.totalItems ?? course?.total_items
+    item?.totalItems ??
+      item?.total_items ??
+      course?.totalItems ??
+      course?.total_items
   );
 
   const itemsCompleted = toNumber(
@@ -199,8 +207,11 @@ const normalizeLearning = (item) => {
   };
 };
 
+// Updated: Supports the actual recentAssignments API structure.
 const normalizeQuiz = (item, index) => {
   const title =
+    item?.assignmentName ||
+    item?.assignment_name ||
     item?.title ||
     item?.quizTitle ||
     item?.quiz_title ||
@@ -215,31 +226,47 @@ const normalizeQuiz = (item, index) => {
     item?.correct_answers;
 
   const totalValue =
+    item?.totalScore ??
+    item?.total_score ??
     item?.total ??
     item?.totalMarks ??
     item?.total_marks ??
     item?.totalQuestions ??
     item?.total_questions;
 
-  const score = scoreValue == null ? Number.NaN : Number(scoreValue);
-  const total = totalValue == null ? Number.NaN : Number(totalValue);
+  const score =
+    scoreValue == null ? Number.NaN : Number(scoreValue);
+
+  const total =
+    totalValue == null ? Number.NaN : Number(totalValue);
+
   const suppliedPercentage =
-    item?.percentage ?? item?.scorePercentage ?? item?.score_percentage;
+    item?.percentage ??
+    item?.scorePercentage ??
+    item?.score_percentage;
 
   const percentage =
-    Number.isFinite(Number(suppliedPercentage))
+    suppliedPercentage != null && Number.isFinite(Number(suppliedPercentage))
       ? clampPercentage(suppliedPercentage)
-      : Number.isFinite(score) && Number.isFinite(total) && total > 0
+      : Number.isFinite(score) &&
+          Number.isFinite(total) &&
+          total > 0
         ? clampPercentage((score / total) * 100)
         : null;
 
   return {
-    id: item?.id ?? item?.attemptId ?? item?.attempt_id ?? `${title}-${index}`,
+    id:
+      item?.attemptId ??
+      item?.attempt_id ??
+      item?.id ??
+      `${title}-${index}`,
     title,
     score: Number.isFinite(score) ? score : null,
     total: Number.isFinite(total) && total > 0 ? total : null,
     percentage,
     date:
+      item?.submittedAt ||
+      item?.submitted_at ||
       item?.date ||
       item?.attemptedAt ||
       item?.attempted_at ||
@@ -250,7 +277,11 @@ const normalizeQuiz = (item, index) => {
 };
 
 const normalizeActivity = (item, index) => ({
-  id: item?.id ?? item?.activityId ?? item?.activity_id ?? `activity-${index}`,
+  id:
+    item?.id ??
+    item?.activityId ??
+    item?.activity_id ??
+    `activity-${index}`,
   title:
     item?.title ||
     item?.name ||
@@ -258,7 +289,11 @@ const normalizeActivity = (item, index) => ({
     item?.activity_name ||
     "Scheduled activity",
   description: item?.description || item?.summary || "",
-  type: item?.type || item?.activityType || item?.activity_type || "Activity",
+  type:
+    item?.type ||
+    item?.activityType ||
+    item?.activity_type ||
+    "Activity",
   date:
     item?.date ||
     item?.scheduledAt ||
@@ -269,14 +304,20 @@ const normalizeActivity = (item, index) => ({
     item?.start_date ||
     null,
   courseName:
-    item?.courseName || item?.course_name || item?.course?.fullName || "",
+    item?.courseName ||
+    item?.course_name ||
+    item?.course?.fullName ||
+    "",
   status: item?.status || "Upcoming",
 });
 
 const formatDate = (value) => {
   if (!value) return "Date to be announced";
+
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) return String(value);
+
   return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -288,8 +329,11 @@ const formatDate = (value) => {
 
 const formatEnrollmentDate = (value) => {
   if (!value) return "";
+
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) return "";
+
   return `Enrolled ${date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -302,11 +346,18 @@ function MiniRing({ percent }) {
   const stroke = 6;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (clampPercentage(percent) / 100) * circumference;
+  const offset =
+    circumference -
+    (clampPercentage(percent) / 100) * circumference;
 
   return (
     <div className="relative h-[60px] w-[60px] shrink-0">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -328,6 +379,7 @@ function MiniRing({ percent }) {
           style={{ transition: "stroke-dashoffset 0.8s ease" }}
         />
       </svg>
+
       <span className="absolute inset-0 flex items-center justify-center text-[14px] font-extrabold text-white">
         {Math.round(clampPercentage(percent))}%
       </span>
@@ -354,7 +406,8 @@ function LearningSpaceCard({ course, index }) {
       };
 
   const coursePath = `/student/my-learning?course=${encodeURIComponent(course.courseId)}`;
-  const itemLabel = course.totalModules === 1 ? "learning module" : "learning modules";
+  const itemLabel =
+    course.totalModules === 1 ? "learning module" : "learning modules";
 
   return (
     <Link
@@ -363,23 +416,30 @@ function LearningSpaceCard({ course, index }) {
     >
       <div className={`relative overflow-hidden px-5 pb-4 pt-4 ${theme.header}`}>
         <div className="pointer-events-none absolute -right-8 -top-12 h-32 w-32 rounded-full border-[18px] border-white/30" />
+
         <div className="relative flex items-center justify-between">
           <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-[#06424B] text-lg font-extrabold text-[#FFAB0B] shadow-sm">
             {course.fullName.charAt(0).toUpperCase()}
           </div>
+
           <div className="flex items-center gap-2">
             {isComplete && (
               <span className="rounded-full bg-white/75 px-2.5 py-1 text-[10px] font-bold text-[#376B4D]">
                 Completed
               </span>
             )}
+
             <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/60 text-[#06424B] transition-all group-hover:bg-[#06424B] group-hover:text-white">
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </span>
           </div>
         </div>
+
         <div className="relative mt-3">
-          <h3 className="text-[17px] font-bold tracking-tight text-[#06424B]">{course.fullName}</h3>
+          <h3 className="text-[17px] font-bold tracking-tight text-[#06424B]">
+            {course.fullName}
+          </h3>
+
           <p className={`mt-0.5 text-[11px] font-semibold ${theme.subtitle}`}>
             {course.totalModules} {itemLabel}
           </p>
@@ -389,31 +449,44 @@ function LearningSpaceCard({ course, index }) {
       <div className="flex flex-1 flex-col px-5 pb-4 pt-3.5">
         <p className="line-clamp-2 min-h-[36px] text-[12px] leading-[18px] text-[#63777A]">
           {[
-            course.shortName && course.shortName !== course.fullName ? course.shortName : "",
+            course.shortName && course.shortName !== course.fullName
+              ? course.shortName
+              : "",
             formatEnrollmentDate(course.enrolledAt),
           ]
             .filter(Boolean)
             .join(" · ")}
         </p>
+
         <div className="mt-auto pt-4">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-[#63777A]">Your progress</span>
+            <span className="text-[11px] font-semibold text-[#63777A]">
+              Your progress
+            </span>
+
             <span className="text-xs font-extrabold tabular-nums text-[#06424B]">
               {Math.round(course.completionPercentage)}%
             </span>
           </div>
+
           <div className="h-[6px] overflow-hidden rounded-full bg-[#E9EFEE]">
             <div
               className={`h-full rounded-full transition-all duration-700 ${theme.accent}`}
               style={{ width: `${course.completionPercentage}%` }}
             />
           </div>
+
           <div className="mt-2.5 flex items-center justify-between gap-2">
             <span className="text-[10px] font-medium text-[#829194]">
               {course.modulesCompleted} of {course.totalModules} modules completed
             </span>
+
             <span className="shrink-0 text-[11px] font-bold text-[#06424B] transition-colors group-hover:text-[#B27B20]">
-              {isComplete ? "Review" : course.modulesCompleted > 0 ? "Continue" : "Open course"}
+              {isComplete
+                ? "Review"
+                : course.modulesCompleted > 0
+                  ? "Continue"
+                  : "Open course"}
             </span>
           </div>
         </div>
@@ -426,11 +499,15 @@ function DashboardLoadingCards() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {[1, 2, 3].map((item) => (
-        <Card key={item} className="min-h-[224px] animate-pulse overflow-hidden p-0">
+        <Card
+          key={item}
+          className="min-h-[224px] animate-pulse overflow-hidden p-0"
+        >
           <div className="h-[112px] bg-[#E5F0EE] p-5">
             <div className="h-10 w-10 rounded-xl bg-white/70" />
             <div className="mt-3 h-4 w-2/3 rounded bg-white/70" />
           </div>
+
           <div className="p-5">
             <div className="h-3 w-3/4 rounded bg-[#EEF3F3]" />
             <div className="mt-5 h-2 rounded bg-[#EEF3F3]" />
@@ -449,15 +526,19 @@ function DashboardLoadingState() {
           <div className="h-7 w-48 rounded-lg bg-[#DCE7E5]" />
           <div className="h-4 w-2/3 max-w-[560px] rounded bg-[#E5ECEA]" />
         </div>
+
         <div className="h-[230px] rounded-[24px] bg-[#DCE7E5]" />
+
         <div className="space-y-3">
           <div className="h-6 w-44 rounded bg-[#DCE7E5]" />
           <div className="h-28 rounded-2xl bg-white" />
         </div>
+
         <div className="space-y-3">
           <div className="h-6 w-48 rounded bg-[#DCE7E5]" />
           <DashboardLoadingCards />
         </div>
+
         <div className="grid gap-5 xl:grid-cols-[1.35fr_1fr]">
           <div className="h-[300px] rounded-2xl bg-white" />
           <div className="h-[300px] rounded-2xl bg-white" />
@@ -481,9 +562,11 @@ function DashboardError({ message, onRetry, onClose }) {
 function RecentQuizResults({ quizzes, isLoading }) {
   const results = quizzes
     .map(normalizeQuiz)
-    .filter((quiz) =>
-      quiz.title &&
-      (quiz.percentage !== null || (quiz.score !== null && quiz.total !== null))
+    .filter(
+      (quiz) =>
+        quiz.title &&
+        (quiz.percentage !== null ||
+          (quiz.score !== null && quiz.total !== null))
     );
 
   return (
@@ -494,13 +577,20 @@ function RecentQuizResults({ quizzes, isLoading }) {
       />
 
       {isLoading ? (
-        <div className="mt-5 animate-pulse space-y-4" aria-label="Loading quiz results">
+        <div
+          className="mt-5 animate-pulse space-y-4"
+          aria-label="Loading quiz results"
+        >
           {[1, 2, 3].map((item) => (
-            <div key={item} className="flex items-center justify-between gap-4 border-b border-[#EAF1F0] pb-4">
+            <div
+              key={item}
+              className="flex items-center justify-between gap-4 border-b border-[#EAF1F0] pb-4"
+            >
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-2/3 rounded bg-[#E8EFEE]" />
                 <div className="h-3 w-24 rounded bg-[#F0F4F3]" />
               </div>
+
               <div className="h-8 w-24 rounded-full bg-[#FFF1D2]" />
             </div>
           ))}
@@ -508,18 +598,28 @@ function RecentQuizResults({ quizzes, isLoading }) {
       ) : results.length > 0 ? (
         <ul className="mt-5 divide-y divide-[#EAF1F0]">
           {results.slice(0, 5).map((quiz) => (
-            <li key={quiz.id} className="flex items-center justify-between gap-4 py-3.5 first:pt-1 last:pb-0">
+            <li
+              key={quiz.id}
+              className="flex items-center justify-between gap-4 py-3.5 first:pt-1 last:pb-0"
+            >
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF3D8] text-[#A87513]">
                   <ClipboardCheck size={17} />
                 </span>
+
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-[#2F4A4E]">{quiz.title}</p>
+                  <p className="truncate text-sm font-bold text-[#2F4A4E]">
+                    {quiz.title}
+                  </p>
+
                   <p className="mt-0.5 text-xs text-[#6C8589]">
-                    {quiz.date ? formatDate(quiz.date) : "Recently attempted"}
+                    {quiz.date
+                      ? formatDate(quiz.date)
+                      : "Recently attempted"}
                   </p>
                 </div>
               </div>
+
               <span className="shrink-0 rounded-full bg-[#FFF1D2] px-3 py-1.5 text-xs font-extrabold tabular-nums text-[#8A5700]">
                 {quiz.score !== null && quiz.total !== null
                   ? `${quiz.score}/${quiz.total} · ${Math.round(quiz.percentage)}%`
@@ -552,10 +652,17 @@ function UpcomingActivity({ activities, isLoading }) {
       />
 
       {isLoading ? (
-        <div className="mt-5 animate-pulse space-y-4" aria-label="Loading upcoming activity">
+        <div
+          className="mt-5 animate-pulse space-y-4"
+          aria-label="Loading upcoming activity"
+        >
           {[1, 2, 3].map((item) => (
-            <div key={item} className="flex gap-3 border-b border-[#EAF1F0] pb-4">
+            <div
+              key={item}
+              className="flex gap-3 border-b border-[#EAF1F0] pb-4"
+            >
               <div className="h-10 w-10 rounded-xl bg-[#FFF1D2]" />
+
               <div className="flex-1 space-y-2">
                 <div className="h-4 w-3/4 rounded bg-[#E8EFEE]" />
                 <div className="h-3 w-1/2 rounded bg-[#F0F4F3]" />
@@ -566,31 +673,48 @@ function UpcomingActivity({ activities, isLoading }) {
       ) : items.length > 0 ? (
         <ul className="mt-5 divide-y divide-[#EAF1F0]">
           {items.slice(0, 5).map((activity) => (
-            <li key={activity.id} className="flex items-start gap-3 py-3.5 first:pt-1 last:pb-0">
+            <li
+              key={activity.id}
+              className="flex items-start gap-3 py-3.5 first:pt-1 last:pb-0"
+            >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3D8] text-[#A87513]">
                 {String(activity.type).toLowerCase().includes("class") ? (
                   <CalendarDays size={18} />
-                ) : String(activity.type).toLowerCase().includes("assignment") ? (
+                ) : String(activity.type)
+                    .toLowerCase()
+                    .includes("assignment") ? (
                   <FileText size={18} />
                 ) : (
                   <CalendarClock size={18} />
                 )}
               </span>
+
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-bold text-[#2F4A4E]">{activity.title}</p>
+                  <p className="text-sm font-bold text-[#2F4A4E]">
+                    {activity.title}
+                  </p>
+
                   <span className="rounded-full bg-[#EEF3F4] px-2 py-0.5 text-[10px] font-semibold text-[#526D71]">
                     {activity.status}
                   </span>
                 </div>
+
                 {activity.description && (
-                  <p className="mt-1 text-xs leading-5 text-[#6C8589]">{activity.description}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#6C8589]">
+                    {activity.description}
+                  </p>
                 )}
+
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#829194]">
                   <span className="inline-flex items-center gap-1">
-                    <Clock3 size={12} /> {formatDate(activity.date)}
+                    <Clock3 size={12} />
+                    {formatDate(activity.date)}
                   </span>
-                  {activity.courseName && <span>{activity.courseName}</span>}
+
+                  {activity.courseName && (
+                    <span>{activity.courseName}</span>
+                  )}
                 </div>
               </div>
             </li>
@@ -643,12 +767,18 @@ function StudentDashboard() {
   );
 
   const learningSpaces = allLearnings;
+
   const totalModules = useMemo(
-    () => allLearnings.reduce((total, course) => total + course.totalModules, 0),
+    () =>
+      allLearnings.reduce(
+        (total, course) => total + course.totalModules,
+        0
+      ),
     [allLearnings]
   );
 
   const modulesCompleted = dashboard?.modulesCompleted ?? 0;
+
   const overallPercent =
     totalModules > 0
       ? clampPercentage((modulesCompleted / totalModules) * 100)
@@ -689,7 +819,8 @@ function StudentDashboard() {
   ];
 
   const continueCourse =
-    learningSpaces.find((course) => !course.isCompleted) || learningSpaces[0];
+    learningSpaces.find((course) => !course.isCompleted) ||
+    learningSpaces[0];
 
   if (isLoading && !dashboard) {
     return (
@@ -718,14 +849,19 @@ function StudentDashboard() {
 
         <section className="relative overflow-hidden rounded-[24px] bg-[#06424B] px-6 py-5 text-white shadow-[0_12px_30px_rgba(6,66,75,0.14)] sm:px-8 sm:py-6">
           <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full border-[18px] border-[#FFAB0B]/10" />
+
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-[#FFAB0B]" />
 
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-3">
                 <span className="h-5 w-1.5 rounded-full bg-[#FFAB0B]" />
-                <h2 className="text-lg font-extrabold tracking-tight">Your learning path</h2>
+
+                <h2 className="text-lg font-extrabold tracking-tight">
+                  Your learning path
+                </h2>
               </div>
+
               <p className="mt-1 pl-[18px] text-xs text-white/65">
                 Follow these steps for every enrolled course.
               </p>
@@ -743,24 +879,45 @@ function StudentDashboard() {
                     Continue: {continueCourse.fullName}
                   </LinkButton>
                 ) : (
-                  <LinkButton to="/student/topics" variant="gold" size="sm" icon={Compass}>
+                  <LinkButton
+                    to="/student/topics"
+                    variant="gold"
+                    size="sm"
+                    icon={Compass}
+                  >
                     Start learning
                   </LinkButton>
                 )}
-                <LinkButton to="/student/my-analytics" variant="gold" iconRight={TrendingUp}>
+
+                <LinkButton
+                  to="/student/my-analytics"
+                  variant="gold"
+                  iconRight={TrendingUp}
+                >
                   View My Analytics
                 </LinkButton>
               </div>
 
               <div className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.08] py-2 pl-2.5 pr-4">
                 <MiniRing percent={overallPercent} />
+
                 <div>
-                  <p className="text-[11px] font-semibold text-white/65">Overall progress</p>
+                  <p className="text-[11px] font-semibold text-white/65">
+                    Overall progress
+                  </p>
+
                   <p className="mt-0.5 text-lg font-extrabold leading-none text-white">
                     {dashboard ? modulesCompleted : "—"}
-                    <span className="text-xs font-semibold text-white/55"> / {dashboard ? totalModules : "—"}</span>
+
+                    <span className="text-xs font-semibold text-white/55">
+                      {" "}
+                      / {dashboard ? totalModules : "—"}
+                    </span>
                   </p>
-                  <p className="mt-0.5 text-[10px] text-white/65">modules completed</p>
+
+                  <p className="mt-0.5 text-[10px] text-white/65">
+                    modules completed
+                  </p>
                 </div>
               </div>
             </div>
@@ -768,9 +925,13 @@ function StudentDashboard() {
 
           <div className="relative mt-6">
             <div className="pointer-events-none absolute left-[7.2%] right-[7.2%] top-[22px] hidden h-0.5 border-t-2 border-dashed border-white/25 lg:block" />
+
             <ol className="relative grid gap-5 sm:grid-cols-2 lg:grid-cols-7 lg:gap-2">
               {learningFlow.map((step, index) => (
-                <li key={step} className="flex items-start gap-3 lg:flex-col lg:items-center lg:text-center">
+                <li
+                  key={step}
+                  className="flex items-start gap-3 lg:flex-col lg:items-center lg:text-center"
+                >
                   <span
                     className={`relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-extrabold ring-4 ring-[#06424B] ${
                       index % 2 === 0
@@ -780,7 +941,10 @@ function StudentDashboard() {
                   >
                     {index + 1}
                   </span>
-                  <span className="pt-2 text-[13px] font-semibold leading-5 text-white/90 lg:pt-0">{step}</span>
+
+                  <span className="pt-2 text-[13px] font-semibold leading-5 text-white/90 lg:pt-0">
+                    {step}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -788,7 +952,11 @@ function StudentDashboard() {
         </section>
 
         <section className="mt-7">
-          <SectionHeading title="Learning overview" subtitle="Your personal learning summary." />
+          <SectionHeading
+            title="Learning overview"
+            subtitle="Your personal learning summary."
+          />
+
           <Card className="overflow-hidden p-0">
             <div className="grid grid-cols-2 xl:grid-cols-4">
               {stats.map(({ label, value, note, icon, tone }, index) => (
@@ -796,19 +964,31 @@ function StudentDashboard() {
                   key={label}
                   className={`relative border-[#E3EEEC] p-5 sm:p-6 ${
                     index % 2 === 1 ? "border-l" : ""
-                  } ${index > 1 ? "border-t xl:border-t-0" : ""} ${index > 0 ? "xl:border-l" : ""}`}
+                  } ${index > 1 ? "border-t xl:border-t-0" : ""} ${
+                    index > 0 ? "xl:border-l" : ""
+                  }`}
                 >
                   <span
                     className={`absolute left-0 top-5 h-10 w-1 rounded-r-full ${
                       tone === "gold" ? "bg-[#FFAB0B]" : "bg-[#06424B]"
                     }`}
                   />
+
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[30px] font-extrabold leading-none tracking-tight text-[#06424B]">{value}</p>
+                    <p className="text-[30px] font-extrabold leading-none tracking-tight text-[#06424B]">
+                      {value}
+                    </p>
+
                     <IconBadge icon={icon} tone={tone} />
                   </div>
-                  <p className="mt-3 text-sm font-bold text-[#2F4A4E]">{label}</p>
-                  <p className="mt-0.5 text-xs text-[#6C8589]">{note}</p>
+
+                  <p className="mt-3 text-sm font-bold text-[#2F4A4E]">
+                    {label}
+                  </p>
+
+                  <p className="mt-0.5 text-xs text-[#6C8589]">
+                    {note}
+                  </p>
                 </div>
               ))}
             </div>
@@ -819,13 +999,25 @@ function StudentDashboard() {
           <SectionHeading
             title="Your learning spaces"
             subtitle="Your enrolled courses, ready to continue inside My Learning."
-            right={<LinkButton to="/student/topics" variant="outline" size="sm">Explore all</LinkButton>}
+            right={
+              <LinkButton
+                to="/student/topics"
+                variant="outline"
+                size="sm"
+              >
+                Explore all
+              </LinkButton>
+            }
           />
 
           {learningSpaces.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {learningSpaces.map((course, index) => (
-                <LearningSpaceCard key={course.courseId} course={course} index={index} />
+                <LearningSpaceCard
+                  key={course.courseId}
+                  course={course}
+                  index={index}
+                />
               ))}
             </div>
           ) : error ? (
@@ -842,15 +1034,30 @@ function StudentDashboard() {
                 icon={GraduationCap}
                 title="No courses added yet"
                 text="Your enrolled courses will appear here after you add a course from Explore Courses."
-                action={<LinkButton to="/student/topics" variant="gold" icon={Compass}>Explore Courses</LinkButton>}
+                action={
+                  <LinkButton
+                    to="/student/topics"
+                    variant="gold"
+                    icon={Compass}
+                  >
+                    Explore Courses
+                  </LinkButton>
+                }
               />
             </Card>
           )}
         </section>
 
         <div className="mt-8 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
-          <RecentQuizResults quizzes={dashboard?.recentQuizzes || []} isLoading={isLoading} />
-          <UpcomingActivity activities={dashboard?.upcomingActivities || []} isLoading={isLoading} />
+          <RecentQuizResults
+            quizzes={dashboard?.recentQuizzes || []}
+            isLoading={isLoading}
+          />
+
+          <UpcomingActivity
+            activities={dashboard?.upcomingActivities || []}
+            isLoading={isLoading}
+          />
         </div>
 
         <footer className="mt-9 border-t border-[#D9E8E6] py-5 text-center text-xs text-[#6C8589]">

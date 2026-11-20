@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
+import Editor from "@monaco-editor/react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -9,6 +10,10 @@ import {
   Check,
   CheckCircle2,
   Clock3,
+  Code2,
+  Copy,
+  Play,
+  Terminal,
   GraduationCap,
   Info,
   LoaderCircle,
@@ -350,7 +355,167 @@ function InstructionModal({
   );
 }
 
-function QuestionAnswer({ question, value, onChange, disabled }) {
+// Load the Python runtime only when a student presses Run Code.
+// Pyodide executes Python in the browser; no backend execution endpoint is needed.
+let pyodideLoadPromise;
+const loadPyodideRuntime = () => {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Python execution is available in the browser only."));
+  }
+
+  if (window.loadPyodide) {
+    return window.loadPyodide({
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/",
+    });
+  }
+
+  if (!pyodideLoadPromise) {
+    pyodideLoadPromise = new Promise((resolve, reject) => {
+      const existingScript = document.querySelector('script[data-pyodide-runtime="true"]');
+      const script = existingScript || document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js";
+      script.async = true;
+      script.dataset.pyodideRuntime = "true";
+      script.onload = () => {
+        if (window.loadPyodide) resolve(window.loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/",
+        }));
+        else reject(new Error("Python runtime loaded, but its initializer was not found."));
+      };
+      script.onerror = () => {
+        pyodideLoadPromise = null;
+        reject(new Error("Could not load the Python runtime. Please check your internet connection and try again."));
+      };
+      if (!existingScript) document.head.appendChild(script);
+    });
+  }
+
+  return pyodideLoadPromise;
+};
+
+const getMonacoLanguage = (language) => {
+  const value = String(language || "plaintext").trim().toLowerCase();
+  const aliases = {
+    py: "python", python3: "python", python: "python",
+    js: "javascript", jsx: "javascript", node: "javascript", nodejs: "javascript",
+    ts: "typescript", tsx: "typescript", typescript: "typescript",
+    html: "html", css: "css", scss: "scss", json: "json",
+    java: "java", c: "c", cpp: "cpp", "c++": "cpp", csharp: "csharp", "c#": "csharp",
+    cs: "csharp", go: "go", golang: "go", rust: "rust", rs: "rust",
+    php: "php", ruby: "ruby", rb: "ruby", sql: "sql", shell: "shell",
+    bash: "shell", sh: "shell", yaml: "yaml", yml: "yaml", xml: "xml",
+    markdown: "markdown", md: "markdown", plaintext: "plaintext", text: "plaintext",
+  };
+  return aliases[value] || value.replace(/[^a-z0-9+#-]/g, "") || "plaintext";
+};
+
+function buildBrowserPreviewDocument({ language, code, stdin, runId }) {
+  const safeCode = String(code || '').replace(/<\/script/gi, '<\\/script');
+  const inputLines = JSON.stringify(String(stdin || '').replace(/\r\n/g, '\n').split('\n'));
+  const bridge = `<script>(()=>{const runId=${JSON.stringify(runId)};const inputs=${inputLines};const send=(kind,value)=>parent.postMessage({type:'skillnext-code-output',runId,kind,value:String(value??'')},'*');['log','info','warn','error'].forEach(k=>{const original=console[k].bind(console);console[k]=(...args)=>{original(...args);send(k,args.map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join(' '))}});window.prompt=(message)=>{send('log',message||'Input requested');return inputs.length?inputs.shift():''};window.addEventListener('error',e=>send('error',e.message));window.addEventListener('unhandledrejection',e=>send('error',e.reason?.message||e.reason));window.addEventListener('load',()=>send('ready','Preview loaded'))})();</script>`;
+
+  if (language === 'html') {
+    if (/<html[\s>]/i.test(code) || /<!doctype/i.test(code)) return String(code).replace(/<\/head>/i, `${bridge}</head>`);
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${bridge}</head><body>${code}</body></html>`;
+  }
+  if (language === 'css') {
+    return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:24px;color:#173A40}.sample{padding:24px;border:1px solid #dce8e6;border-radius:16px;background:#f4f7f7}${code}</style>${bridge}</head><body><div class="sample"><h2>CSS Preview</h2><p>Change the CSS to style this sample content.</p><button class="demo-button">Preview button</button></div></body></html>`;
+  }
+  if (language === 'react') {
+    const hasMount = /createRoot\s*\(|ReactDOM\.render\s*\(/.test(code);
+    const mount = hasMount ? '' : `\nconst root=ReactDOM.createRoot(document.getElementById('root'));root.render(typeof App!=='undefined'?<App/>:<div style={{padding:20}}>Create an App component to preview.</div>);`;
+    const reactCode = `${code}${mount}`.replace(/<\/script/gi, '<\\/script');
+    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial;padding:20px;color:#173A40}</style>${bridge}<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script><script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script></head><body><div id="root"></div><script type="text/babel" data-presets="env,react">${reactCode}</script></body></html>`;
+  }
+  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px;color:#173A40}</style>${bridge}</head><body><p style="font-size:12px;color:#829596">JavaScript sandbox preview. Use console.log() to print output.</p><script>${safeCode}</script></body></html>`;
+}
+
+function CodingEditor({ question, value, onChange, disabled }) {
+  const [copied,setCopied]=useState(false);
+  const [stdin,setStdin]=useState('');
+  const [output,setOutput]=useState('');
+  const [runError,setRunError]=useState('');
+  const [isRunning,setIsRunning]=useState(false);
+  const [runtimeReady,setRuntimeReady]=useState(false);
+  const [previewDocument,setPreviewDocument]=useState('');
+  const [showPreview,setShowPreview]=useState(false);
+  const [activeTab,setActiveTab]=useState('output');
+  const previewFrameRef=useRef(null);
+  const activeRunIdRef=useRef('');
+  const rawLanguage=String(question.language||'python').trim().toLowerCase();
+  const language=['jsx','reactjs','react.js'].includes(rawLanguage)?'react':['js','node','nodejs'].includes(rawLanguage)?'javascript':rawLanguage;
+  const code=value??question.starterCode??'';
+  const isPython=['python','py','python3'].includes(language);
+  const isBrowserLanguage=['html','css','javascript','react'].includes(language);
+  const isJava=language==='java';
+
+  useEffect(()=>{
+    const onMessage=(event)=>{
+      if(event.source!==previewFrameRef.current?.contentWindow)return;
+      const data=event.data;
+      if(!data||data.type!=='skillnext-code-output'||data.runId!==activeRunIdRef.current)return;
+      if(data.kind==='ready'){setRuntimeReady(true);setIsRunning(false);return;}
+      if(data.kind==='error')setRunError(current=>current?`${current}\n${data.value}`:data.value);
+      else setOutput(current=>current?`${current}\n${data.value}`:data.value);
+    };
+    window.addEventListener('message',onMessage);
+    return()=>window.removeEventListener('message',onMessage);
+  },[]);
+
+  const copyCode=async()=>{try{await navigator.clipboard.writeText(code);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch(error){setRunError('Clipboard access is unavailable in this browser.');}};
+
+  const runPythonCode=async()=>{
+    if(!String(code).trim()){setRunError('Write your Python code before running it.');return;}
+    setIsRunning(true);setOutput('');setRunError('');setShowPreview(false);setActiveTab('output');
+    try{
+      const pyodide=await loadPyodideRuntime();setRuntimeReady(true);
+      const lines=stdin.replace(/\r\n/g,'\n').split('\n');const out=[];const err=[];
+      pyodide.setStdin({stdin:()=>lines.length?lines.shift():null});
+      pyodide.setStdout({batched:chunk=>out.push(chunk)});pyodide.setStderr({batched:chunk=>err.push(chunk)});
+      await pyodide.runPythonAsync(String(code));
+      setOutput(out.join('')||(err.length?'':'Program executed successfully with no output.'));
+      if(err.length)setRunError(err.join(''));
+    }catch(error){setRunError(error?.message||'Python execution failed. Check your code and try again.');}
+    finally{setIsRunning(false);}
+  };
+
+  const runBrowserCode=()=>{
+    if(!String(code).trim()){setRunError('Write your code before running it.');return;}
+    const runId=`${question.id}-${Date.now()}`;activeRunIdRef.current=runId;
+    setIsRunning(true);setRuntimeReady(false);setOutput('');setRunError('');
+    setActiveTab(['html','css','react'].includes(language)?'preview':'output');setShowPreview(true);
+    setPreviewDocument(buildBrowserPreviewDocument({language,code,stdin,runId}));
+    window.setTimeout(()=>{if(activeRunIdRef.current===runId)setIsRunning(false);},3000);
+  };
+
+  const runJavaCode=()=>{
+    setOutput('');setActiveTab('output');setShowPreview(false);
+    setRunError('Java needs both a compiler and a JVM. CheerpJ CDN runs compiled .class/.jar files; it does not compile Java source typed in this editor. A secure Java execution API or browser-based Java compiler is required to enable this Run Code button.');
+  };
+  const handleRun=()=>isPython?runPythonCode():isBrowserLanguage?runBrowserCode():isJava?runJavaCode():setRunError(`Run Code is not configured for ${question.language||'this language'}.`);
+  const monacoLanguage=getMonacoLanguage(language==='react'?'javascript':language);
+
+  return (
+    <div className="mt-6 overflow-hidden rounded-[22px] border border-[#D8E4E2] bg-[#102B30] shadow-[0_16px_38px_rgba(6,66,75,0.12)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#173A40] px-4 py-3 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFAB0B]/15 text-[#FFAB0B]"><Code2 size={18}/></span><div><p className="text-xs font-extrabold text-white">Coding workspace</p><p className="mt-0.5 text-[10px] text-[#A9C0C0]">{isPython?'Python browser runtime':isBrowserLanguage?'Live browser preview':isJava?'Java compiler setup required':'Code editor'}</p></div></div>
+        <div className="flex items-center gap-2"><span className="rounded-lg border border-white/10 bg-white/[0.07] px-3 py-2 text-[10px] font-bold uppercase tracking-[1px] text-[#FFD47A]">{question.language||'Python'}</span><button type="button" onClick={copyCode} disabled={!code} className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.07] px-3 text-[11px] font-semibold text-white transition hover:bg-white/[0.13] disabled:opacity-40"><Copy size={13}/>{copied?'Copied':'Copy'}</button></div>
+      </div>
+      <div className="overflow-hidden bg-[#102B30]"><Editor height="360px" language={monacoLanguage} theme="vs-dark" value={code} onChange={next=>onChange(next??'')} loading={<div className="flex h-[360px] items-center justify-center text-xs text-[#A9C0C0]">Loading code editor...</div>} options={{readOnly:disabled,minimap:{enabled:false},fontSize:13,lineHeight:23,fontFamily:"'Cascadia Code','Fira Code',Consolas,monospace",fontLigatures:true,automaticLayout:true,scrollBeyondLastLine:false,wordWrap:'on',tabSize:4,insertSpaces:true,padding:{top:16,bottom:16},lineNumbers:'on',renderLineHighlight:'all',roundedSelection:true,cursorBlinking:'smooth',smoothScrolling:true,contextmenu:true,suggestOnTriggerCharacters:true,quickSuggestions:true,overviewRulerBorder:false,scrollbar:{verticalScrollbarSize:8,horizontalScrollbarSize:8}}}/></div>
+      <div className="grid gap-4 border-t border-white/10 bg-[#173A40] p-4 sm:p-5 lg:grid-cols-2">
+        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><label htmlFor={`stdin-${question.id}`} className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#D9E7E5]"><Terminal size={14} className="text-[#FFAB0B]"/>Input (stdin)</label><span className="text-[10px] text-[#A9C0C0]">One value per line</span></div><textarea id={`stdin-${question.id}`} value={stdin} onChange={e=>setStdin(e.target.value)} disabled={disabled||isRunning} rows={4} placeholder={'Example:\n10\n20'} className="w-full resize-y rounded-xl border border-white/10 bg-[#102B30] px-3 py-3 font-mono text-xs leading-6 text-white outline-none placeholder:text-[#668084] focus:border-[#FFAB0B]/60 disabled:opacity-60"/></div>
+        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><button type="button" onClick={()=>setActiveTab('output')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='output'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>Output</button>{isBrowserLanguage&&<button type="button" onClick={()=>setActiveTab('preview')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='preview'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>Preview</button>}</div>{runtimeReady&&<span className="text-[10px] text-[#A7D98E]">Runtime ready</span>}</div>
+          {activeTab==='preview'&&showPreview&&isBrowserLanguage?<iframe key={activeRunIdRef.current} ref={previewFrameRef} title={`Code preview ${question.id}`} srcDoc={previewDocument} sandbox="allow-scripts allow-modals" className="h-[230px] w-full rounded-xl border border-white/10 bg-white"/>:<div className="min-h-[112px] max-h-[230px] overflow-auto rounded-xl border border-white/10 bg-[#0B2024] p-3 font-mono text-xs leading-6 text-[#DCE9E7]">{runError?<pre className="whitespace-pre-wrap break-words text-[#FFB4A9]">{runError}</pre>:output?<pre className="whitespace-pre-wrap break-words">{output}</pre>:<p className="text-[#668084]">Run your code to see the output here.</p>}</div>}
+          {runError&&activeTab==='preview'&&<pre className="mt-2 max-h-20 overflow-auto whitespace-pre-wrap break-words text-[11px] text-[#FFB4A9]">{runError}</pre>}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#102B30] px-4 py-3 sm:px-5"><p className="max-w-xl text-[10px] leading-5 text-[#A9C0C0]">{isPython?'Python runs in-browser using Pyodide.':isBrowserLanguage?'HTML, CSS, JavaScript and React run inside a sandboxed browser preview.':isJava?'Java source compilation needs an execution service or browser compiler.':'Execution is not configured.'} Your code is included in the assessment submission.</p><div className="flex items-center gap-3"><span className="hidden rounded-full bg-[#FFAB0B]/10 px-3 py-1.5 text-[10px] font-bold text-[#FFD47A] sm:inline-flex">{Number(question.score)||0} {Number(question.score)===1?'mark':'marks'}</span><button type="button" onClick={handleRun} disabled={disabled||isRunning||(!isPython&&!isBrowserLanguage&&!isJava)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#173A40] shadow-[0_5px_16px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC044] disabled:cursor-not-allowed disabled:opacity-50">{isRunning?<LoaderCircle size={15} className="animate-spin"/>:<Play size={15} fill="currentColor"/>}{isRunning?'Running...':'Run Code'}</button></div></div>
+    </div>
+  );
+}
+
+
+function QuestionAnswer({ question, value, onChange, disabled, isITCourse }) {
   const options = Array.isArray(question.options) ? question.options : [];
   const questionType = String(question.questionType || "text")
     .trim()
@@ -361,7 +526,11 @@ function QuestionAnswer({ question, value, onChange, disabled }) {
     question.multipleAnswers === true ||
     ["multiple_select", "multi_select"].includes(questionType);
   const isEssay = ["essay", "long_answer", "paragraph"].includes(questionType);
-  const isCode = questionType === "code" || questionType.includes("coding") || Boolean(question.starterCode);
+  const isCode = isITCourse && (questionType === "code" || questionType.includes("coding") || Boolean(question.starterCode) || Boolean(question.language));
+
+  if (isCode) {
+    return <CodingEditor question={question} value={value} onChange={onChange} disabled={disabled} />;
+  }
 
   if (isTrueFalse) {
     const selected = value === true || value === "true" ? true : value === false || value === "false" ? false : null;
@@ -470,6 +639,47 @@ function QuestionAnswer({ question, value, onChange, disabled }) {
     </div>
   );
 }
+
+
+const isITCourseRecord = (...records) => {
+  const values = [];
+  const addValue = (value) => {
+    if (typeof value === "string" || typeof value === "number") values.push(String(value));
+    else if (value && typeof value === "object") {
+      if (typeof value.name === "string") values.push(value.name);
+      if (typeof value.title === "string") values.push(value.title);
+    }
+  };
+
+  records.filter(Boolean).forEach((record) => {
+    [
+      record.fullName,
+      record.shortName,
+      record.name,
+      record.title,
+      record.courseName,
+      record.category,
+      record.categoryName,
+      record.track,
+      record.courseType,
+      record.type,
+      record.subject,
+      record.program,
+      record.department,
+      record.courseCategory,
+      record.courseTrack,
+      record.course?.fullName,
+      record.course?.shortName,
+      record.course?.name,
+      record.course?.category,
+      record.course?.categoryName,
+      record.course?.track,
+      record.course?.courseType,
+    ].forEach(addValue);
+  });
+
+  return /python|programming|software|web development|web technology|javascript|react|java|html|css|computer science|information technology|\\bit\\b/i.test(values.join(" "));
+};
 
 function FinalAssessmentPage() {
   const [searchParams] = useSearchParams();
@@ -802,6 +1012,7 @@ function FinalAssessmentPage() {
   }, [secondsLeft, attempt?.id, isSubmitting, result, handleSubmit]);
 
   const activeQuestions = questions || EMPTY_QUESTIONS;
+  const isITCourse = isITCourseRecord(assessment, assignment, location.state?.course, location.state?.courseDetails);
   const currentQuestion = activeQuestions[questionIndex];
   const answeredCount = useMemo(
     () => activeQuestions.filter((question) => isAnswerComplete(answers[question.id])).length,
@@ -971,6 +1182,7 @@ function FinalAssessmentPage() {
                 value={answers[currentQuestion?.id] ?? (currentQuestion?.multipleAnswers ? [] : "")}
                 onChange={(value) => updateAnswer(currentQuestion.id, value)}
                 disabled={isSubmitting}
+                isITCourse={isITCourse}
               />
 
               {answerValidation && <p role="alert" className="mt-5 rounded-xl border border-[#F0DFB8] bg-[#FFF8E8] px-4 py-3 text-xs leading-5 text-[#805C17]">{answerValidation}</p>}

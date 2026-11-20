@@ -7,7 +7,7 @@ import StudentLayout from "../components/student/StudentLayout";
 import StudentDashboard from "../pages/student/StudentDashboard";
 import MyLearning from "../pages/student/MyLearning";
 import FinalAssessmentPage from "../pages/student/FinalAssessmentPage";
-import CourseCodingAssignment from "../pages/student/CourseCodingAssignment";
+
 
 // Explore Topics and lesson pages
 import ExploreTopics from "../pages/student/ExploreTopics";
@@ -52,13 +52,6 @@ function StudentRoutes() {
 
         {/* My Learning - API enrolled courses and course modules */}
         <Route path="my-learning" element={<MyLearning />} />
-
-
-        {/* Course Coding Assignment */}
-        <Route
-          path="course-coding-assignment"
-          element={<CourseCodingAssignment />}
-        />
 
         {/* Explore Topics */}
         <Route path="topics" element={<ExploreTopics />} />

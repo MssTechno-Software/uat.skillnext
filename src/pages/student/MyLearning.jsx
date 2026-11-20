@@ -10,6 +10,9 @@ import {
   LockKeyhole,
   PlayCircle,
   RefreshCw,
+  Trash2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
@@ -20,7 +23,7 @@ import {
   SectionHeading,
 } from "../../components/student/ui";
 import Loader from "../../components/Loader";
-import { getMyLearnings, getCourseLearningPath } from "../../api/course.api";
+import { getMyLearnings, getCourseLearningPath, leaveCourse } from "../../api/course.api";
 import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 
 /* =====================================================
@@ -388,7 +391,29 @@ function ErrorState({ title, message, onRetry, backToList = false }) {
    ENROLLED COURSE LIST — GET /api/my-learnings
 ===================================================== */
 
-function EnrolledCourseList({ enrollments }) {
+function EnrolledCourseList({ enrollments, onLeaveCourse }) {
+  const [coursePendingRemoval, setCoursePendingRemoval] = useState(null);
+  const [isRemovingCourse, setIsRemovingCourse] = useState(false);
+  const [removeCourseError, setRemoveCourseError] = useState("");
+
+  const handleConfirmLeaveCourse = async () => {
+    if (!coursePendingRemoval?.id || isRemovingCourse) return;
+
+    setIsRemovingCourse(true);
+    setRemoveCourseError("");
+
+    try {
+      await onLeaveCourse(coursePendingRemoval.id);
+      setCoursePendingRemoval(null);
+    } catch (requestError) {
+      setRemoveCourseError(
+        getErrorMessage(requestError, "We couldn't remove this course. Please try again.")
+      );
+    } finally {
+      setIsRemovingCourse(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -499,7 +524,21 @@ function EnrolledCourseList({ enrollments }) {
                             {statusLabel}
                           </span>
                         </div>
-                        <CircularProgress value={percentage} size={68} label={`${courseName} completion`} />
+                        <div className="flex shrink-0 items-start gap-2">
+                          <CircularProgress value={percentage} size={68} label={`${courseName} completion`} />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRemoveCourseError("");
+                              setCoursePendingRemoval({ id: courseId, name: courseName });
+                            }}
+                            aria-label={`Leave ${courseName}`}
+                            title="Leave course"
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#F0D9D6] bg-white text-[#A85A50] transition hover:border-[#D9A29B] hover:bg-[#FFF3F1] hover:text-[#8B3E36] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C98E86]/40 focus-visible:ring-offset-2"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
 
                       <p className="mt-5 min-h-[48px] text-sm leading-6 text-[#627C7F] line-clamp-2">
@@ -549,6 +588,81 @@ function EnrolledCourseList({ enrollments }) {
             })}
           </div>
         </>
+      )}
+
+      {coursePendingRemoval && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-[#102F33]/55 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (!isRemovingCourse && event.target === event.currentTarget) {
+              setCoursePendingRemoval(null);
+              setRemoveCourseError("");
+            }
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="leave-course-title"
+            aria-describedby="leave-course-description"
+            className="w-full max-w-[440px] rounded-[24px] border border-white/70 bg-white p-6 shadow-[0_24px_80px_rgba(6,44,49,0.28)] sm:p-7"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF1EE] text-[#A85A50]">
+                <AlertTriangle size={22} />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isRemovingCourse) return;
+                  setCoursePendingRemoval(null);
+                  setRemoveCourseError("");
+                }}
+                aria-label="Close confirmation"
+                disabled={isRemovingCourse}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#73898B] transition hover:bg-[#F2F5F5] hover:text-[#06424B] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <h2 id="leave-course-title" className="mt-5 text-xl font-extrabold text-[#123B43]">
+              Leave this course?
+            </h2>
+            <p id="leave-course-description" className="mt-2 text-sm leading-7 text-[#5A7478]">
+              Are you sure you want to remove <span className="font-bold text-[#06424B]">{coursePendingRemoval.name}</span> from My Learning? Your saved lesson progress and assessment attempts will be kept.
+            </p>
+
+            {removeCourseError && (
+              <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs leading-5 text-red-700">
+                {removeCourseError}
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setCoursePendingRemoval(null);
+                  setRemoveCourseError("");
+                }}
+                disabled={isRemovingCourse}
+                className="rounded-xl border border-[#DCE6E4] bg-white px-5 py-3 text-sm font-bold text-[#456367] transition hover:bg-[#F6F8F8] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Keep course
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLeaveCourse}
+                disabled={isRemovingCourse}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#8B514B] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_18px_rgba(139,81,75,0.18)] transition hover:bg-[#75413C] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 size={15} />
+                {isRemovingCourse ? "Leaving course..." : "Leave course"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
@@ -854,6 +968,20 @@ function MyLearning() {
     }
   }, []);
 
+  const handleLeaveCourse = useCallback(async (courseId) => {
+    const response = await leaveCourse(courseId, false);
+
+    if (response?.success === false) {
+      throw new Error(response?.message || "The course could not be removed.");
+    }
+
+    setEnrollments((currentEnrollments) =>
+      currentEnrollments.filter(
+        (enrollment) => String(enrollment?.course?.id) !== String(courseId)
+      )
+    );
+  }, []);
+
   const loadCourseLearningPath = useCallback(async () => {
     if (!enrolledCourseId) return;
 
@@ -961,7 +1089,7 @@ function MyLearning() {
             />
           ) : null
         ) : (
-          <EnrolledCourseList enrollments={enrollments} />
+          <EnrolledCourseList enrollments={enrollments} onLeaveCourse={handleLeaveCourse} />
         )}
       </div>
     </PageShell>

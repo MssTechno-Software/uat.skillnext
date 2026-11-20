@@ -33,6 +33,7 @@ import {
   completeModule,
 } from "../../api/course.api";
 import { getModuleAssessments } from "../../api/assessment.api";
+import Editor from "@monaco-editor/react";
 
 const normalizeModules = (payload) => (Array.isArray(payload?.modules) ? payload.modules : [])
   .filter((module) => module && module.visible !== false && module.id !== undefined && module.id !== null)
@@ -89,9 +90,14 @@ const mergeContentWithLearningPath = (contentModules, progressModules) => {
       ...(contentModule || {}),
       ...progressModule,
       contents: contentModule?.contents || [],
+      // Prefer the actual content API list when the Learning Path API reports
+      // zero or omits contentsCount. This keeps Mark as Read available for IT
+      // modules whose progress response does not include the content count.
       contentsCount: Math.max(
         0,
-        Number(progressModule.contentsCount ?? contentModule?.contents?.length) || 0
+        Number(progressModule.contentsCount) > 0
+          ? Number(progressModule.contentsCount)
+          : Number(contentModule?.contents?.length) || 0
       ),
     };
   });
@@ -437,11 +443,12 @@ function CodingPlayground({ block }) {
         if (currentRunId !== runIdRef.current) return;
 
         const outputLines = [];
+        // Match ModuleAssessmentPage: each line in Input (stdin) is supplied
+        // to the next Python input() call, in order.
         const inputLines = programInput.replace(/\r\n/g, "\n").split("\n");
-        let inputIndex = 0;
 
         pyodide.setStdin({
-          stdin: () => inputIndex < inputLines.length ? inputLines[inputIndex++] : null,
+          stdin: () => inputLines.length ? inputLines.shift() : null,
         });
         pyodide.setStdout({
           batched: (message) => outputLines.push(String(message)),
@@ -502,23 +509,6 @@ function CodingPlayground({ block }) {
     }
   };
 
-  const handleEditorKeyDown = (event) => {
-    if (event.key === "Tab") {
-      event.preventDefault();
-      const element = event.currentTarget;
-      const start = element.selectionStart;
-      const end = element.selectionEnd;
-      setCode(`${code.slice(0, start)}    ${code.slice(end)}`);
-      window.requestAnimationFrame(() => {
-        element.selectionStart = element.selectionEnd = start + 4;
-      });
-    }
-    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-      event.preventDefault();
-      handleRun();
-    }
-  };
-
   const isPreviewLanguage = isBrowserLanguage;
   const languageLabel = normalizedLanguage === "react" ? "React / JSX" : normalizedLanguage.toUpperCase();
 
@@ -545,21 +535,59 @@ function CodingPlayground({ block }) {
             <span className="text-[10px] font-extrabold uppercase tracking-[1.2px] text-[#526D71]">Code editor</span>
             <span className="text-[10px] text-[#829596]">{languageLabel} · Editable</span>
           </div>
-          <div className="relative bg-white">
-            <div className="pointer-events-none absolute bottom-0 left-0 top-0 flex w-11 flex-col items-center overflow-hidden border-r border-[#E8EEEE] bg-[#F8FAFA] pt-4 font-mono text-[12px] leading-[25px] text-[#9AAEAF]">
-              {code.split("\n").map((_, index) => <span key={index}>{index + 1}</span>)}
-            </div>
-            <textarea
-              ref={editorRef}
+          <div className="min-h-[340px] overflow-hidden bg-white">
+            <Editor
+              height="min(55vh, 480px)"
+              language={normalizedLanguage === "react" ? "javascript" : normalizedLanguage}
               value={code}
-              onChange={(event) => setCode(event.target.value)}
-              onKeyDown={handleEditorKeyDown}
-              spellCheck={false}
-              autoCapitalize="off"
-              autoCorrect="off"
-              aria-label={`${languageLabel} code editor`}
-              className="block min-h-[340px] max-h-[55vh] w-full resize-y border-0 bg-white py-4 pl-[58px] pr-5 font-mono text-[13px] leading-[25px] text-[#183C42] caret-[#B88736] outline-none selection:bg-[#FFF0C9] focus:ring-0"
-              style={{ tabSize: 4 }}
+              onChange={(value) => setCode(value ?? "")}
+              onMount={(editor, monaco) => {
+                editorRef.current = editor;
+                monaco.editor.defineTheme("skillnext-light", {
+                  base: "vs",
+                  inherit: true,
+                  rules: [
+                    { token: "comment", foreground: "829596", fontStyle: "italic" },
+                    { token: "keyword", foreground: "06424B", fontStyle: "bold" },
+                    { token: "string", foreground: "A15C20" },
+                    { token: "number", foreground: "94650C" },
+                  ],
+                  colors: {
+                    "editor.background": "#FFFFFF",
+                    "editor.foreground": "#183C42",
+                    "editorLineNumber.foreground": "#A3B3B4",
+                    "editorLineNumber.activeForeground": "#06424B",
+                    "editor.lineHighlightBackground": "#F4F7F7",
+                    "editor.selectionBackground": "#FFF0C9",
+                    "editorCursor.foreground": "#B88736",
+                    "editorIndentGuide.background": "#E8EEEE",
+                    "editorIndentGuide.activeBackground": "#C9D8D6",
+                  },
+                });
+                monaco.editor.setTheme("skillnext-light");
+                editor.addCommand(
+                  monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+                  () => handleRun()
+                );
+              }}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 13,
+                lineHeight: 25,
+                fontFamily: "'Cascadia Code', 'Fira Code', Consolas, monospace",
+                tabSize: 4,
+                insertSpaces: true,
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
+                wordWrap: "off",
+                lineNumbers: "on",
+                roundedSelection: true,
+                renderLineHighlight: "line",
+                padding: { top: 16, bottom: 16 },
+                scrollbar: { verticalScrollbarSize: 9, horizontalScrollbarSize: 9 },
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: true,
+              }}
             />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E5ECEB] bg-[#F4F7F7] px-4 py-3">
@@ -576,10 +604,25 @@ function CodingPlayground({ block }) {
         <div className="flex min-h-[340px] min-w-0 flex-col bg-white">
           {isPython && (
             <div className="border-b border-[#E5ECEB] px-4 py-3">
-              <label className="block text-[11px] font-extrabold text-[#06424B]" htmlFor={`code-input-${block?.id || block?.title || "editor"}`}>
-                Program input <span className="font-medium text-[#829596]">(optional · one value per line)</span>
-              </label>
-              <textarea id={`code-input-${block?.id || block?.title || "editor"}`} value={programInput} onChange={(event) => setProgramInput(event.target.value)} rows={3} spellCheck={false} placeholder="Input for input() goes here" className="mt-2 w-full resize-y rounded-lg border border-[#DCE7E5] bg-[#F8FAFA] px-3 py-2.5 font-mono text-xs leading-5 text-[#183C42] outline-none placeholder:text-[#A3B3B4] focus:border-[#B88736]" />
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label
+                  htmlFor={`stdin-${block?.id || block?.title || "editor"}`}
+                  className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#06424B]"
+                >
+                  <Terminal size={14} className="text-[#B88736]" /> Input (stdin)
+                </label>
+                <span className="text-[10px] text-[#829596]">One value per line</span>
+              </div>
+              <textarea
+                id={`stdin-${block?.id || block?.title || "editor"}`}
+                value={programInput}
+                onChange={(event) => setProgramInput(event.target.value)}
+                disabled={isRunning}
+                rows={4}
+                spellCheck={false}
+                placeholder={"Example:\n10\n20"}
+                className="w-full resize-y rounded-xl border border-[#DCE7E5] bg-[#F8FAFA] px-3 py-3 font-mono text-xs leading-6 text-[#183C42] outline-none placeholder:text-[#A3B3B4] focus:border-[#B88736] disabled:opacity-60"
+              />
             </div>
           )}
           <div className="flex items-center gap-2 border-b border-[#E5ECEB] bg-[#F8FAFA] px-4 py-3">
@@ -843,7 +886,13 @@ function LessonContent() {
   const isPassed = Boolean(module && module.assessmentPassed === true);
   const isRead = Boolean(module && (module.isRead === true || isPassed));
   const isUnlocked = Boolean(module && module.isUnlocked === true);
-  const contentCount = Math.max(0, Number(module?.contentsCount ?? module?.contents?.length) || 0);
+  // Use the loaded lesson items as a fallback if the progress API returns 0.
+  const contentCount = Math.max(
+    0,
+    Number(module?.contentsCount) > 0
+      ? Number(module.contentsCount)
+      : Number(module?.contents?.length) || 0
+  );
   const learningPath = `/student/my-learning?course=${encodeURIComponent(courseId || "")}`;
   const courseName = course?.fullName || course?.shortName || "Course";
   const courseClassification = [

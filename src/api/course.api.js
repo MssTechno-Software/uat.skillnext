@@ -170,6 +170,31 @@ export const enrollInMyCourses = async (courseIds) => {
 
   return response.data;
 };
+// Leave enrolled course
+export const leaveCourse = async (
+  courseId,
+  removeProgress = false
+) => {
+  validateId(courseId, "Course reference");
+
+  const response = await API.delete(
+    `/api/enrollments/me/${encodeURIComponent(courseId)}`,
+    {
+      params: {
+        removeProgress,
+      },
+      requiresAuth: true,
+    }
+  );
+
+  // Clear related cached learning data
+  invalidateCourseLearningPath(courseId);
+
+  contentCache.delete(String(courseId));
+  contentRequests.delete(String(courseId));
+
+  return response.data;
+};
 
 // Mark module as completed
 export const completeModule = async (moduleId) => {
