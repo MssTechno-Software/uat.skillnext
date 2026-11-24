@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { BookOpen, MessageCircleQuestion, ShieldCheck, Workflow, Users, ClipboardCheck } from "lucide-react";
 import TeacherLayout from "./TeacherLayout";
 import { PageHeader } from "./TeacherUI";
@@ -12,5 +13,5 @@ const helpItems = [
 ];
 
 export default function TeacherSupport() {
-  return <TeacherLayout><PageHeader title="Help & Support" description="Guidance for building courses, publishing learning materials and assigning courses to students." /><div className="grid gap-4 md:grid-cols-2">{helpItems.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-[20px] border border-[#E0E9E9] bg-white p-5 shadow-[0_5px_18px_rgba(18,59,67,0.03)]"><span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#EAF2F1] text-[#06424B]"><Icon size={20} /></span><h2 className="mt-4 text-[14px] font-extrabold text-[#17464D]">{title}</h2><p className="mt-2 text-[11px] leading-6 text-[#829497]">{text}</p></article>)}</div></TeacherLayout>;
+  return <TeacherLayout><PageHeader title={translateValue("Help & Support")} description={translateValue("Guidance for building courses, publishing learning materials and assigning courses to students.")} /><div className="grid gap-4 md:grid-cols-2">{helpItems.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-[20px] border border-[#E0E9E9] bg-white p-5 shadow-[0_5px_18px_rgba(18,59,67,0.03)]"><span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#EAF2F1] text-[#06424B]"><Icon size={20} /></span><h2 className="mt-4 text-[14px] font-extrabold text-[#17464D]">{translateValue(title)}</h2><p className="mt-2 text-[11px] leading-6 text-[#829497]">{translateValue(text)}</p></article>)}</div></TeacherLayout>;
 }

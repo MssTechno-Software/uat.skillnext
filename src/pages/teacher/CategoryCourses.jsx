@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
@@ -156,16 +157,16 @@ export default function CategoryCourses() {
       <div className="space-y-6 pb-8">
         {notice && (
           <div className="rounded-xl border border-[#DCE9E5] bg-[#F1F8F5] px-4 py-3 text-[11px] font-semibold text-[#245D4B]">
-            {notice}
+            {translateValue(notice)}
           </div>
         )}
 
         {/* Page Header */}
         <PageHeader
-          title={category.name}
+          title={translateValue(category.name)}
           description={
-            category.description ||
-            "Explore and manage courses belonging to this main category."
+            translateValue(category.description ||
+            "Explore and manage courses belonging to this main category.")
           }
           backLink={
             <Link
@@ -173,8 +174,7 @@ export default function CategoryCourses() {
               className="mb-3 inline-flex items-center gap-2 text-[11px] font-bold text-[#06424B] transition-colors hover:text-[#B77C09]"
             >
               <ArrowLeft size={14} />
-              All Categories
-            </Link>
+              {translateValue("All Categories")}</Link>
           }
           actions={
             <button
@@ -183,7 +183,7 @@ export default function CategoryCourses() {
               className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-[11px] font-bold !text-white shadow-[0_4px_12px_rgba(6,66,75,0.12)] transition-all hover:bg-[#0B5661] hover:shadow-[0_6px_16px_rgba(6,66,75,0.18)]"
             >
               <Plus size={15} className="shrink-0 text-[#FFAB0B]" />
-              <span className="!text-white">Create Course</span>
+              <span className="!text-white">{translateValue("Create Course")}</span>
             </button>
           }
         />
@@ -202,23 +202,21 @@ export default function CategoryCourses() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-[9px] font-extrabold uppercase tracking-[1.5px] text-[#9AA9AA]">
-                    Main Category
-                  </p>
+                    {translateValue("Main Category")}</p>
 
                   {category.visible && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF2F1] px-2 py-1 text-[9px] font-bold text-[#06424B]">
                       <span className="h-1.5 w-1.5 rounded-full bg-[#06424B]" />
-                      Published
-                    </span>
+                      {translateValue("Published")}</span>
                   )}
                 </div>
 
                 <h2 className="mt-1.5 truncate text-[19px] font-extrabold tracking-tight text-[#06424B]">
-                  {category.name}
+                  {translateValue(category.name)}
                 </h2>
 
                 <p className="mt-1 text-[10px] font-medium text-[#8A9B9D]">
-                  {category.idNumber || "Course Category"}
+                  {translateValue(category.idNumber || "Course Category")}
                 </p>
               </div>
             </div>
@@ -230,11 +228,10 @@ export default function CategoryCourses() {
 
               <div>
                 <p className="text-[19px] font-extrabold leading-none text-[#06424B]">
-                  {courses.length.toString().padStart(2, "0")}
+                  {translateValue(courses.length.toString().padStart(2, "0"))}
                 </p>
                 <p className="mt-1 text-[9px] font-semibold text-[#927D54]">
-                  Total Courses
-                </p>
+                  {translateValue("Total Courses")}</p>
               </div>
             </div>
           </div>
@@ -249,15 +246,13 @@ export default function CategoryCourses() {
                 <BookOpen size={18} />
               </div>
               <span className="text-[9px] font-bold uppercase tracking-wider text-[#A0ADAF]">
-                Courses
-              </span>
+                {translateValue("Courses")}</span>
             </div>
             <p className="mt-4 text-[25px] font-extrabold text-[#06424B]">
-              {courses.length.toString().padStart(2, "0")}
+              {translateValue(courses.length.toString().padStart(2, "0"))}
             </p>
             <p className="mt-1 text-[10px] font-semibold text-[#829497]">
-              Total courses
-            </p>
+              {translateValue("Total courses")}</p>
           </div>
 
           <div className="rounded-[18px] border border-[#E4EBEB] bg-white p-4 transition-all hover:shadow-md">
@@ -266,15 +261,13 @@ export default function CategoryCourses() {
                 <Layers3 size={18} />
               </div>
               <span className="text-[9px] font-bold uppercase tracking-wider text-[#A0ADAF]">
-                Structure
-              </span>
+                {translateValue("Structure")}</span>
             </div>
             <p className="mt-4 text-[25px] font-extrabold text-[#06424B]">
-              {totalModules.toString().padStart(2, "0")}
+              {translateValue(totalModules.toString().padStart(2, "0"))}
             </p>
             <p className="mt-1 text-[10px] font-semibold text-[#829497]">
-              Total modules
-            </p>
+              {translateValue("Total modules")}</p>
           </div>
 
           <div className="rounded-[18px] border border-[#E4EBEB] bg-white p-4 transition-all hover:shadow-md">
@@ -283,15 +276,13 @@ export default function CategoryCourses() {
                 <FileText size={18} />
               </div>
               <span className="text-[9px] font-bold uppercase tracking-wider text-[#A0ADAF]">
-                Resources
-              </span>
+                {translateValue("Resources")}</span>
             </div>
             <p className="mt-4 text-[25px] font-extrabold text-[#06424B]">
-              {totalContent.toString().padStart(2, "0")}
+              {translateValue(totalContent.toString().padStart(2, "0"))}
             </p>
             <p className="mt-1 text-[10px] font-semibold text-[#829497]">
-              Learning content items
-            </p>
+              {translateValue("Learning content items")}</p>
           </div>
         </div>
 
@@ -302,23 +293,20 @@ export default function CategoryCourses() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-[15px] font-extrabold text-[#06424B]">
-                  Courses in this Category
-                </h2>
+                  {translateValue("Courses in this Category")}</h2>
 
                 <span className="rounded-full bg-[#FFF3D6] px-2.5 py-1 text-[10px] font-extrabold text-[#946A12]">
-                  {courses.length}
+                  {translateValue(courses.length)}
                 </span>
               </div>
 
               <p className="mt-1 text-[11px] text-[#8A9B9D]">
-                Explore course details and manage learning structures.
-              </p>
+                {translateValue("Explore course details and manage learning structures.")}</p>
             </div>
 
             <div className="inline-flex items-center gap-2 text-[10px] font-semibold text-[#819497]">
               <Eye size={13} className="text-[#06424B]" />
-              {visibleCourses} visible courses
-            </div>
+              {translateValue(visibleCourses)} {translateValue("visible courses")}</div>
           </div>
 
           {/* Course Cards */}
@@ -364,22 +352,22 @@ export default function CategoryCourses() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-[13px] font-extrabold leading-5 text-[#06424B]">
-                            {course.fullName}
+                            {translateValue(course.fullName)}
                           </h3>
 
                           <StatusPill visible={course.visible} />
                         </div>
 
                         <p className="mt-1 text-[10px] font-semibold text-[#91A1A3]">
-                          {course.idNumber || `COURSE-${course.id}`}
+                          {translateValue(course.idNumber || `COURSE-${course.id}`)}
                         </p>
                       </div>
                     </div>
 
                     {/* Summary */}
                     <p className="mt-5 min-h-[42px] text-[11px] leading-[21px] text-[#829497] line-clamp-2">
-                      {course.summary ||
-                        "No course summary added. Manage modules and learning resources inside this course."}
+                      {translateValue(course.summary ||
+                        "No course summary added. Manage modules and learning resources inside this course.")}
                     </p>
 
                     {/* Course Statistics */}
@@ -391,11 +379,10 @@ export default function CategoryCourses() {
                         </div>
                         <div>
                           <p className="text-[14px] font-extrabold text-[#06424B]">
-                            {modules.length.toString().padStart(2, "0")}
+                            {translateValue(modules.length.toString().padStart(2, "0"))}
                           </p>
                           <p className="text-[9px] font-semibold text-[#91A1A3]">
-                            Modules
-                          </p>
+                            {translateValue("Modules")}</p>
                         </div>
                       </div>
 
@@ -405,11 +392,10 @@ export default function CategoryCourses() {
                         </div>
                         <div>
                           <p className="text-[14px] font-extrabold text-[#06424B]">
-                            {contentCount.toString().padStart(2, "0")}
+                            {translateValue(contentCount.toString().padStart(2, "0"))}
                           </p>
                           <p className="text-[9px] font-semibold text-[#A18A5D]">
-                            Content Items
-                          </p>
+                            {translateValue("Content Items")}</p>
                         </div>
                       </div>
                     </div>
@@ -422,8 +408,7 @@ export default function CategoryCourses() {
                       <span className="flex items-center gap-2 !text-white">
                         <BookOpen size={15} className="shrink-0 text-[#FFAB0B]" />
                         <span className="!text-white">
-                          Open Course Structure
-                        </span>
+                          {translateValue("Open Course Structure")}</span>
                       </span>
 
                       <ArrowRight
@@ -439,8 +424,8 @@ export default function CategoryCourses() {
             <div className="rounded-[20px] border border-[#E4EBEB] bg-white py-10">
               <EmptyState
                 icon={BookOpen}
-                title="No courses in this category yet"
-                description="Create a course and assign it directly to this main category. Then build its modules and learning content."
+                title={translateValue("No courses in this category yet")}
+                description={translateValue("Create a course and assign it directly to this main category. Then build its modules and learning content.")}
                 action={
                   <button
                     type="button"
@@ -448,7 +433,7 @@ export default function CategoryCourses() {
                     className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 py-3 text-[11px] font-bold !text-white shadow-sm transition-all hover:bg-[#0B5661]"
                   >
                     <Plus size={15} className="shrink-0 text-[#FFAB0B]" />
-                    <span className="!text-white">Create First Course</span>
+                    <span className="!text-white">{translateValue("Create First Course")}</span>
                   </button>
                 }
               />
@@ -460,23 +445,23 @@ export default function CategoryCourses() {
         <Modal
           open={modalOpen}
           onClose={() => !busy && setModalOpen(false)}
-          title="Create Course"
-          description={`Add a new course to ${category.name}.`}
+          title={translateValue("Create Course")}
+          description={translateValue("Add a new course to {{category}}.", { category: translateValue(category.name) })}
           width="max-w-2xl"
         >
           <form onSubmit={submitCourse} className="space-y-4">
-            <Field label="Main category" required>
+            <Field label={translateValue("Main category")} required>
               <select
                 value={String(category.id)}
                 disabled
                 className={`${inputClass} cursor-not-allowed bg-[#F4F7F7]`}
               >
-                <option value={String(category.id)}>{category.name}</option>
+                <option value={String(category.id)}>{translateValue(category.name)}</option>
               </select>
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Full course name" required>
+              <Field label={translateValue("Full course name")} required>
                 <input
                   required
                   maxLength={150}
@@ -484,49 +469,49 @@ export default function CategoryCourses() {
                   onChange={(event) =>
                     setForm({ ...form, fullName: event.target.value })
                   }
-                  placeholder="e.g. Full Stack Web Development"
+                  placeholder={translateValue("e.g. Full Stack Web Development")}
                   className={inputClass}
                 />
               </Field>
 
-              <Field label="Short name">
+              <Field label={translateValue("Short name")}>
                 <input
                   maxLength={60}
                   value={form.shortName}
                   onChange={(event) =>
                     setForm({ ...form, shortName: event.target.value })
                   }
-                  placeholder="e.g. Full Stack"
+                  placeholder={translateValue("e.g. Full Stack")}
                   className={inputClass}
                 />
               </Field>
             </div>
 
-            <Field label="Course ID number">
+            <Field label={translateValue("Course ID number")}>
               <input
                 maxLength={50}
                 value={form.idNumber}
                 onChange={(event) =>
                   setForm({ ...form, idNumber: event.target.value })
                 }
-                placeholder="e.g. SN-WEB-101"
+                placeholder={translateValue("e.g. SN-WEB-101")}
                 className={inputClass}
               />
             </Field>
 
-            <Field label="Course summary">
+            <Field label={translateValue("Course summary")}>
               <textarea
                 value={form.summary}
                 onChange={(event) =>
                   setForm({ ...form, summary: event.target.value })
                 }
-                placeholder="What will students learn in this course?"
+                placeholder={translateValue("What will students learn in this course?")}
                 className={textareaClass}
               />
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Start date">
+              <Field label={translateValue("Start date")}>
                 <input
                   type="date"
                   value={form.startDate}
@@ -537,7 +522,7 @@ export default function CategoryCourses() {
                 />
               </Field>
 
-              <Field label="End date">
+              <Field label={translateValue("End date")}>
                 <input
                   type="date"
                   min={form.startDate || undefined}
@@ -559,8 +544,7 @@ export default function CategoryCourses() {
                 }
                 className="h-4 w-4 accent-[#06424B]"
               />
-              Visible to students
-            </label>
+              {translateValue("Visible to students")}</label>
 
             <div className="flex justify-end gap-2 border-t border-[#EDF1F1] pt-4">
               <button
@@ -569,8 +553,7 @@ export default function CategoryCourses() {
                 disabled={busy}
                 className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-[#DCE6E5] bg-white px-4 py-2.5 text-[11px] font-bold text-[#526F73] transition hover:bg-[#F5F8F8] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Cancel
-              </button>
+                {translateValue("Cancel")}</button>
               <button
                 type="submit"
                 disabled={busy}
@@ -578,7 +561,7 @@ export default function CategoryCourses() {
               >
                 <Plus size={14} className="text-[#FFAB0B]" />
                 <span className="!text-white">
-                  {busy ? "Creating..." : "Create Course"}
+                  {translateValue(busy ? "Creating..." : "Create Course")}
                 </span>
               </button>
             </div>

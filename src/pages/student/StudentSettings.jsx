@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -7,6 +8,7 @@ import {
   CheckCircle2,
   ChevronRight,
   GraduationCap,
+  Globe2,
   Lock,
   LockKeyhole,
   MapPin,
@@ -18,6 +20,7 @@ import {
 } from "lucide-react";
 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
+import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 import { Card, IconBadge, PageShell } from "../../components/student/ui";
 import Loader from "../../components/Loader";
 
@@ -34,28 +37,28 @@ import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 const DEFAULT_MAX_LENGTH = 150;
 
 const PERSONAL_FIELDS = [
-  { name: "firstName", label: "First Name", required: true, maxLength: 60 },
-  { name: "lastName", label: "Last Name", required: true, maxLength: 60 },
+  { name: "firstName", label: "First Name", placeholder: "Enter first name", required: true, maxLength: 60 },
+  { name: "lastName", label: "Last Name", placeholder: "Enter last name", required: true, maxLength: 60 },
 ];
 
 const CONTACT_FIELDS = [
-  { name: "phone", label: "Phone Number", type: "tel" },
-  { name: "country", label: "Country" },
-  { name: "state", label: "State" },
-  { name: "city", label: "City" },
+  { name: "phone", label: "Phone Number", placeholder: "Enter phone number", type: "tel" },
+  { name: "country", label: "Country", placeholder: "Enter country" },
+  { name: "state", label: "State", placeholder: "Enter state or province" },
+  { name: "city", label: "City", placeholder: "Enter city" },
 ];
 
 const EDUCATION_FIELDS = [
-  { name: "institution", label: "Institution" },
-  { name: "educationLevel", label: "Education Level" },
-  { name: "course", label: "Course" },
-  { name: "studyYear", label: "Study Year" },
+  { name: "institution", label: "Institution", placeholder: "Enter institution" },
+  { name: "educationLevel", label: "Education Level", placeholder: "Enter education level" },
+  { name: "course", label: "Course", placeholder: "Enter course or program" },
+  { name: "studyYear", label: "Study Year", placeholder: "Enter study year" },
 ];
 
 const TEACHER_FIELDS = [
-  { name: "department", label: "Department" },
-  { name: "subject", label: "Subject" },
-  { name: "designation", label: "Designation" },
+  { name: "department", label: "Department", placeholder: "Enter department" },
+  { name: "subject", label: "Subject", placeholder: "Enter subject" },
+  { name: "designation", label: "Designation", placeholder: "Enter designation" },
 ];
 
 const STUDENT_GROUPS = [
@@ -110,13 +113,7 @@ const EMPTY_PROFILE = {
   email: "",
 };
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                            */
-/* ------------------------------------------------------------------ */
 
-// "First Name" -> "First name"
-const toSentenceCase = (text) =>
-  text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
 
 const trimmed = (value) => String(value ?? "").trim();
 
@@ -126,69 +123,98 @@ const getInitials = ({ firstName, lastName }) =>
     .map((part) => part.trim().charAt(0).toUpperCase())
     .join("") || "U";
 
-// Single source of error text: the shared API error handler.
-// Errors thrown locally (no HTTP response) keep their own message.
-const getErrorMessage = (error, fallback) => {
-  if (!error?.response && !error?.request && error?.message) {
-    return error.message;
-  }
-
-  return getApiErrorMessage(error, fallback);
+// Only show backend text directly when it has a matching locale entry.
+// Unknown backend messages use a translated, safe fallback instead of
+// leaking English text into the selected-language interface.
+const resolveMessageKey = (i18n, candidate, fallbackKey) => {
+  const message = typeof candidate === "string" ? candidate.trim() : "";
+  return message && i18n.exists(message, { ns: "ui" }) ? message : fallbackKey;
 };
 
-// Map backend validation errors to the fields shown for this role.
-const getServerFieldErrors = (error, allowedFields) => {
+const getErrorMessageKey = (error, fallbackKey, i18n) => {
+  const body = error?.response?.data;
+  const candidates = [
+    typeof body === "string" ? body : "",
+    body?.message,
+    body?.error,
+    typeof body?.detail === "string" ? body.detail : "",
+    error?.message,
+  ];
+
+  if (Array.isArray(body?.detail)) {
+    candidates.push(...body.detail.map((item) => item?.msg || item?.message || ""));
+  }
+
+  // Keep using the shared API error normalizer, but only surface its text
+  // when that exact message has a locale entry.
+  const sharedApiMessage = getApiErrorMessage(error, "");
+  if (sharedApiMessage) candidates.push(sharedApiMessage);
+
+  const knownMessage = candidates.find(
+    (candidate) =>
+      typeof candidate === "string" &&
+      candidate.trim() &&
+      i18n.exists(candidate.trim(), { ns: "ui" })
+  );
+
+  return knownMessage ? knownMessage.trim() : fallbackKey;
+};
+
+// Convert server-side field errors to translation keys. Unknown messages use
+// one consistent localized message rather than displaying raw backend English.
+const getServerFieldErrors = (error, allowedFields, i18n) => {
   const body = error?.response?.data;
   const fieldErrors = {};
 
+  const addFieldError = (field, rawMessage) => {
+    if (!allowedFields.includes(field)) return;
+    fieldErrors[field] = {
+      key: resolveMessageKey(i18n, String(rawMessage || ""), "Please check this field."),
+    };
+  };
+
   if (Array.isArray(body?.detail)) {
     body.detail.forEach((item) => {
-      const field = Array.isArray(item?.loc)
-        ? item.loc[item.loc.length - 1]
-        : "";
-
-      if (allowedFields.includes(field)) {
-        fieldErrors[field] = item?.msg || "Please check this field.";
-      }
+      const field = Array.isArray(item?.loc) ? item.loc[item.loc.length - 1] : "";
+      addFieldError(field, item?.msg || item?.message);
     });
   }
 
   Object.entries(body?.errors || {}).forEach(([field, message]) => {
-    if (allowedFields.includes(field)) {
-      fieldErrors[field] = Array.isArray(message)
-        ? message[0]
-        : String(message);
-    }
+    addFieldError(field, Array.isArray(message) ? message[0] : String(message));
   });
 
   return fieldErrors;
 };
 
-// Client-side validation for the fields of one section.
+// Client-side validation stores translation keys and interpolation values,
+// not English sentences. Errors therefore update immediately when language changes.
 const validateProfile = (profile, fields) => {
   const errors = {};
 
-  // Required and max-length rules
   fields.forEach((field) => {
     const value = trimmed(profile[field.name]);
     const limit = field.maxLength ?? DEFAULT_MAX_LENGTH;
-    const sentence = toSentenceCase(field.label);
 
     if (field.required && !value) {
-      errors[field.name] = `${sentence} is required.`;
+      errors[field.name] = {
+        key: "{{field}} is required.",
+        values: { field: field.label },
+      };
     } else if (value.length > limit) {
-      errors[field.name] = field.maxLength
-        ? `${sentence} cannot exceed ${limit} characters.`
-        : "This field cannot exceed 150 characters.";
+      errors[field.name] = {
+        key: "{{field}} cannot exceed {{limit}} characters.",
+        values: { field: field.label, limit },
+      };
     }
   });
 
-  // Phone number: 7 to 15 digits when provided
+  // Phone number: 7 to 15 digits when provided.
   const phone = trimmed(profile.phone);
   if (phone && fields.some((field) => field.name === "phone")) {
     const digits = phone.replace(/\D/g, "").length;
     if (digits < 7 || digits > 15) {
-      errors.phone = "Enter a valid phone number containing 7 to 15 digits.";
+      errors.phone = { key: "Enter a valid phone number containing 7 to 15 digits." };
     }
   }
 
@@ -208,6 +234,7 @@ const createProfilePayload = (profile, fields) =>
 
 // Centered popup for success and error messages
 function MessageDialog({ dialog, onClose }) {
+  const { t } = useTranslation("ui");
   const buttonRef = useRef(null);
 
   // Close on Escape and focus the action button
@@ -260,14 +287,14 @@ function MessageDialog({ dialog, onClose }) {
             id="message-dialog-title"
             className="mt-4 text-lg font-bold text-[#06424B]"
           >
-            {isError ? "Something went wrong" : "Profile updated"}
+            {t(isError ? "Something went wrong" : "Profile updated")}
           </h2>
 
           <p
             id="message-dialog-text"
             className="mt-2 break-words text-sm leading-6 text-[#5A7478]"
           >
-            {dialog.message}
+            {t(dialog.message || "Unable to save your profile. Please try again.")}
           </p>
 
           <button
@@ -276,7 +303,7 @@ function MessageDialog({ dialog, onClose }) {
             onClick={onClose}
             className="mt-6 h-11 w-full rounded-xl bg-[#06424B] text-sm font-semibold text-white transition-colors hover:bg-[#0A515B] focus:outline-none focus:ring-4 focus:ring-[#FFAB0B]/30"
           >
-            {isError ? "Close" : "Done"}
+            {t(isError ? "Close" : "Done")}
           </button>
         </div>
       </div>
@@ -287,6 +314,7 @@ function MessageDialog({ dialog, onClose }) {
 
 // Editable input with inline validation message
 function ProfileInput({ field, value, error, disabled, onChange }) {
+  const { t } = useTranslation("ui");
   const id = `settings-${field.name}`;
 
   return (
@@ -295,7 +323,7 @@ function ProfileInput({ field, value, error, disabled, onChange }) {
         htmlFor={id}
         className="mb-1.5 block text-[13px] font-semibold text-[#06424B]"
       >
-        {field.label}
+        {t(field.label)}
         {field.required && <span className="ml-1 text-[#C0392B]">*</span>}
       </label>
 
@@ -305,7 +333,7 @@ function ProfileInput({ field, value, error, disabled, onChange }) {
         type={field.type || "text"}
         value={value}
         onChange={(event) => onChange(field.name, event.target.value)}
-        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+        placeholder={t(field.placeholder)}
         maxLength={field.maxLength ?? DEFAULT_MAX_LENGTH}
         disabled={disabled}
         aria-required={field.required || undefined}
@@ -323,7 +351,13 @@ function ProfileInput({ field, value, error, disabled, onChange }) {
           id={`${id}-error`}
           className="mt-1.5 text-xs font-medium text-[#C0392B]"
         >
-          {error}
+          {error && typeof error === "object"
+            ? t(error.key, {
+                ...(error.values || {}),
+                field: error.values?.field ? t(error.values.field) : undefined,
+                defaultValue: t("Please check this field."),
+              })
+            : error ? t("Please check this field.") : ""}
         </p>
       )}
     </div>
@@ -332,18 +366,19 @@ function ProfileInput({ field, value, error, disabled, onChange }) {
 
 // Read-only value shown until the section is opened for editing
 function ProfileValue({ field, value }) {
+  const { t } = useTranslation("ui");
   const text = trimmed(value);
 
   return (
     <div className="min-w-0 rounded-xl border border-[#E5ECEA] bg-[#F8FAF9] px-4 py-3">
-      <p className="text-xs font-semibold text-[#6C8589]">{field.label}</p>
+      <p className="text-xs font-semibold text-[#6C8589]">{t(field.label)}</p>
 
       {text ? (
         <p className="mt-1 break-words text-sm font-semibold text-[#06424B]">
           {text}
         </p>
       ) : (
-        <p className="mt-1 text-sm italic text-[#9AABAD]">Not provided</p>
+        <p className="mt-1 text-sm italic text-[#9AABAD]">{t("Not provided")}</p>
       )}
     </div>
   );
@@ -358,6 +393,8 @@ function SettingsSection({
   action,
   children,
 }) {
+  const { t } = useTranslation("ui");
+
   return (
     <section id={`section-${id}`} className="scroll-mt-6">
       <Card className="p-5 sm:p-7">
@@ -365,8 +402,8 @@ function SettingsSection({
           <IconBadge icon={Icon} />
 
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-bold text-[#06424B]">{title}</h2>
-            <p className="text-sm text-[#5A7478]">{description}</p>
+            <h2 className="text-lg font-bold text-[#06424B]">{t(title)}</h2>
+            <p className="text-sm text-[#5A7478]">{t(description)}</p>
           </div>
 
           {action}
@@ -380,8 +417,10 @@ function SettingsSection({
 
 // Page-shaped placeholder shown during the first load
 function SettingsSkeleton() {
+  const { t } = useTranslation("ui");
+
   return (
-    <div className="space-y-5" aria-busy="true" aria-label="Loading profile">
+    <div className="space-y-5" aria-busy="true" aria-label={t("Loading profile")}>
       {[0, 1, 2].map((section) => (
         <Card key={section} className="p-5 sm:p-7">
           <div className="flex animate-pulse items-center gap-4">
@@ -408,6 +447,7 @@ function SettingsSkeleton() {
 /* ------------------------------------------------------------------ */
 
 function StudentSettings() {
+  const { t, i18n } = useTranslation("ui");
   const isTeacher =
     String(getUserRole() || "student").trim().toLowerCase() === "teacher";
   const roleLabel = isTeacher ? "Teacher" : "Student";
@@ -492,13 +532,14 @@ function StudentSettings() {
       console.error("Get Profile API Error:", error);
       showDialog(
         "error",
-        getErrorMessage(
+        getErrorMessageKey(
           error,
-          "Unable to load your profile. Please try again."
+          "Unable to load your profile. Please try again.",
+          i18n
         )
       );
     }
-  }, [refreshProfile, showDialog]);
+  }, [refreshProfile, showDialog, i18n]);
 
   // Warn before leaving the page with unsaved changes
   useEffect(() => {
@@ -586,14 +627,15 @@ function StudentSettings() {
     } catch (error) {
       console.error("Update Profile API Error:", error);
 
-      const serverErrors = getServerFieldErrors(error, profileFieldKeys);
+      const serverErrors = getServerFieldErrors(error, profileFieldKeys, i18n);
       setFieldErrors(serverErrors);
 
       outcome = {
         type: "error",
-        message: getErrorMessage(
+        message: getErrorMessageKey(
           error,
-          "Unable to save your profile. Please try again."
+          "Unable to save your profile. Please try again.",
+          i18n
         ),
         focusField: profileFieldKeys.find((key) => serverErrors[key]),
       };
@@ -644,7 +686,7 @@ function StudentSettings() {
                 {isFirstLoad ? (
                   <div
                     className="relative animate-pulse"
-                    aria-label="Loading profile"
+                    aria-label={t("Loading profile")}
                   >
                     <div className="mx-auto h-16 w-16 rounded-full bg-white/15" />
                     <div className="mx-auto mt-3 h-4 w-32 rounded bg-white/15" />
@@ -658,15 +700,15 @@ function StudentSettings() {
                     </div>
 
                     <h2 className="mt-3 truncate text-base font-bold">
-                      {fullName || `${roleLabel} profile`}
+                      {fullName || t("{{role}} profile", { role: t(roleLabel) })}
                     </h2>
 
                     <p className="mt-0.5 truncate text-xs text-white/70">
-                      {saved.email || `${roleLabel} account`}
+                      {saved.email || t("{{role}} account", { role: t(roleLabel) })}
                     </p>
 
                     <span className="mt-3 inline-block rounded-full bg-[#FFAB0B] px-3 py-1 text-[11px] font-bold text-[#06424B]">
-                      {roleLabel}
+                      {t(roleLabel)}
                     </span>
                   </div>
                 )}
@@ -679,13 +721,12 @@ function StudentSettings() {
                 className="flex w-full items-center justify-center gap-2 border-t border-[#EAF0EE] px-4 py-3 text-xs font-semibold text-[#06424B] transition-colors hover:bg-[#F4F7F7] disabled:opacity-50"
               >
                 <RefreshCw size={14} />
-                Refresh profile
-              </button>
+                {t("Refresh profile")}</button>
             </Card>
 
             {showContent && (
               <Card className="hidden p-2 lg:block">
-                <nav aria-label="Settings sections">
+                <nav aria-label={t("Settings sections")}>
                   {navItems.map(({ id, title, icon: Icon }) => (
                     <button
                       key={id}
@@ -694,7 +735,7 @@ function StudentSettings() {
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold text-[#3F5C60] transition-colors hover:bg-[#EEF5F4] hover:text-[#06424B]"
                     >
                       <Icon size={16} className="text-[#8A5F00]" />
-                      <span className="flex-1">{title}</span>
+                      <span className="flex-1">{t(title)}</span>
                       <ChevronRight size={14} className="text-[#A5B0B1]" />
                     </button>
                   ))}
@@ -714,11 +755,10 @@ function StudentSettings() {
                 </span>
 
                 <h2 className="mt-4 text-lg font-bold text-[#06424B]">
-                  We could not load your profile
-                </h2>
+                  {t("We could not load your profile")}</h2>
 
                 <p className="mt-2 max-w-md break-words text-sm leading-6 text-[#5A7478]">
-                  {loadError}
+                  {t(resolveMessageKey(i18n, loadError, "Unable to load your profile. Please try again."))}
                 </p>
 
                 <button
@@ -727,8 +767,7 @@ function StudentSettings() {
                   className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl bg-[#06424B] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#0A515B] focus:outline-none focus:ring-4 focus:ring-[#FFAB0B]/30"
                 >
                   <RefreshCw size={15} />
-                  Try again
-                </button>
+                  {t("Try again")}</button>
               </Card>
             )}
 
@@ -738,30 +777,27 @@ function StudentSettings() {
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#D5E4E2] bg-white px-5 py-3.5">
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-[#06424B]">
-                      Profile details
-                    </p>
+                      {t("Profile details")}</p>
                     <p className="text-xs text-[#6C8589]">
-                      {isEditing
+                      {t(isEditing
                         ? "Update your details, then save your changes at the bottom."
-                        : "Select the pencil to update your information."}
+                        : "Select the pencil to update your information.")}
                     </p>
                   </div>
 
                   {isEditing ? (
                     <span className="shrink-0 rounded-full bg-[#FFF4D6] px-3 py-1 text-[11px] font-bold text-[#8A5F00]">
-                      Editing
-                    </span>
+                      {t("Editing")}</span>
                   ) : (
                     <button
                       type="button"
                       onClick={startEditing}
                       disabled={isSaving}
-                      aria-label="Edit profile"
+                      aria-label={t("Edit profile")}
                       className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-[#D5E4E2] bg-white px-4 text-xs font-bold text-[#06424B] transition-colors hover:border-[#FFAB0B] hover:bg-[#FFF4D6] focus:outline-none focus:ring-4 focus:ring-[#FFAB0B]/25 disabled:opacity-50"
                     >
                       <Pencil size={15} />
-                      Edit profile
-                    </button>
+                      {t("Edit profile")}</button>
                   )}
                 </div>
 
@@ -805,8 +841,7 @@ function StudentSettings() {
                   action={
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF3F4] px-3 py-1 text-[11px] font-bold text-[#526D71]">
                       <Lock size={12} />
-                      Read only
-                    </span>
+                      {t("Read only")}</span>
                   }
                 >
                   <ProfileValue
@@ -815,9 +850,7 @@ function StudentSettings() {
                   />
 
                   <p className="mt-3 text-xs text-[#6C8589]">
-                    Your email cannot be changed here. Password changes are
-                    handled separately from profile settings.
-                  </p>
+                    {t("Your email cannot be changed here. Password changes are handled separately from profile settings.")}</p>
                 </SettingsSection>
 
                 {/* Notifications (backend not available yet) */}
@@ -828,14 +861,11 @@ function StudentSettings() {
                   icon={Bell}
                   action={
                     <span className="rounded-full bg-[#FFF4D6] px-3 py-1 text-[11px] font-bold text-[#8A5F00]">
-                      Coming soon
-                    </span>
+                      {t("Coming soon")}</span>
                   }
                 >
                   <p className="rounded-xl border border-dashed border-[#D5E4E2] bg-[#F8FAF9] px-4 py-3 text-sm text-[#5A7478]">
-                    These preferences will be available once the notification
-                    settings service is connected.
-                  </p>
+                    {t("These preferences will be available once the notification settings service is connected.")}</p>
                 </SettingsSection>
 
                 {/* Sticky action bar, shown only while editing */}
@@ -850,13 +880,11 @@ function StudentSettings() {
                       {isDirty ? (
                         <>
                           <span className="h-2 w-2 rounded-full bg-[#FFAB0B]" />
-                          You have unsaved changes
-                        </>
+                          {t("You have unsaved changes")}</>
                       ) : (
                         <>
-                          Fields marked with{" "}
-                          <span className="text-[#C0392B]">*</span> are required
-                        </>
+                          {t("Fields marked with")}
+                          <span className="text-[#C0392B]">{t("*")}</span> {t("are required")}</>
                       )}
                     </p>
 
@@ -868,8 +896,7 @@ function StudentSettings() {
                         className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#D5E4E2] bg-white px-4 text-sm font-semibold text-[#06424B] transition-colors hover:bg-[#F2F6F5] disabled:opacity-50"
                       >
                         <X size={15} />
-                        Cancel
-                      </button>
+                        {t("Cancel")}</button>
 
                       <button
                         type="submit"
@@ -877,19 +904,33 @@ function StudentSettings() {
                         className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0A515B] focus:outline-none focus:ring-4 focus:ring-[#FFAB0B]/30 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Save size={15} />
-                        Save changes
-                      </button>
+                        {t("Save changes")}</button>
                     </div>
                   </div>
                 )}
               </form>
             )}
+
+            <div className="mt-6">
+              <SettingsSection
+                id="language-preference"
+                title="Language preference"
+                description="Choose the language used throughout Skill Next."
+                icon={Globe2}
+              >
+                <div className="flex justify-start">
+                  <div className="w-full sm:w-[260px]">
+                    <LanguageSwitcher variant="sidebar" />
+                  </div>
+                </div>
+              </SettingsSection>
+            </div>
           </div>
         </div>
       </PageShell>
 
       {/* Dashboard loader: first load, refresh and save */}
-      <Loader open={isLoading || isSaving} text={loaderText} />
+      <Loader open={isLoading || isSaving} text={t(loaderText)} />
 
       {/* Success and error popup */}
       <MessageDialog dialog={dialog} onClose={closeDialog} />

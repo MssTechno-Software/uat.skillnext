@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
@@ -52,7 +53,9 @@ const getStudentErrorMessage = (error, fallbackMessage) => {
     return error.message;
   }
 
-  return validationMessage || getApiErrorMessage(error, fallbackMessage);
+  return validationMessage
+    ? validationMessage
+    : getApiErrorMessage(error, fallbackMessage);
 };
 
 const isAnswerComplete = (value) => {
@@ -129,14 +132,11 @@ function LoadingScreen() {
           </span>
 
           <p className="mt-6 text-[10px] font-black uppercase tracking-[1.8px] text-[#A87916]">
-            Skill Next · Final assessment
-          </p>
+            {translateValue("Skill Next · Final assessment")}</p>
           <h1 className="mt-2 text-2xl font-black tracking-tight text-[#06424B] sm:text-[28px]">
-            Preparing your assessment
-          </h1>
+            {translateValue("Preparing your assessment")}</h1>
           <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#718486]">
-            We are securely retrieving your assessment details. This page will move to the instructions once everything is ready.
-          </p>
+            {translateValue("We are securely retrieving your assessment details. This page will move to the instructions once everything is ready.")}</p>
 
           <div className="mx-auto mt-8 max-w-sm space-y-3" aria-hidden="true">
             <div className="h-3 w-full animate-pulse rounded-full bg-[#EEF3F4]" />
@@ -144,8 +144,7 @@ function LoadingScreen() {
             <div className="h-3 w-3/5 animate-pulse rounded-full bg-[#EEF3F4]" />
           </div>
           <p className="mt-7 text-[10px] font-semibold tracking-wide text-[#91A1A2]">
-            PLEASE KEEP THIS PAGE OPEN
-          </p>
+            {translateValue("PLEASE KEEP THIS PAGE OPEN")}</p>
         </div>
       </section>
     </main>
@@ -165,17 +164,15 @@ function ErrorScreen({ message, onRetry, courseId }) {
             <AlertCircle size={24} />
           </span>
           <p className="mt-5 text-[10px] font-black uppercase tracking-[1.6px] text-[#FFD47A]">
-            Final assessment unavailable
-          </p>
-          <h1 className="mt-2 text-2xl font-black">We couldn't open this assessment</h1>
+            {translateValue("Final assessment unavailable")}</p>
+          <h1 className="mt-2 text-2xl font-black">{translateValue("We couldn't open this assessment")}</h1>
           <p className="mt-2 text-sm leading-6 text-white/70">
-            The assessment could not be prepared. Your attempt has not been started from this page.
-          </p>
+            {translateValue("The assessment could not be prepared. Your attempt has not been started from this page.")}</p>
         </div>
         <div className="p-7 sm:p-9">
           <div role="alert" className="flex items-start gap-3 rounded-2xl border border-[#F0D8D2] bg-[#FFF8F6] p-4">
             <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#A85A50]" />
-            <p className="text-sm leading-6 text-[#80534D]">{message}</p>
+            <p className="text-sm leading-6 text-[#80534D]">{translateValue(message)}</p>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <button
@@ -183,14 +180,12 @@ function ErrorScreen({ message, onRetry, courseId }) {
               onClick={onRetry}
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] transition hover:bg-[#FFC13C]"
             >
-              <LoaderCircle size={15} /> Try Again
-            </button>
+              <LoaderCircle size={15} /> {translateValue("Try Again")}</button>
             <Link
               to={backPath}
               className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E4] px-5 text-sm font-bold text-[#06424B] !no-underline transition hover:bg-[#F4F7F7]"
             >
-              <ArrowLeft size={15} /> Back to My Learning
-            </Link>
+              <ArrowLeft size={15} /> {translateValue("Back to My Learning")}</Link>
           </div>
         </div>
       </section>
@@ -266,18 +261,14 @@ function InstructionModal({
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-black uppercase tracking-[1.7px] text-[#A87916]">
-                Before you begin
-              </p>
+                {translateValue("Before you begin")}</p>
               <h2 id="final-instructions-title" className="mt-1 text-xl font-black tracking-tight text-[#06424B] sm:text-[26px]">
-                Final assessment instructions
-              </h2>
+                {translateValue("Final assessment instructions")}</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[#718486]">
-                Please review the assessment details and rules carefully. Your timer starts only after the assessment start request succeeds.
-              </p>
+                {translateValue("Please review the assessment details and rules carefully. Your timer starts only after the assessment start request succeeds.")}</p>
             </div>
             <span className="hidden shrink-0 rounded-full border border-[#E7ECEA] bg-[#F8FAF9] px-3 py-1.5 text-[9px] font-black uppercase tracking-[1.1px] text-[#718486] sm:inline-flex">
-              Final exam
-            </span>
+              {translateValue("Final exam")}</span>
           </div>
         </header>
 
@@ -287,10 +278,10 @@ function InstructionModal({
               <div key={label} className="rounded-2xl border border-[#E6ECEA] bg-[#F8FAF9] p-3.5 sm:p-4">
                 <div className="flex items-center gap-2 text-[#9A7A37]">
                   <Icon size={14} />
-                  <p className="text-[10px] font-bold text-[#829596]">{label}</p>
+                  <p className="text-[10px] font-bold text-[#829596]">{translateValue(label)}</p>
                 </div>
                 <p className="mt-2 text-base font-black leading-5 text-[#06424B] sm:text-lg">
-                  {value}
+                  {translateValue(value)}
                 </p>
               </div>
             ))}
@@ -298,17 +289,17 @@ function InstructionModal({
 
           <div>
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="text-sm font-black text-[#06424B]">Important rules</h3>
-              <span className="text-[10px] font-semibold text-[#91A1A2]">Please read all 6 rules</span>
+              <h3 className="text-sm font-black text-[#06424B]">{translateValue("Important rules")}</h3>
+              <span className="text-[10px] font-semibold text-[#91A1A2]">{translateValue("Please read all 6 rules")}</span>
             </div>
             <div className="space-y-2.5">
               {instructions.map((instruction, index) => (
                 <div key={instruction} className="flex items-start gap-3 rounded-2xl border border-[#E8EFED] bg-white px-3.5 py-3 sm:px-4 sm:py-3.5">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#F1E1B8] bg-[#FFF7E5] text-xs font-black text-[#93660F]">
-                    {index + 1}
+                    {translateValue(index + 1)}
                   </span>
                   <p className="pt-0.5 text-[13px] leading-6 text-[#526D71] sm:text-sm">
-                    {instruction}
+                    {translateValue(instruction)}
                   </p>
                 </div>
               ))}
@@ -318,7 +309,7 @@ function InstructionModal({
           {instructionError && (
             <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-[#F0D8D2] bg-[#FFF8F6] px-4 py-3">
               <AlertCircle size={16} className="mt-0.5 shrink-0 text-[#A85A50]" />
-              <p className="text-xs leading-5 text-[#80534D]">{instructionError}</p>
+              <p className="text-xs leading-5 text-[#80534D]">{translateValue(instructionError)}</p>
             </div>
           )}
         </div>
@@ -332,8 +323,7 @@ function InstructionModal({
               className="mt-1 h-4 w-4 shrink-0 accent-[#A87916]"
             />
             <span className="text-[13px] font-semibold leading-6 text-[#38565A] sm:text-sm">
-              I have read and understood the instructions. I am ready to begin the final assessment.
-            </span>
+              {translateValue("I have read and understood the instructions. I am ready to begin the final assessment.")}</span>
           </label>
 
           <button
@@ -343,12 +333,11 @@ function InstructionModal({
             className="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-black text-[#06424B] shadow-[0_7px_18px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none"
           >
             {isStarting ? <LoaderCircle size={17} className="animate-spin" /> : <ShieldCheck size={17} />}
-            {isStarting ? "Starting assessment..." : "Accept & Start Assessment"}
+            {translateValue(isStarting ? "Starting assessment..." : "Accept & Start Assessment")}
             {!isStarting && <ArrowRight size={16} />}
           </button>
           <p className="mt-3 text-center text-[10px] leading-5 text-[#91A1A2]">
-            The attempt is counted only after the server successfully starts it. The instruction screen does not use an attempt.
-          </p>
+            {translateValue("The attempt is counted only after the server successfully starts it. The instruction screen does not use an attempt.")}</p>
         </footer>
       </section>
     </div>
@@ -498,18 +487,18 @@ function CodingEditor({ question, value, onChange, disabled }) {
   return (
     <div className="mt-6 overflow-hidden rounded-[22px] border border-[#D8E4E2] bg-[#102B30] shadow-[0_16px_38px_rgba(6,66,75,0.12)]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#173A40] px-4 py-3 sm:px-5">
-        <div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFAB0B]/15 text-[#FFAB0B]"><Code2 size={18}/></span><div><p className="text-xs font-extrabold text-white">Coding workspace</p><p className="mt-0.5 text-[10px] text-[#A9C0C0]">{isPython?'Python browser runtime':isBrowserLanguage?'Live browser preview':isJava?'Java compiler setup required':'Code editor'}</p></div></div>
-        <div className="flex items-center gap-2"><span className="rounded-lg border border-white/10 bg-white/[0.07] px-3 py-2 text-[10px] font-bold uppercase tracking-[1px] text-[#FFD47A]">{question.language||'Python'}</span><button type="button" onClick={copyCode} disabled={!code} className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.07] px-3 text-[11px] font-semibold text-white transition hover:bg-white/[0.13] disabled:opacity-40"><Copy size={13}/>{copied?'Copied':'Copy'}</button></div>
+        <div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFAB0B]/15 text-[#FFAB0B]"><Code2 size={18}/></span><div><p className="text-xs font-extrabold text-white">{translateValue("Coding workspace")}</p><p className="mt-0.5 text-[10px] text-[#A9C0C0]">{translateValue(isPython?'Python browser runtime':isBrowserLanguage?'Live browser preview':isJava?'Java compiler setup required':'Code editor')}</p></div></div>
+        <div className="flex items-center gap-2"><span className="rounded-lg border border-white/10 bg-white/[0.07] px-3 py-2 text-[10px] font-bold uppercase tracking-[1px] text-[#FFD47A]">{translateValue(question.language||'Python')}</span><button type="button" onClick={copyCode} disabled={!code} className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.07] px-3 text-[11px] font-semibold text-white transition hover:bg-white/[0.13] disabled:opacity-40"><Copy size={13}/>{translateValue(copied?'Copied':'Copy')}</button></div>
       </div>
-      <div className="overflow-hidden bg-[#102B30]"><Editor height="360px" language={monacoLanguage} theme="vs-dark" value={code} onChange={next=>onChange(next??'')} loading={<div className="flex h-[360px] items-center justify-center text-xs text-[#A9C0C0]">Loading code editor...</div>} options={{readOnly:disabled,minimap:{enabled:false},fontSize:13,lineHeight:23,fontFamily:"'Cascadia Code','Fira Code',Consolas,monospace",fontLigatures:true,automaticLayout:true,scrollBeyondLastLine:false,wordWrap:'on',tabSize:4,insertSpaces:true,padding:{top:16,bottom:16},lineNumbers:'on',renderLineHighlight:'all',roundedSelection:true,cursorBlinking:'smooth',smoothScrolling:true,contextmenu:true,suggestOnTriggerCharacters:true,quickSuggestions:true,overviewRulerBorder:false,scrollbar:{verticalScrollbarSize:8,horizontalScrollbarSize:8}}}/></div>
+      <div className="overflow-hidden bg-[#102B30]"><Editor height="360px" language={monacoLanguage} theme="vs-dark" value={code} onChange={next=>onChange(next??'')} loading={<div className="flex h-[360px] items-center justify-center text-xs text-[#A9C0C0]">{translateValue("Loading code editor...")}</div>} options={{readOnly:disabled,minimap:{enabled:false},fontSize:13,lineHeight:23,fontFamily:"'Cascadia Code','Fira Code',Consolas,monospace",fontLigatures:true,automaticLayout:true,scrollBeyondLastLine:false,wordWrap:'on',tabSize:4,insertSpaces:true,padding:{top:16,bottom:16},lineNumbers:'on',renderLineHighlight:'all',roundedSelection:true,cursorBlinking:'smooth',smoothScrolling:true,contextmenu:true,suggestOnTriggerCharacters:true,quickSuggestions:true,overviewRulerBorder:false,scrollbar:{verticalScrollbarSize:8,horizontalScrollbarSize:8}}}/></div>
       <div className="grid gap-4 border-t border-white/10 bg-[#173A40] p-4 sm:p-5 lg:grid-cols-2">
-        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><label htmlFor={`stdin-${question.id}`} className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#D9E7E5]"><Terminal size={14} className="text-[#FFAB0B]"/>Input (stdin)</label><span className="text-[10px] text-[#A9C0C0]">One value per line</span></div><textarea id={`stdin-${question.id}`} value={stdin} onChange={e=>setStdin(e.target.value)} disabled={disabled||isRunning} rows={4} placeholder={'Example:\n10\n20'} className="w-full resize-y rounded-xl border border-white/10 bg-[#102B30] px-3 py-3 font-mono text-xs leading-6 text-white outline-none placeholder:text-[#668084] focus:border-[#FFAB0B]/60 disabled:opacity-60"/></div>
-        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><button type="button" onClick={()=>setActiveTab('output')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='output'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>Output</button>{isBrowserLanguage&&<button type="button" onClick={()=>setActiveTab('preview')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='preview'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>Preview</button>}</div>{runtimeReady&&<span className="text-[10px] text-[#A7D98E]">Runtime ready</span>}</div>
-          {activeTab==='preview'&&showPreview&&isBrowserLanguage?<iframe key={activeRunIdRef.current} ref={previewFrameRef} title={`Code preview ${question.id}`} srcDoc={previewDocument} sandbox="allow-scripts allow-modals" className="h-[230px] w-full rounded-xl border border-white/10 bg-white"/>:<div className="min-h-[112px] max-h-[230px] overflow-auto rounded-xl border border-white/10 bg-[#0B2024] p-3 font-mono text-xs leading-6 text-[#DCE9E7]">{runError?<pre className="whitespace-pre-wrap break-words text-[#FFB4A9]">{runError}</pre>:output?<pre className="whitespace-pre-wrap break-words">{output}</pre>:<p className="text-[#668084]">Run your code to see the output here.</p>}</div>}
+        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><label htmlFor={`stdin-${question.id}`} className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#D9E7E5]"><Terminal size={14} className="text-[#FFAB0B]"/>{translateValue("Input (stdin)")}</label><span className="text-[10px] text-[#A9C0C0]">{translateValue("One value per line")}</span></div><textarea id={`stdin-${question.id}`} value={stdin} onChange={e=>setStdin(e.target.value)} disabled={disabled||isRunning} rows={4} placeholder={translateValue('Example:\n10\n20')} className="w-full resize-y rounded-xl border border-white/10 bg-[#102B30] px-3 py-3 font-mono text-xs leading-6 text-white outline-none placeholder:text-[#668084] focus:border-[#FFAB0B]/60 disabled:opacity-60"/></div>
+        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><button type="button" onClick={()=>setActiveTab('output')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='output'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>{translateValue("Output")}</button>{isBrowserLanguage&&<button type="button" onClick={()=>setActiveTab('preview')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='preview'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>{translateValue("Preview")}</button>}</div>{runtimeReady&&<span className="text-[10px] text-[#A7D98E]">{translateValue("Runtime ready")}</span>}</div>
+          {activeTab==='preview'&&showPreview&&isBrowserLanguage?<iframe key={activeRunIdRef.current} ref={previewFrameRef} title={translateValue("Code preview {{id}}", { id: question.id })} srcDoc={previewDocument} sandbox="allow-scripts allow-modals" className="h-[230px] w-full rounded-xl border border-white/10 bg-white"/>:<div className="min-h-[112px] max-h-[230px] overflow-auto rounded-xl border border-white/10 bg-[#0B2024] p-3 font-mono text-xs leading-6 text-[#DCE9E7]">{runError?<pre className="whitespace-pre-wrap break-words text-[#FFB4A9]">{runError}</pre>:output?<pre className="whitespace-pre-wrap break-words">{output}</pre>:<p className="text-[#668084]">{translateValue("Run your code to see the output here.")}</p>}</div>}
           {runError&&activeTab==='preview'&&<pre className="mt-2 max-h-20 overflow-auto whitespace-pre-wrap break-words text-[11px] text-[#FFB4A9]">{runError}</pre>}
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#102B30] px-4 py-3 sm:px-5"><p className="max-w-xl text-[10px] leading-5 text-[#A9C0C0]">{isPython?'Python runs in-browser using Pyodide.':isBrowserLanguage?'HTML, CSS, JavaScript and React run inside a sandboxed browser preview.':isJava?'Java source compilation needs an execution service or browser compiler.':'Execution is not configured.'} Your code is included in the assessment submission.</p><div className="flex items-center gap-3"><span className="hidden rounded-full bg-[#FFAB0B]/10 px-3 py-1.5 text-[10px] font-bold text-[#FFD47A] sm:inline-flex">{Number(question.score)||0} {Number(question.score)===1?'mark':'marks'}</span><button type="button" onClick={handleRun} disabled={disabled||isRunning||(!isPython&&!isBrowserLanguage&&!isJava)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#173A40] shadow-[0_5px_16px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC044] disabled:cursor-not-allowed disabled:opacity-50">{isRunning?<LoaderCircle size={15} className="animate-spin"/>:<Play size={15} fill="currentColor"/>}{isRunning?'Running...':'Run Code'}</button></div></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#102B30] px-4 py-3 sm:px-5"><p className="max-w-xl text-[10px] leading-5 text-[#A9C0C0]">{translateValue(isPython?'Python runs in-browser using Pyodide.':isBrowserLanguage?'HTML, CSS, JavaScript and React run inside a sandboxed browser preview.':isJava?'Java source compilation needs an execution service or browser compiler.':'Execution is not configured.')} {translateValue("Your code is included in the assessment submission.")}</p><div className="flex items-center gap-3"><span className="hidden rounded-full bg-[#FFAB0B]/10 px-3 py-1.5 text-[10px] font-bold text-[#FFD47A] sm:inline-flex">{translateValue(Number(question.score)||0)} {translateValue(Number(question.score)===1?'mark':'marks')}</span><button type="button" onClick={handleRun} disabled={disabled||isRunning||(!isPython&&!isBrowserLanguage&&!isJava)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#173A40] shadow-[0_5px_16px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC044] disabled:cursor-not-allowed disabled:opacity-50">{isRunning?<LoaderCircle size={15} className="animate-spin"/>:<Play size={15} fill="currentColor"/>}{translateValue(isRunning?'Running...':'Run Code')}</button></div></div>
     </div>
   );
 }
@@ -549,7 +538,7 @@ function QuestionAnswer({ question, value, onChange, disabled, isITCourse }) {
                 : "border-[#E2EBE9] bg-white text-[#38565A] hover:border-[#D6B76D]"
             } disabled:cursor-not-allowed disabled:opacity-60`}
           >
-            {option ? "True" : "False"}
+            {translateValue(option ? "True" : "False")}
             <span className={`flex h-7 w-7 items-center justify-center rounded-full border ${selected === option ? "border-[#06424B] bg-[#06424B] text-white" : "border-[#D5E1DE] text-transparent"}`}>
               <Check size={15} />
             </span>
@@ -599,7 +588,7 @@ function QuestionAnswer({ question, value, onChange, disabled, isITCourse }) {
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#F0F5F4] text-xs font-black text-[#526D71]">
                 {isMultiple ? (selected ? <Check size={15} /> : index + 1) : String.fromCharCode(65 + index)}
               </span>
-              <span className="min-w-0 flex-1 font-semibold leading-6">{option.text ?? option.label ?? String(option.value ?? "")}</span>
+              <span className="min-w-0 flex-1 font-semibold leading-6">{translateValue(option.text ?? option.label ?? String(option.value ?? ""))}</span>
               {selected && <CheckCircle2 size={18} className="shrink-0 text-[#06424B]" />}
             </label>
           );
@@ -611,7 +600,7 @@ function QuestionAnswer({ question, value, onChange, disabled, isITCourse }) {
   return (
     <div className="mt-6">
       <label htmlFor={`final-answer-${question.id}`} className="mb-2 block text-xs font-extrabold uppercase tracking-[0.8px] text-[#526D71]">
-        {isCode ? "Your solution" : isEssay ? "Your response" : "Your answer"}
+        {translateValue(isCode ? "Your solution" : isEssay ? "Your response" : "Your answer")}
       </label>
       {isCode || isEssay ? (
         <textarea
@@ -621,7 +610,7 @@ function QuestionAnswer({ question, value, onChange, disabled, isITCourse }) {
           disabled={disabled}
           rows={isCode ? 12 : 7}
           spellCheck={!isCode}
-          placeholder={isCode ? "Write your solution here..." : "Write your response here..."}
+          placeholder={translateValue(isCode ? "Write your solution here..." : "Write your response here...")}
           className={`w-full resize-y rounded-2xl border border-[#DCE8E6] bg-[#FCFDFD] px-4 py-4 text-sm leading-7 text-[#23464B] outline-none transition focus:border-[#06424B] focus:ring-4 focus:ring-[#06424B]/[0.07] disabled:bg-[#F4F7F7] ${isCode ? "font-mono text-[13px]" : ""}`}
         />
       ) : (
@@ -632,7 +621,7 @@ function QuestionAnswer({ question, value, onChange, disabled, isITCourse }) {
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
           autoComplete="off"
-          placeholder="Enter your answer..."
+          placeholder={translateValue("Enter your answer...")}
           className="h-12 w-full rounded-2xl border border-[#DCE8E6] bg-[#FCFDFD] px-4 text-sm text-[#23464B] outline-none transition focus:border-[#06424B] focus:ring-4 focus:ring-[#06424B]/[0.07] disabled:bg-[#F4F7F7]"
         />
       )}
@@ -1058,15 +1047,15 @@ function FinalAssessmentPage() {
   };
 
   if (isLoading) return <LoadingScreen />;
-  if (loadError || !assessment) return <ErrorScreen message={loadError || "The final assessment was not found."} onRetry={loadFinalAssessment} courseId={courseId} />;
+  if (loadError || !assessment) return <ErrorScreen message={translateValue(loadError || "The final assessment was not found.")} onRetry={loadFinalAssessment} courseId={courseId} />;
 
   if (isSubmitting) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#EEF3F4] px-4">
         <section className="w-full max-w-lg rounded-[28px] border border-[#DFE8E8] bg-white p-8 text-center shadow-xl">
           <LoaderCircle size={32} className="mx-auto animate-spin text-[#B77A06]" />
-          <h1 className="mt-5 text-2xl font-black text-[#06424B]">Submitting your assessment</h1>
-          <p className="mt-2 text-sm leading-6 text-[#718486]">Your answers are being saved and evaluated. Please keep this page open.</p>
+          <h1 className="mt-5 text-2xl font-black text-[#06424B]">{translateValue("Submitting your assessment")}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#718486]">{translateValue("Your answers are being saved and evaluated. Please keep this page open.")}</p>
         </section>
       </main>
     );
@@ -1083,36 +1072,33 @@ function FinalAssessmentPage() {
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#FFAB0B]">
               {result.passed ? <Trophy size={30} /> : <Award size={30} />}
             </span>
-            <p className="mt-5 text-[10px] font-black uppercase tracking-[1.7px] text-[#FFD47A]">Final assessment result</p>
-            <h1 className="mt-2 text-3xl font-black">{result.passed ? "Assessment passed" : "Assessment submitted"}</h1>
-            <p className="mt-2 text-sm text-white/75">{result.passed ? "Well done. Your final assessment was passed." : "Your attempt has been submitted. Review your course status in My Learning."}</p>
+            <p className="mt-5 text-[10px] font-black uppercase tracking-[1.7px] text-[#FFD47A]">{translateValue("Final assessment result")}</p>
+            <h1 className="mt-2 text-3xl font-black">{translateValue(result.passed ? "Assessment passed" : "Assessment submitted")}</h1>
+            <p className="mt-2 text-sm text-white/75">{translateValue(result.passed ? "Well done. Your final assessment was passed." : "Your attempt has been submitted. Review your course status in My Learning.")}</p>
           </div>
           <div className="grid gap-3 p-6 sm:grid-cols-3 sm:p-8">
             <div className="rounded-2xl bg-[#F4F7F7] p-4 text-center">
-              <p className="text-[10px] font-bold text-[#829596]">Your score</p>
-              <p className="mt-1 text-2xl font-black text-[#06424B]">{resultPercentage === null ? "—" : `${resultPercentage}%`}</p>
+              <p className="text-[10px] font-bold text-[#829596]">{translateValue("Your score")}</p>
+              <p className="mt-1 text-2xl font-black text-[#06424B]">{translateValue(resultPercentage === null ? "—" : `${resultPercentage}%`)}</p>
             </div>
             <div className="rounded-2xl bg-[#F4F7F7] p-4 text-center">
-              <p className="text-[10px] font-bold text-[#829596]">Questions</p>
-              <p className="mt-1 text-2xl font-black text-[#06424B]">{result.totalQuestions}</p>
+              <p className="text-[10px] font-bold text-[#829596]">{translateValue("Questions")}</p>
+              <p className="mt-1 text-2xl font-black text-[#06424B]">{translateValue(result.totalQuestions)}</p>
             </div>
             <div className="rounded-2xl bg-[#F4F7F7] p-4 text-center">
-              <p className="text-[10px] font-bold text-[#829596]">Focus warnings</p>
-              <p className="mt-1 text-2xl font-black text-[#06424B]">{result.focusViolationCount}/{MAX_FOCUS_VIOLATIONS}</p>
+              <p className="text-[10px] font-bold text-[#829596]">{translateValue("Focus warnings")}</p>
+              <p className="mt-1 text-2xl font-black text-[#06424B]">{translateValue(result.focusViolationCount)}{translateValue("/")}{translateValue(MAX_FOCUS_VIOLATIONS)}</p>
             </div>
           </div>
           {result.autoSubmitted && (
             <p className="mx-6 rounded-xl border border-[#F0DFB8] bg-[#FFF8E8] px-4 py-3 text-xs leading-5 text-[#805C17] sm:mx-8">
-              This attempt was automatically submitted because the timer ended or the focus-violation limit was reached.
-            </p>
+              {translateValue("This attempt was automatically submitted because the timer ended or the focus-violation limit was reached.")}</p>
           )}
           <div className="flex flex-wrap justify-center gap-3 px-6 pb-7 pt-5 sm:px-8">
             <Link to={myLearningPath} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline transition hover:bg-[#FFC13C]">
-              <ArrowLeft size={16} /> Back to My Learning
-            </Link>
+              <ArrowLeft size={16} /> {translateValue("Back to My Learning")}</Link>
             <button type="button" onClick={loadFinalAssessment} className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E4] px-5 text-sm font-bold text-[#06424B] transition hover:bg-[#F4F7F7]">
-              Refresh course status
-            </button>
+              {translateValue("Refresh course status")}</button>
           </div>
         </section>
       </main>
@@ -1139,17 +1125,17 @@ function FinalAssessmentPage() {
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#06424B] text-[#FFAB0B]"><GraduationCap size={21} /></span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-black text-[#06424B]">{assignment?.title || assessment.title || "Final Course Assessment"}</p>
-                <p className="text-[10px] font-bold uppercase tracking-[1px] text-[#829596]">Secure assessment session</p>
+                <p className="truncate text-sm font-black text-[#06424B]">{translateValue(assignment?.title || assessment.title || "Final Course Assessment")}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[1px] text-[#829596]">{translateValue("Secure assessment session")}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6ECEA] bg-[#F7FAF9] px-3 py-2 text-[10px] font-extrabold text-[#526D71]">
-                <ShieldAlert size={13} className="text-[#A87916]" /> Focus warnings: {focusViolationCount}/{MAX_FOCUS_VIOLATIONS}
+                <ShieldAlert size={13} className="text-[#A87916]" /> {translateValue("Focus warnings:")}{" "}{translateValue(focusViolationCount)}{translateValue("/")}{translateValue(MAX_FOCUS_VIOLATIONS)}
               </span>
               {secondsLeft !== null && (
                 <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black tabular-nums ${secondsLeft <= 60 ? "bg-[#FFF0ED] text-[#B54B3E]" : "bg-[#06424B] text-white"}`}>
-                  <Clock3 size={15} /> {formatDuration(secondsLeft)}
+                  <Clock3 size={15} /> {translateValue(formatDuration(secondsLeft))}
                 </span>
               )}
             </div>
@@ -1161,10 +1147,10 @@ function FinalAssessmentPage() {
             <div className="border-b border-[#EAF0EF] px-5 py-5 sm:px-7">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[1.4px] text-[#A87916]">Question {questionIndex + 1} of {activeQuestions.length}</p>
-                  <h1 className="mt-1 text-lg font-black text-[#06424B] sm:text-xl">{currentQuestion?.title || "Answer the question"}</h1>
+                  <p className="text-[10px] font-black uppercase tracking-[1.4px] text-[#A87916]">{translateValue("Question")}{" "}{translateValue(questionIndex + 1)} {translateValue("of")}{" "}{translateValue(activeQuestions.length)}</p>
+                  <h1 className="mt-1 text-lg font-black text-[#06424B] sm:text-xl">{translateValue(currentQuestion?.title || "Answer the question")}</h1>
                 </div>
-                <span className="rounded-full bg-[#F4F7F7] px-3 py-1.5 text-[10px] font-extrabold text-[#607B7E]">{answeredCount} answered</span>
+                <span className="rounded-full bg-[#F4F7F7] px-3 py-1.5 text-[10px] font-extrabold text-[#607B7E]">{translateValue(answeredCount)} {translateValue("answered")}</span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#EDF2F1]">
                 <div className="h-full rounded-full bg-gradient-to-r from-[#06424B] to-[#FFAB0B] transition-all" style={{ width: `${progress}%` }} />
@@ -1173,8 +1159,8 @@ function FinalAssessmentPage() {
 
             <div className="p-5 sm:p-7">
               <div className="rounded-2xl bg-[#F8FAFA] p-4 sm:p-5">
-                <p className="text-[10px] font-black uppercase tracking-[1.2px] text-[#829596]">Question</p>
-                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-7 text-[#284B50]">{currentQuestion?.questionText || currentQuestion?.question || currentQuestion?.text || "Question text is unavailable."}</p>
+                <p className="text-[10px] font-black uppercase tracking-[1.2px] text-[#829596]">{translateValue("Question")}</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-7 text-[#284B50]">{translateValue(currentQuestion?.questionText || currentQuestion?.question || currentQuestion?.text || "Question text is unavailable.")}</p>
               </div>
 
               <QuestionAnswer
@@ -1185,20 +1171,19 @@ function FinalAssessmentPage() {
                 isITCourse={isITCourse}
               />
 
-              {answerValidation && <p role="alert" className="mt-5 rounded-xl border border-[#F0DFB8] bg-[#FFF8E8] px-4 py-3 text-xs leading-5 text-[#805C17]">{answerValidation}</p>}
-              {submitError && <p role="alert" className="mt-5 rounded-xl border border-[#F0D8D2] bg-[#FFF8F6] px-4 py-3 text-xs leading-5 text-[#80534D]">{submitError}</p>}
+              {answerValidation && <p role="alert" className="mt-5 rounded-xl border border-[#F0DFB8] bg-[#FFF8E8] px-4 py-3 text-xs leading-5 text-[#805C17]">{translateValue(answerValidation)}</p>}
+              {submitError && <p role="alert" className="mt-5 rounded-xl border border-[#F0D8D2] bg-[#FFF8F6] px-4 py-3 text-xs leading-5 text-[#80534D]">{translateValue(submitError)}</p>}
 
               <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[#EAF0EF] pt-5">
                 <button type="button" disabled={questionIndex === 0} onClick={() => setQuestionIndex((index) => Math.max(0, index - 1))} className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E4] px-4 text-sm font-bold text-[#526D71] transition hover:bg-[#F4F7F7] disabled:cursor-not-allowed disabled:opacity-40">
-                  <ArrowLeft size={15} /> Previous
-                </button>
+                  <ArrowLeft size={15} /> {translateValue("Previous")}</button>
                 {questionIndex < activeQuestions.length - 1 ? (
                   <button type="button" onClick={() => setQuestionIndex((index) => Math.min(activeQuestions.length - 1, index + 1))} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#06424B] px-5 text-sm font-extrabold text-white transition hover:bg-[#0B5962]">
-                    Next Question <ArrowRight size={15} />
+                    {translateValue("Next Question")}{" "}<ArrowRight size={15} />
                   </button>
                 ) : (
                   <button type="button" onClick={requestSubmit} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] transition hover:bg-[#FFC13C]">
-                    Review & Submit <CheckCircle2 size={16} />
+                    {translateValue("Review & Submit")}{" "}<CheckCircle2 size={16} />
                   </button>
                 )}
               </div>
@@ -1207,35 +1192,35 @@ function FinalAssessmentPage() {
 
           <aside className="space-y-4">
             <section className="rounded-[24px] border border-[#DFE8E8] bg-white p-5 shadow-[0_10px_28px_rgba(6,66,75,0.04)]">
-              <h2 className="text-sm font-black text-[#06424B]">Question navigator</h2>
-              <p className="mt-1 text-[11px] text-[#829596]">Select a number to review that question.</p>
+              <h2 className="text-sm font-black text-[#06424B]">{translateValue("Question navigator")}</h2>
+              <p className="mt-1 text-[11px] text-[#829596]">{translateValue("Select a number to review that question.")}</p>
               <div className="mt-4 grid grid-cols-5 gap-2">
                 {activeQuestions.map((question, index) => {
                   const isAnswered = isAnswerComplete(answers[question.id]);
                   return (
                     <button key={question.id} type="button" onClick={() => setQuestionIndex(index)} className={`flex h-10 items-center justify-center rounded-xl border text-xs font-black transition ${index === questionIndex ? "border-[#06424B] bg-[#06424B] text-white" : isAnswered ? "border-[#CFE5DB] bg-[#EAF4EF] text-[#28765E]" : "border-[#E2EAEA] bg-[#F8FAFA] text-[#718486]"}`}>
-                      {index + 1}
+                      {translateValue(index + 1)}
                     </button>
                   );
                 })}
               </div>
               <div className="mt-4 flex flex-wrap gap-3 text-[10px] font-semibold text-[#829596]">
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#06424B]" /> Current</span>
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#CFE5DB]" /> Answered</span>
-                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#E2EAEA]" /> Unanswered</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#06424B]" /> {translateValue("Current")}</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#CFE5DB]" /> {translateValue("Answered")}</span>
+                <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#E2EAEA]" /> {translateValue("Unanswered")}</span>
               </div>
             </section>
 
             <section className="rounded-[24px] border border-[#DFE8E8] bg-white p-5 shadow-[0_10px_28px_rgba(6,66,75,0.04)]">
-              <div className="flex items-center gap-2 text-[#06424B]"><ShieldCheck size={17} className="text-[#A87916]" /><h2 className="text-sm font-black">Assessment rules</h2></div>
-              <p className="mt-3 text-xs leading-6 text-[#718486]">Stay on this page. Copy/paste, right-click, and text selection are disabled. Focus violations are counted and the attempt is automatically submitted at {MAX_FOCUS_VIOLATIONS}.</p>
-              {fullscreenWarning && <p className="mt-3 rounded-xl border border-[#F0DFB8] bg-[#FFF8E8] p-3 text-[10px] leading-5 text-[#805C17]">{fullscreenWarning}</p>}
+              <div className="flex items-center gap-2 text-[#06424B]"><ShieldCheck size={17} className="text-[#A87916]" /><h2 className="text-sm font-black">{translateValue("Assessment rules")}</h2></div>
+              <p className="mt-3 text-xs leading-6 text-[#718486]">{translateValue("Stay on this page. Copy/paste, right-click, and text selection are disabled. Focus violations are counted and the attempt is automatically submitted at")}{" "}{translateValue(MAX_FOCUS_VIOLATIONS)}{translateValue(".")}</p>
+              {fullscreenWarning && <p className="mt-3 rounded-xl border border-[#F0DFB8] bg-[#FFF8E8] p-3 text-[10px] leading-5 text-[#805C17]">{translateValue(fullscreenWarning)}</p>}
               <div className="mt-4 flex items-center justify-between border-t border-[#EAF0EF] pt-4 text-xs">
-                <span className="font-semibold text-[#829596]">Answered</span>
-                <span className="font-black text-[#06424B]">{answeredCount} / {activeQuestions.length}</span>
+                <span className="font-semibold text-[#829596]">{translateValue("Answered")}</span>
+                <span className="font-black text-[#06424B]">{translateValue(answeredCount)} {translateValue("/")}{" "}{translateValue(activeQuestions.length)}</span>
               </div>
               <button type="button" onClick={requestSubmit} className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-xs font-black text-[#06424B] transition hover:bg-[#FFC13C]">
-                Submit Final Assessment <ArrowRight size={15} />
+                {translateValue("Submit Final Assessment")}{" "}<ArrowRight size={15} />
               </button>
             </section>
           </aside>
@@ -1246,17 +1231,17 @@ function FinalAssessmentPage() {
             <section role="dialog" aria-modal="true" className="w-full max-w-md overflow-hidden rounded-[26px] bg-white shadow-2xl">
               <div className="bg-[#06424B] px-6 py-6 text-white">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-[#FFAB0B]"><CheckCircle2 size={22} /></span>
-                <h2 className="mt-4 text-xl font-black">Submit final assessment?</h2>
-                <p className="mt-1 text-sm leading-6 text-white/70">Once submitted, your answers cannot be changed.</p>
+                <h2 className="mt-4 text-xl font-black">{translateValue("Submit final assessment?")}</h2>
+                <p className="mt-1 text-sm leading-6 text-white/70">{translateValue("Once submitted, your answers cannot be changed.")}</p>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between rounded-xl bg-[#F4F7F7] px-4 py-3 text-sm">
-                  <span className="font-semibold text-[#526D71]">Questions answered</span>
-                  <strong className="text-[#06424B]">{answeredCount} / {activeQuestions.length}</strong>
+                  <span className="font-semibold text-[#526D71]">{translateValue("Questions answered")}</span>
+                  <strong className="text-[#06424B]">{translateValue(answeredCount)} {translateValue("/")}{" "}{translateValue(activeQuestions.length)}</strong>
                 </div>
                 <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                  <button type="button" onClick={() => setShowSubmitConfirmation(false)} className="h-11 rounded-xl border border-[#DCE6E4] px-4 text-sm font-bold text-[#526D71]">Review answers</button>
-                  <button type="button" onClick={() => handleSubmit(false)} className="h-11 rounded-xl bg-[#FFAB0B] px-5 text-sm font-black text-[#06424B]">Confirm submit</button>
+                  <button type="button" onClick={() => setShowSubmitConfirmation(false)} className="h-11 rounded-xl border border-[#DCE6E4] px-4 text-sm font-bold text-[#526D71]">{translateValue("Review answers")}</button>
+                  <button type="button" onClick={() => handleSubmit(false)} className="h-11 rounded-xl bg-[#FFAB0B] px-5 text-sm font-black text-[#06424B]">{translateValue("Confirm submit")}</button>
                 </div>
               </div>
             </section>
@@ -1267,10 +1252,10 @@ function FinalAssessmentPage() {
           <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-[#263538]/45 p-4 backdrop-blur-[2px]">
             <section role="alertdialog" aria-modal="true" className="w-full max-w-md rounded-[26px] border border-white/40 bg-white p-6 shadow-2xl">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF0ED] text-[#B54B3E]"><ShieldAlert size={24} /></span>
-              <h2 className="mt-4 text-xl font-black text-[#06424B]">Focus warning</h2>
-              <p className="mt-2 text-sm leading-6 text-[#718486]">{violationMessage} Keep the assessment tab active. Reaching {MAX_FOCUS_VIOLATIONS} violations will automatically submit your current answers.</p>
+              <h2 className="mt-4 text-xl font-black text-[#06424B]">{translateValue("Focus warning")}</h2>
+              <p className="mt-2 text-sm leading-6 text-[#718486]">{translateValue(violationMessage)} {translateValue("Keep the assessment tab active. Reaching")}{" "}{translateValue(MAX_FOCUS_VIOLATIONS)} {translateValue("violations will automatically submit your current answers.")}</p>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#EEF2F1]"><div className="h-full rounded-full bg-[#D97757]" style={{ width: `${(focusViolationCount / MAX_FOCUS_VIOLATIONS) * 100}%` }} /></div>
-              <button type="button" onClick={dismissViolationWarning} className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-sm font-extrabold text-white"><Maximize2 size={15} /> Return to assessment</button>
+              <button type="button" onClick={dismissViolationWarning} className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-sm font-extrabold text-white"><Maximize2 size={15} /> {translateValue("Return to assessment")}</button>
             </section>
           </div>
         )}
@@ -1283,28 +1268,26 @@ function FinalAssessmentPage() {
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <Link to={myLearningPath} className="inline-flex items-center gap-2 text-sm font-bold text-[#587579] !no-underline transition hover:text-[#06424B]">
-            <ArrowLeft size={16} /> Back to My Learning
-          </Link>
+            <ArrowLeft size={16} /> {translateValue("Back to My Learning")}</Link>
           <span className="inline-flex items-center gap-2 rounded-full border border-[#E1EAE8] bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[1.2px] text-[#789094]">
-            <GraduationCap size={14} className="text-[#B88736]" /> Whole-course assessment
-          </span>
+            <GraduationCap size={14} className="text-[#B88736]" /> {translateValue("Whole-course assessment")}</span>
         </div>
 
         <section className="relative isolate overflow-hidden rounded-[30px] bg-gradient-to-br from-[#063B43] via-[#06424B] to-[#0D6068] px-6 py-8 text-white shadow-[0_18px_50px_rgba(6,66,75,0.14)] sm:px-10 sm:py-10">
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full border-[34px] border-white/[0.055]" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-3xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[1.4px] text-[#FFD47A]"><BookOpenCheck size={13} /> Final assessment</span>
-              <h1 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-4xl">{assessment.title || "Final Course Assessment"}</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">{assessment.description || "Complete this assessment to finish your course."}</p>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[1.4px] text-[#FFD47A]"><BookOpenCheck size={13} /> {translateValue("Final assessment")}</span>
+              <h1 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-4xl">{translateValue(assessment.title || "Final Course Assessment")}</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">{translateValue(assessment.description || "Complete this assessment to finish your course.")}</p>
               <span className={`mt-5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-black ${status.tone === "success" ? "border-[#CFE5DB] bg-[#EAF4EF] text-[#28765E]" : status.tone === "danger" ? "border-[#EAD9D4] bg-[#FFF5F2] text-[#A85A50]" : status.tone === "warning" ? "border-[#F0DFB8] bg-[#FFF8E8] text-[#916B18]" : "border-white/20 bg-white/10 text-white"}`}>
-                {status.tone === "success" ? <CheckCircle2 size={13} /> : <Info size={13} />}{status.label}
+                {status.tone === "success" ? <CheckCircle2 size={13} /> : <Info size={13} />}{translateValue(status.label)}
               </span>
             </div>
             <div className="flex h-[122px] w-[122px] shrink-0 flex-col items-center justify-center self-start rounded-[26px] border border-white/15 bg-white/[0.08] text-center lg:self-center">
               <Trophy size={27} className="text-[#FFAB0B]" />
-              <span className="mt-2 text-2xl font-black tabular-nums text-white">{Number(assessment.passPercentage) || 0}%</span>
-              <span className="mt-0.5 text-[9px] font-black uppercase tracking-[1.1px] text-white/60">To pass</span>
+              <span className="mt-2 text-2xl font-black tabular-nums text-white">{translateValue(Number(assessment.passPercentage) || 0)}{translateValue("%")}</span>
+              <span className="mt-0.5 text-[9px] font-black uppercase tracking-[1.1px] text-white/60">{translateValue("To pass")}</span>
             </div>
           </div>
         </section>
@@ -1317,8 +1300,8 @@ function FinalAssessmentPage() {
             { icon: ShieldCheck, label: "Passing score", value: `${Number(assessment.passPercentage) || 0}%` },
           ].map((item) => (
             <div key={item.label} className="rounded-2xl border border-[#E2EAEA] bg-white p-4 shadow-[0_6px_18px_rgba(6,66,75,0.025)]">
-              <div className="flex items-center gap-2 text-[#829596]"><item.icon size={16} className="text-[#A87916]" /><p className="text-[11px] font-bold">{item.label}</p></div>
-              <p className="mt-2 text-lg font-black text-[#06424B]">{item.value}</p>
+              <div className="flex items-center gap-2 text-[#829596]"><item.icon size={16} className="text-[#A87916]" /><p className="text-[11px] font-bold">{translateValue(item.label)}</p></div>
+              <p className="mt-2 text-lg font-black text-[#06424B]">{translateValue(item.value)}</p>
             </div>
           ))}
         </section>
@@ -1327,18 +1310,18 @@ function FinalAssessmentPage() {
           <section className="rounded-[26px] border border-[#E2EAEA] bg-white p-6 shadow-[0_8px_26px_rgba(6,66,75,0.035)] sm:p-8">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF5DF] text-[#A87916]"><Info size={19} /></span>
-              <div><h2 className="text-base font-black text-[#06424B]">Assessment overview</h2><p className="mt-0.5 text-xs text-[#829596]">Your final evaluation for the entire course.</p></div>
+              <div><h2 className="text-base font-black text-[#06424B]">{translateValue("Assessment overview")}</h2><p className="mt-0.5 text-xs text-[#829596]">{translateValue("Your final evaluation for the entire course.")}</p></div>
             </div>
             <ul className="mt-5 space-y-3 text-sm leading-6 text-[#627C7F]">
-              <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />This is the final assessment for the entire course.</li>
-              <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />You need at least {Number(assessment.passPercentage) || 0}% to pass.</li>
-              <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />Time allowed: {formatMinutes(assessment.timeLimitMinutes)}.</li>
-              {maxAttempts > 0 && <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />You have {maxAttempts} total attempts.</li>}
+              <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />{translateValue("This is the final assessment for the entire course.")}</li>
+              <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />{translateValue("You need at least")}{" "}{translateValue(Number(assessment.passPercentage) || 0)}{translateValue("% to pass.")}</li>
+              <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />{translateValue("Time allowed:")}{" "}{translateValue(formatMinutes(assessment.timeLimitMinutes))}{translateValue(".")}</li>
+              {maxAttempts > 0 && <li className="flex items-start gap-2.5"><CheckCircle2 size={16} className="mt-1 shrink-0 text-[#28765E]" />{translateValue("You have")}{" "}{translateValue(maxAttempts)} {translateValue("total attempts.")}</li>}
             </ul>
             <div className="mt-6 rounded-2xl border border-[#E9EFED] bg-[#F8FAFA] p-4">
-              <p className="text-xs font-black text-[#06424B]">Assessment status</p>
+              <p className="text-xs font-black text-[#06424B]">{translateValue("Assessment status")}</p>
               <p className="mt-1 text-xs leading-6 text-[#718486]">
-                {assessment.passed === true
+                {translateValue(assessment.passed === true
                   ? "You have already passed this final assessment."
                   : assessment.pendingReview === true
                     ? "Your latest attempt is waiting for review."
@@ -1346,22 +1329,22 @@ function FinalAssessmentPage() {
                       ? "This assessment is currently unavailable."
                       : status.label === "Attempts exhausted"
                         ? "You have used all available attempts."
-                        : "Your module requirements are complete. Review the rules, then begin when you are ready."}
+                        : "Your module requirements are complete. Review the rules, then begin when you are ready.")}
               </p>
             </div>
-            {loadError && <p role="alert" className="mt-4 rounded-xl border border-[#F0D8D2] bg-[#FFF8F6] px-4 py-3 text-xs text-[#80534D]">{loadError}</p>}
+            {loadError && <p role="alert" className="mt-4 rounded-xl border border-[#F0D8D2] bg-[#FFF8F6] px-4 py-3 text-xs text-[#80534D]">{translateValue(loadError)}</p>}
           </section>
 
           <aside className="space-y-4">
             <section className="rounded-[24px] border border-[#E2EAEA] bg-white p-5 shadow-[0_8px_26px_rgba(6,66,75,0.035)]">
-              <h2 className="text-sm font-black text-[#06424B]">Your attempts</h2>
+              <h2 className="text-sm font-black text-[#06424B]">{translateValue("Your attempts")}</h2>
               <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-[#F4F7F7] p-3"><p className="text-xl font-black tabular-nums text-[#06424B]">{attemptsUsed}</p><p className="mt-1 text-[10px] font-bold text-[#829596]">Used</p></div>
-                <div className="rounded-xl bg-[#F4F7F7] p-3"><p className="text-xl font-black tabular-nums text-[#06424B]">{maxAttempts > 0 && Number.isFinite(attemptsLeft) ? Math.max(0, attemptsLeft) : "—"}</p><p className="mt-1 text-[10px] font-bold text-[#829596]">Remaining</p></div>
+                <div className="rounded-xl bg-[#F4F7F7] p-3"><p className="text-xl font-black tabular-nums text-[#06424B]">{translateValue(attemptsUsed)}</p><p className="mt-1 text-[10px] font-bold text-[#829596]">{translateValue("Used")}</p></div>
+                <div className="rounded-xl bg-[#F4F7F7] p-3"><p className="text-xl font-black tabular-nums text-[#06424B]">{translateValue(maxAttempts > 0 && Number.isFinite(attemptsLeft) ? Math.max(0, attemptsLeft) : "—")}</p><p className="mt-1 text-[10px] font-bold text-[#829596]">{translateValue("Remaining")}</p></div>
               </div>
-              <div className="mt-4 border-t border-[#EAF0EF] pt-4"><p className="text-[11px] font-bold text-[#829596]">Best score</p><p className="mt-1 text-2xl font-black tabular-nums text-[#06424B]">{Number.isFinite(Number(assessment.bestPercentage)) ? `${Math.round(Number(assessment.bestPercentage))}%` : "—"}</p></div>
+              <div className="mt-4 border-t border-[#EAF0EF] pt-4"><p className="text-[11px] font-bold text-[#829596]">{translateValue("Best score")}</p><p className="mt-1 text-2xl font-black tabular-nums text-[#06424B]">{translateValue(Number.isFinite(Number(assessment.bestPercentage)) ? `${Math.round(Number(assessment.bestPercentage))}%` : "—")}</p></div>
               {assessment.passed === true ? (
-                <span className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#EAF4EF] px-4 text-xs font-black text-[#28765E]"><CheckCircle2 size={15} /> Final assessment passed</span>
+                <span className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#EAF4EF] px-4 text-xs font-black text-[#28765E]"><CheckCircle2 size={15} /> {translateValue("Final assessment passed")}</span>
               ) : (
                 <button
                   type="button"
@@ -1369,13 +1352,13 @@ function FinalAssessmentPage() {
                   onClick={() => { setShowInstructions(true); setInstructionsAccepted(false); setInstructionError(""); }}
                   className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-xs font-black text-[#06424B] transition hover:bg-[#FFC13C] disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  {canStart ? <><LockKeyhole size={14} /> Start Final Assessment <ArrowRight size={15} /></> : status.label}
+                  {canStart ? <><LockKeyhole size={14} /> {translateValue("Start Final Assessment")}{" "}<ArrowRight size={15} /></> : status.label}
                 </button>
               )}
             </section>
             <section className="rounded-[24px] border border-[#E2EAEA] bg-[#FAFCFB] p-5">
-              <div className="flex items-center gap-2 text-[#06424B]"><ShieldCheck size={18} className="text-[#B88736]" /><h3 className="text-sm font-black">Secure exam mode</h3></div>
-              <p className="mt-2 text-xs leading-6 text-[#718486]">A dedicated full-page assessment screen will open. Copy/paste and text selection are disabled. Leaving the tab or fullscreen is counted as a focus warning.</p>
+              <div className="flex items-center gap-2 text-[#06424B]"><ShieldCheck size={18} className="text-[#B88736]" /><h3 className="text-sm font-black">{translateValue("Secure exam mode")}</h3></div>
+              <p className="mt-2 text-xs leading-6 text-[#718486]">{translateValue("A dedicated full-page assessment screen will open. Copy/paste and text selection are disabled. Leaving the tab or fullscreen is counted as a focus warning.")}</p>
             </section>
           </aside>
         </div>

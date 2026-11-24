@@ -1,3 +1,4 @@
+import i18n, { translateValue } from "../../i18n";
 
 import { useMemo, useState, useEffect } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
@@ -236,11 +237,9 @@ function CodeExampleEditor({ block, onChange }) {
 
           <div>
             <p className="text-[11px] font-extrabold text-white">
-              Code example
-            </p>
+              {translateValue("Code example")}</p>
             <p className="mt-0.5 text-[9px] text-white/60">
-              Add code to explain this topic
-            </p>
+              {translateValue("Add code to explain this topic")}</p>
           </div>
         </div>
 
@@ -257,7 +256,7 @@ function CodeExampleEditor({ block, onChange }) {
               value={language.value}
               className="bg-white text-[#17464D]"
             >
-              {language.label}
+              {translateValue(language.label)}
             </option>
           ))}
         </select>
@@ -273,7 +272,7 @@ function CodeExampleEditor({ block, onChange }) {
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-[#FFAB0B]" />
             <span className="font-mono text-[10px] font-semibold text-[#D7E0E8]">
-              {block.language === "html"
+              {translateValue(block.language === "html"
                 ? "index.html"
                 : block.language === "css"
                   ? "style.css"
@@ -281,7 +280,7 @@ function CodeExampleEditor({ block, onChange }) {
                     ? "script.js"
                     : block.language === "python"
                       ? "main.py"
-                      : "Main.java"}
+                      : "Main.java")}
             </span>
           </div>
 
@@ -291,7 +290,7 @@ function CodeExampleEditor({ block, onChange }) {
             className="flex items-center gap-1.5 text-[10px] text-[#AAB9C2] hover:text-white"
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
-            {copied ? "Copied" : "Copy code"}
+            {translateValue(copied ? "Copied" : "Copy code")}
           </button>
 
         </div>
@@ -300,7 +299,7 @@ function CodeExampleEditor({ block, onChange }) {
 
           <div className="select-none px-3 py-3 text-right font-mono text-[10px] leading-[22px] text-[#788795]">
             {lines.map((_, index) => (
-              <div key={index}>{index + 1}</div>
+              <div key={index}>{translateValue(index + 1)}</div>
             ))}
           </div>
 
@@ -310,8 +309,8 @@ function CodeExampleEditor({ block, onChange }) {
             onChange={(event) =>
               update({ code: event.target.value })
             }
-            placeholder="Write your code here..."
-            aria-label="Code example editor"
+            placeholder={translateValue("Write your code here...")}
+            aria-label={translateValue("Code example editor")}
             className="min-h-[190px] min-w-0 flex-1 resize-y overflow-auto border-0 bg-transparent px-3 py-3 font-mono text-[11px] leading-[22px] text-[#E6EDF3] outline-none focus:ring-0"
             style={{
               tabSize: 2,
@@ -333,8 +332,7 @@ function CodeExampleEditor({ block, onChange }) {
           className="flex items-center gap-1.5 rounded-lg border border-[#DCE6E6] bg-white px-3 py-2 text-[10px] font-semibold text-[#607A7E] hover:text-[#06424B]"
         >
           <RotateCcw size={12} />
-          Reset
-        </button>
+          {translateValue("Reset")}</button>
 
         {isHtml ? (
           <button
@@ -343,7 +341,7 @@ function CodeExampleEditor({ block, onChange }) {
             className="flex items-center gap-1.5 rounded-lg bg-[#06424B] px-3.5 py-2 text-[10px] font-bold text-white hover:bg-[#0B5963]"
           >
             <Eye size={13} />
-            {showPreview ? "Hide preview" : "Show preview"}
+            {translateValue(showPreview ? "Hide preview" : "Show preview")}
             <ChevronDown
               size={12}
               className={showPreview ? "rotate-180" : ""}
@@ -351,8 +349,7 @@ function CodeExampleEditor({ block, onChange }) {
           </button>
         ) : (
           <span className="text-[9px] text-[#899A9C]">
-            Code display only
-          </span>
+            {translateValue("Code display only")}</span>
         )}
 
       </div>
@@ -367,18 +364,16 @@ function CodeExampleEditor({ block, onChange }) {
             <div className="flex items-center gap-2">
               <Eye size={14} className="text-[#06424B]" />
               <span className="text-[10px] font-extrabold text-[#17464D]">
-                Expected output
-              </span>
+                {translateValue("Expected output")}</span>
             </div>
 
             <span className="rounded-full bg-[#EAF5EF] px-2.5 py-1 text-[9px] font-bold text-[#26835C]">
-              Preview
-            </span>
+              {translateValue("Preview")}</span>
 
           </div>
 
           <iframe
-            title="Code example preview"
+            title={translateValue("Code example preview")}
             sandbox=""
             srcDoc={code}
             className="h-[190px] w-full border-0 bg-white"
@@ -668,7 +663,7 @@ export default function ModuleContent() {
   ===================================================== */
 
   const remove = async (content) => {
-    if (!window.confirm(`Delete "${content.title}"?`)) {
+    if (!window.confirm(i18n.t("Delete \"{{name}}\"?", { name: content.title, ns: "ui" }))) {
       return;
     }
 
@@ -703,22 +698,20 @@ export default function ModuleContent() {
         {/* PAGE HEADER */}
 
         <PageHeader
-          title="Module content"
-          description="Manage lessons and learning resources inside your module."
+          title={translateValue("Module content")}
+          description={translateValue("Manage lessons and learning resources inside your module.")}
           backLink={
             <Link
               to={`/teacher/courses/${course.id}/modules`}
               className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7D9295] hover:text-[#06424B]"
             >
               <ArrowLeft size={14} />
-              Back to modules
-            </Link>
+              {translateValue("Back to modules")}</Link>
           }
           actions={
             <Button onClick={openCreate}>
               <Plus size={15} />
-              Add content
-            </Button>
+              {translateValue("Add content")}</Button>
           }
         />
 
@@ -726,7 +719,7 @@ export default function ModuleContent() {
 
         {notice && (
           <div className="mb-5 flex items-center justify-between rounded-xl border border-[#E9DCC0] bg-[#FFF9EC] px-4 py-3 text-[11px] text-[#89651F]">
-            {notice}
+            {translateValue(notice)}
 
             <button
               type="button"
@@ -747,15 +740,15 @@ export default function ModuleContent() {
             <div className="min-w-0">
 
               <p className="text-[9px] font-extrabold uppercase tracking-[1.3px] text-[#B27B20]">
-                {course.fullName}
+                {translateValue(course.fullName)}
               </p>
 
               <h2 className="mt-1 text-[18px] font-extrabold text-[#17464D]">
-                {module.name}
+                {translateValue(module.name)}
               </h2>
 
               <p className="mt-1 text-[10px] text-[#8B9B9D]">
-                {module.summary || "Manage learning materials for this module."}
+                {translateValue(module.summary || "Manage learning materials for this module.")}
               </p>
 
             </div>
@@ -764,8 +757,7 @@ export default function ModuleContent() {
               <StatusPill visible={module.visible} />
 
               <span className="rounded-full bg-[#EAF2F1] px-3 py-1.5 text-[10px] font-bold text-[#52777B]">
-                {contents.length} content items
-              </span>
+                {translateValue(contents.length)} {translateValue("content items")}</span>
             </div>
 
           </div>
@@ -774,28 +766,25 @@ export default function ModuleContent() {
 
             <div className="px-4 py-4 sm:px-5">
               <p className="text-[9px] font-bold uppercase tracking-wider text-[#94A4A5]">
-                Total content
-              </p>
+                {translateValue("Total content")}</p>
               <p className="mt-1 text-[20px] font-extrabold text-[#17464D]">
-                {contents.length.toString().padStart(2, "0")}
+                {translateValue(contents.length.toString().padStart(2, "0"))}
               </p>
             </div>
 
             <div className="border-l border-[#EAF0F0] px-4 py-4 sm:px-5">
               <p className="text-[9px] font-bold uppercase tracking-wider text-[#94A4A5]">
-                Visible
-              </p>
+                {translateValue("Visible")}</p>
               <p className="mt-1 text-[20px] font-extrabold text-[#17464D]">
-                {visibleCount.toString().padStart(2, "0")}
+                {translateValue(visibleCount.toString().padStart(2, "0"))}
               </p>
             </div>
 
             <div className="border-l border-[#EAF0F0] px-4 py-4 sm:px-5">
               <p className="text-[9px] font-bold uppercase tracking-wider text-[#94A4A5]">
-                Hidden
-              </p>
+                {translateValue("Hidden")}</p>
               <p className="mt-1 text-[20px] font-extrabold text-[#17464D]">
-                {(contents.length - visibleCount).toString().padStart(2, "0")}
+                {translateValue((contents.length - visibleCount).toString().padStart(2, "0"))}
               </p>
             </div>
 
@@ -809,17 +798,14 @@ export default function ModuleContent() {
 
           <div>
             <h2 className="text-[15px] font-extrabold text-[#17464D]">
-              Learning materials
-            </h2>
+              {translateValue("Learning materials")}</h2>
 
             <p className="mt-1 text-[10px] text-[#8B9B9D]">
-              Text lessons, videos and documents are managed inside this module.
-            </p>
+              {translateValue("Text lessons, videos and documents are managed inside this module.")}</p>
           </div>
 
           <span className="text-[10px] font-semibold text-[#91A1A3]">
-            {visibleCount} visible to students
-          </span>
+            {translateValue(visibleCount)} {translateValue("visible to students")}</span>
 
         </div>
 
@@ -841,7 +827,7 @@ export default function ModuleContent() {
                   <div className="flex items-center gap-3">
 
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#F4F7F7] text-[10px] font-extrabold text-[#7C9295]">
-                      {String(content.position || index + 1).padStart(2, "0")}
+                      {translateValue(String(content.position || index + 1).padStart(2, "0"))}
                     </span>
 
                     <LessonIcon type={content.contentType} />
@@ -853,7 +839,7 @@ export default function ModuleContent() {
                     <div className="flex flex-wrap items-center gap-2">
 
                       <h3 className="text-[12px] font-extrabold text-[#17464D]">
-                        {content.title}
+                        {translateValue(content.title)}
                       </h3>
 
                       <StatusPill visible={content.visible} />
@@ -861,7 +847,7 @@ export default function ModuleContent() {
                     </div>
 
                     <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-[#87999B]">
-                      {content.body || "No description added."}
+                      {translateValue(content.body || "No description added.")}
                     </p>
 
                     {content.url && (
@@ -871,18 +857,16 @@ export default function ModuleContent() {
                         rel="noreferrer"
                         className="mt-1 inline-flex items-center gap-1 text-[9px] font-semibold text-[#B27B20] hover:underline"
                       >
-                        Open attached resource
-                        <UploadCloud size={11} />
+                        {translateValue("Open attached resource")}<UploadCloud size={11} />
                       </a>
                     )}
 
                     {content.fileMeta?.name && (
                       <p className="mt-1 inline-flex items-center gap-1 text-[9px] font-semibold text-[#52777B]">
                         <File size={11} />
-                        {content.fileMeta.name}
+                        {translateValue(content.fileMeta.name)}
                         <span className="font-normal text-[#91A1A3]">
-                          (demo file record)
-                        </span>
+                          {translateValue("(demo file record)")}</span>
                       </p>
                     )}
 
@@ -892,16 +876,15 @@ export default function ModuleContent() {
                       ) && (
                         <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-[#EAF2F1] px-2 py-1 text-[9px] font-bold text-[#315B60]">
                           <Code2 size={11} />
-                          {content.blocks.filter(
+                          {translateValue(content.blocks.filter(
                             (block) => block.type === "code_example"
-                          ).length} code examples
-                        </span>
+                          ).length)} {translateValue("code examples")}</span>
                       )}
 
                   </div>
 
                   <span className="w-fit rounded-lg bg-[#F6F8F8] px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wide text-[#71878A]">
-                    {content.contentType}
+                    {translateValue(content.contentType)}
                   </span>
 
                   <div className="flex items-center gap-1 border-t border-[#F0F3F3] pt-2 sm:border-0 sm:pt-0">
@@ -909,7 +892,7 @@ export default function ModuleContent() {
                     <button
                       type="button"
                       onClick={() => openEdit(content)}
-                      title="Edit content"
+                      title={translateValue("Edit content")}
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-[#819699] hover:bg-[#EEF4F3] hover:text-[#06424B]"
                     >
                       <Pencil size={14} />
@@ -918,7 +901,7 @@ export default function ModuleContent() {
                     <button
                       type="button"
                       onClick={() => remove(content)}
-                      title="Delete content"
+                      title={translateValue("Delete content")}
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-[#A4B0B1] hover:bg-[#FFF1EF] hover:text-[#B65345]"
                     >
                       <Trash2 size={14} />
@@ -938,13 +921,12 @@ export default function ModuleContent() {
 
           <EmptyState
             icon={FileText}
-            title="No content in this module"
-            description="Add text lessons, videos or supporting documents to start building this module."
+            title={translateValue("No content in this module")}
+            description={translateValue("Add text lessons, videos or supporting documents to start building this module.")}
             action={
               <Button onClick={openCreate}>
                 <Plus size={14} />
-                Add content
-              </Button>
+                {translateValue("Add content")}</Button>
             }
           />
 
@@ -959,8 +941,8 @@ export default function ModuleContent() {
       <Modal
         open={modalOpen}
         onClose={() => !busy && setModalOpen(false)}
-        title={editing ? "Edit learning content" : "Add learning content"}
-        description={`Create a learning resource for ${module.name}.`}
+        title={translateValue(editing ? "Edit learning content" : "Add learning content")}
+        description={translateValue("Create a learning resource for {{module}}.", { module: translateValue(module.name) })}
         width="max-w-5xl"
       >
 
@@ -972,16 +954,14 @@ export default function ModuleContent() {
 
             <div className="mb-4">
               <h3 className="text-[12px] font-extrabold text-[#17464D]">
-                Basic information
-              </h3>
+                {translateValue("Basic information")}</h3>
               <p className="mt-1 text-[10px] text-[#87999B]">
-                Enter the content title and select the learning format.
-              </p>
+                {translateValue("Enter the content title and select the learning format.")}</p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_120px]">
 
-              <Field label="Content title" required>
+              <Field label={translateValue("Content title")} required>
                 <input
                   required
                   maxLength={150}
@@ -992,12 +972,12 @@ export default function ModuleContent() {
                       title: event.target.value,
                     })
                   }
-                  placeholder="e.g. Introduction to HTML"
+                  placeholder={translateValue("e.g. Introduction to HTML")}
                   className={inputClass}
                 />
               </Field>
 
-              <Field label="Position">
+              <Field label={translateValue("Position")}>
                 <input
                   type="number"
                   min="1"
@@ -1015,7 +995,7 @@ export default function ModuleContent() {
 
             </div>
 
-            <Field label="Content type">
+            <Field label={translateValue("Content type")}>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
 
@@ -1056,10 +1036,10 @@ export default function ModuleContent() {
 
                       <div className="min-w-0">
                         <p className="text-[11px] font-extrabold text-[#31565B]">
-                          {option.label}
+                          {translateValue(option.label)}
                         </p>
                         <p className="mt-1 text-[9px] leading-4 text-[#8B9B9D]">
-                          {option.description}
+                          {translateValue(option.description)}
                         </p>
                       </div>
 
@@ -1089,12 +1069,10 @@ export default function ModuleContent() {
 
               <div className="mb-4">
                 <h3 className="text-[13px] font-extrabold text-[#17464D]">
-                  Lesson content
-                </h3>
+                  {translateValue("Lesson content")}</h3>
 
                 <p className="mt-1 text-[10px] text-[#87999B]">
-                  Organize your explanation with text, lists and coding examples.
-                </p>
+                  {translateValue("Organize your explanation with text, lists and coding examples.")}</p>
               </div>
 
               {/* CONTENT BLOCKS */}
@@ -1129,15 +1107,14 @@ export default function ModuleContent() {
                             key={type.value}
                             value={type.value}
                           >
-                            {type.label}
+                            {translateValue(type.label)}
                           </option>
                         ))}
                       </select>
 
                       {block.type === "code_example" && (
                         <span className="rounded-md bg-[#EAF2F1] px-2 py-1 text-[9px] font-bold text-[#315B60]">
-                          Coding example
-                        </span>
+                          {translateValue("Coding example")}</span>
                       )}
 
                       <span className="flex-1" />
@@ -1145,7 +1122,7 @@ export default function ModuleContent() {
                       <button
                         type="button"
                         onClick={() => removeBlock(index)}
-                        aria-label="Remove block"
+                        aria-label={translateValue("Remove block")}
                         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#A9B3B4] hover:bg-[#FFF2F0] hover:text-[#A94D40]"
                       >
                         <Trash2 size={14} />
@@ -1181,9 +1158,9 @@ export default function ModuleContent() {
                           >
 
                             <span className="w-5 text-center text-[11px] font-bold text-[#8B9B9D]">
-                              {block.type === "bullet_list"
+                              {translateValue(block.type === "bullet_list"
                                 ? "•"
-                                : `${itemIndex + 1}.`}
+                                : `${itemIndex + 1}.`)}
                             </span>
 
                             <input
@@ -1197,7 +1174,7 @@ export default function ModuleContent() {
                                   items,
                                 });
                               }}
-                              placeholder={`List item ${itemIndex + 1}`}
+                              placeholder={translateValue("List item {{number}}", { number: itemIndex + 1 })}
                               className={inputClass}
                             />
 
@@ -1212,7 +1189,7 @@ export default function ModuleContent() {
                                   ),
                                 })
                               }
-                              aria-label="Remove list item"
+                              aria-label={translateValue("Remove list item")}
                               className="px-2 text-[#A9B3B4] hover:text-[#A94D40]"
                             >
                               <X size={14} />
@@ -1232,8 +1209,7 @@ export default function ModuleContent() {
                           }
                           className="ml-7 text-[10px] font-bold text-[#B27B20] hover:underline"
                         >
-                          + Add list item
-                        </button>
+                          {translateValue("+ Add list item")}</button>
 
                       </div>
 
@@ -1261,11 +1237,11 @@ export default function ModuleContent() {
                           })
                         }
                         placeholder={
-                          block.type === "heading"
+                          translateValue(block.type === "heading"
                             ? "Enter heading..."
                             : block.type === "subheading"
                               ? "Enter subheading..."
-                              : "Write your explanation here..."
+                              : "Write your explanation here...")
                         }
                         className={textareaClass}
                       />
@@ -1283,8 +1259,7 @@ export default function ModuleContent() {
               <div className="mt-4 rounded-xl border border-dashed border-[#C9D9D9] bg-[#F8FAFA] p-3">
 
                 <p className="mb-2 text-[10px] font-extrabold text-[#527176]">
-                  Add content block
-                </p>
+                  {translateValue("Add content block")}</p>
 
                 <div className="flex flex-wrap gap-2">
 
@@ -1306,7 +1281,7 @@ export default function ModuleContent() {
                         <Plus size={12} />
                       )}
 
-                      {type.label}
+                      {translateValue(type.label)}
 
                     </button>
 
@@ -1320,7 +1295,7 @@ export default function ModuleContent() {
 
               <div className="mt-4">
                 <Field
-                  label="Plain-text fallback"
+                  label={translateValue("Plain-text fallback")}
                   hint="Optional. If empty, the lesson body is generated from its content blocks."
                 >
                   <textarea
@@ -1332,7 +1307,7 @@ export default function ModuleContent() {
                         body: event.target.value,
                       })
                     }
-                    placeholder="Optional lesson description..."
+                    placeholder={translateValue("Optional lesson description...")}
                     className={textareaClass}
                   />
                 </Field>
@@ -1351,17 +1326,15 @@ export default function ModuleContent() {
 
               <div className="mb-4">
                 <h3 className="text-[12px] font-extrabold text-[#17464D]">
-                  Resource attachment
-                </h3>
+                  {translateValue("Resource attachment")}</h3>
 
                 <p className="mt-1 text-[10px] text-[#87999B]">
-                  Add a hosted resource URL or select a local demo file.
-                </p>
+                  {translateValue("Add a hosted resource URL or select a local demo file.")}</p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
 
-                <Field label="Hosted resource URL">
+                <Field label={translateValue("Hosted resource URL")}>
                   <input
                     type="url"
                     value={form.url}
@@ -1371,16 +1344,16 @@ export default function ModuleContent() {
                         url: event.target.value,
                       })
                     }
-                    placeholder="https://..."
+                    placeholder={translateValue("https://...")}
                     className={inputClass}
                   />
                 </Field>
 
                 <Field
                   label={
-                    form.contentType === "video"
+                    translateValue(form.contentType === "video"
                       ? "Upload video"
-                      : "Upload document"
+                      : "Upload document")
                   }
                 >
 
@@ -1402,10 +1375,10 @@ export default function ModuleContent() {
 
                       <div className="min-w-0">
                         <p className="truncate text-[10px] font-bold text-[#31565B]">
-                          {selectedFile.name}
+                          {translateValue(selectedFile.name)}
                         </p>
                         <p className="text-[9px] text-[#91A1A3]">
-                          {formatFileSize(selectedFile.size)}
+                          {translateValue(formatFileSize(selectedFile.size))}
                         </p>
                       </div>
 
@@ -1413,8 +1386,7 @@ export default function ModuleContent() {
                   )}
 
                   <p className="mt-1.5 text-[9px] text-[#91A1A3]">
-                    Demo only: file name and details are saved locally.
-                  </p>
+                    {translateValue("Demo only: file name and details are saved locally.")}</p>
 
                 </Field>
 
@@ -1430,12 +1402,10 @@ export default function ModuleContent() {
 
             <div>
               <p className="text-[11px] font-extrabold text-[#31565B]">
-                Student visibility
-              </p>
+                {translateValue("Student visibility")}</p>
 
               <p className="mt-1 text-[10px] text-[#91A1A3]">
-                Control whether students can access this learning material.
-              </p>
+                {translateValue("Control whether students can access this learning material.")}</p>
             </div>
 
             <label className="flex cursor-pointer items-center gap-2.5">
@@ -1453,8 +1423,7 @@ export default function ModuleContent() {
               />
 
               <span className="text-[10px] font-bold text-[#526F73]">
-                Visible to students
-              </span>
+                {translateValue("Visible to students")}</span>
 
             </label>
 
@@ -1469,15 +1438,14 @@ export default function ModuleContent() {
               onClick={() => setModalOpen(false)}
               disabled={busy}
             >
-              Cancel
-            </Button>
+              {translateValue("Cancel")}</Button>
 
             <Button type="submit" disabled={busy}>
-              {busy
+              {translateValue(busy
                 ? "Saving..."
                 : editing
                   ? "Save changes"
-                  : "Add content"}
+                  : "Add content")}
             </Button>
 
           </div>

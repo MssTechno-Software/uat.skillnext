@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -185,7 +186,7 @@ function QuickBall() {
           }`}
       >
         <nav
-          aria-label="Quick actions"
+          aria-label={translateValue("Quick actions")}
           aria-hidden={!open}
           className={`flex items-start overflow-hidden transition-all duration-300 ease-out ${open
             ? "mr-2 max-w-[340px] opacity-100"
@@ -197,7 +198,7 @@ function QuickBall() {
               <Link
                 key={label}
                 to={path}
-                title={`${title} – ${text}`}
+                title={`${translateValue(title)} – ${translateValue(text)}`}
                 tabIndex={open ? 0 : -1}
                 onClick={() => {
                   setOpen(false);
@@ -223,7 +224,7 @@ function QuickBall() {
                 </span>
 
                 <span className="flex h-6 items-start justify-center text-center text-[10px] font-semibold leading-3 text-[#2F4A4E] transition-colors group-hover:text-[#B27B20] sm:h-3 sm:whitespace-nowrap">
-                  {label}
+                  {translateValue(label)}
                 </span>
               </Link>
             )
@@ -246,11 +247,11 @@ function QuickBall() {
           onClick={onBallClick}
           aria-expanded={open}
           aria-label={
-            open
+            translateValue(open
               ? "Close quick actions"
-              : "Open quick actions"
+              : "Open quick actions")
           }
-          title="Quick actions"
+          title={translateValue("Quick actions")}
           className={`flex h-14 w-14 items-center justify-center rounded-full ring-4 ring-white shadow-[0_8px_20px_rgba(6,66,75,0.28)] transition-all duration-300 hover:scale-105 focus-visible:outline-none focus-visible:ring-[#FFD36B] ${open
             ? "bg-[#06424B] text-[#FFAB0B]"
             : "bg-[#FFAB0B] text-[#06424B]"
@@ -272,8 +273,7 @@ function QuickBall() {
           className={`pointer-events-none absolute left-1/2 top-full mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#06424B] px-2 py-0.5 text-[10px] font-bold text-[#FFD36B] shadow-sm transition-opacity duration-200 ${open ? "opacity-0" : "opacity-100"
             }`}
         >
-          Quick actions
-        </span>
+          {translateValue("Quick actions")}</span>
       </div>
     </div>
   );
@@ -301,11 +301,11 @@ function StatCard({
       <div className="relative flex items-start justify-between">
         <div>
           <p className="text-[11px] font-semibold text-[#87999B]">
-            {label}
+            {translateValue(label)}
           </p>
 
           <h3 className="mt-3 text-[30px] font-extrabold tracking-tight text-[#173F46]">
-            {value}
+            {translateValue(value)}
           </h3>
         </div>
 
@@ -323,7 +323,7 @@ function StatCard({
       <div className="relative mt-4 flex items-center gap-2 border-t border-[#F0F3F3] pt-3">
         <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
         <p className="text-[10px] font-medium text-[#91A0A2]">
-          {detail}
+          {translateValue(detail)}
         </p>
       </div>
     </div>
@@ -339,15 +339,15 @@ function SectionTitle({ title, subtitle, action }) {
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h2 className="text-[16px] font-extrabold tracking-tight text-[#173F46]">
-          {title}
+          {translateValue(title)}
         </h2>
 
         <p className="mt-1 text-[11px] text-[#899A9C]">
-          {subtitle}
+          {translateValue(subtitle)}
         </p>
       </div>
 
-      {action}
+      {translateValue(action)}
     </div>
   );
 }
@@ -541,8 +541,8 @@ export default function TeacherDashboard() {
         {/* PAGE HEADER */}
         <PageHeader
           eyebrow="TEACHING WORKSPACE"
-          title="Teacher Dashboard"
-          description="Manage your courses, learning materials and teaching activities."
+          title={translateValue("Teacher Dashboard")}
+          description={translateValue("Manage your courses, learning materials and teaching activities.")}
         />
 
         {/* HERO SECTION */}
@@ -561,23 +561,17 @@ export default function TeacherDashboard() {
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.09] px-3 py-1.5">
                 <Sparkles size={13} className="text-[#FFAB0B]" />
                 <span className="text-[9px] font-bold tracking-[1.5px] text-[#FFE0A0]">
-                  YOUR LEARNING COMMAND CENTER
-                </span>
+                  {translateValue("YOUR LEARNING COMMAND CENTER")}</span>
               </div>
 
               <h2 className="text-[25px] font-extrabold leading-[1.3] tracking-tight text-white sm:text-[34px]">
-                Create. Teach.
-                <br />
+                {translateValue("Create. Teach.")}<br />
                 <span className="text-[#FFAB0B]">
-                  Inspire the Next Generation.
-                </span>
+                  {translateValue("Inspire the Next Generation.")}</span>
               </h2>
 
               <p className="mt-4 max-w-xl text-[11px] leading-6 text-white/65 sm:text-[12px]">
-                Build meaningful learning experiences. Organise your
-                courses, create interactive lessons and deliver quality
-                education through Skill Next.
-              </p>
+                {translateValue("Build meaningful learning experiences. Organise your courses, create interactive lessons and deliver quality education through Skill Next.")}</p>
 
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
@@ -585,8 +579,7 @@ export default function TeacherDashboard() {
                   className="group inline-flex items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-[11px] font-extrabold text-[#173F46] shadow-lg shadow-black/10 transition-all duration-300 hover:-translate-y-1 hover:bg-[#FFC34C]"
                 >
                   <Plus size={15} />
-                  Manage Courses
-                  <ArrowRight
+                  {translateValue("Manage Courses")}<ArrowRight
                     size={14}
                     className="transition-transform group-hover:translate-x-1"
                   />
@@ -594,8 +587,7 @@ export default function TeacherDashboard() {
 
                 <div className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/[0.08] px-4 py-3 text-[10px] font-semibold text-white/85">
                   <GraduationCap size={15} className="text-[#FFAB0B]" />
-                  Teaching Overview
-                </div>
+                  {translateValue("Teaching Overview")}</div>
               </div>
             </div>
 
@@ -618,15 +610,13 @@ export default function TeacherDashboard() {
               <div className="absolute right-2 top-7 flex items-center gap-2 rounded-xl border border-white/15 bg-[#15545B] px-3 py-2 shadow-xl">
                 <BookOpen size={15} className="text-[#FFAB0B]" />
                 <span className="text-[9px] font-bold text-white">
-                  Learning
-                </span>
+                  {translateValue("Learning")}</span>
               </div>
 
               <div className="absolute bottom-5 left-0 flex items-center gap-2 rounded-xl border border-white/15 bg-[#15545B] px-3 py-2 shadow-xl">
                 <CircleCheck size={15} className="text-[#8DE1B6]" />
                 <span className="text-[9px] font-bold text-white">
-                  Teaching Excellence
-                </span>
+                  {translateValue("Teaching Excellence")}</span>
               </div>
             </div>
           </div>
@@ -635,14 +625,12 @@ export default function TeacherDashboard() {
 
           <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-white/[0.035] px-6 py-3.5 sm:px-9">
             <span className="text-[9px] font-medium text-white/55">
-              SKILL NEXT CONSULTING INC.
-            </span>
+              {translateValue("SKILL NEXT CONSULTING INC.")}</span>
 
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[#8DE1B6]" />
               <span className="text-[9px] font-semibold text-white/70">
-                Workspace Active
-              </span>
+                {translateValue("Workspace Active")}</span>
             </div>
           </div>
         </section>
@@ -655,18 +643,15 @@ export default function TeacherDashboard() {
               <div className="flex items-center gap-2">
                 <Layers3 size={16} className="text-[#B27B20]" />
                 <h2 className="text-[15px] font-extrabold text-[#173F46]">
-                  Workspace Overview
-                </h2>
+                  {translateValue("Workspace Overview")}</h2>
               </div>
 
               <p className="mt-1 text-[10px] text-[#899A9C]">
-                Your complete teaching catalogue at a glance.
-              </p>
+                {translateValue("Your complete teaching catalogue at a glance.")}</p>
             </div>
 
             <span className="rounded-full border border-[#E3EBEB] bg-white px-3 py-1.5 text-[9px] font-bold text-[#789093]">
-              LIVE COUNTS
-            </span>
+              {translateValue("LIVE COUNTS")}</span>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -684,8 +669,8 @@ export default function TeacherDashboard() {
 
         <section className="dashboard-enter rounded-[22px] border border-[#E3EBEB] bg-white p-5 shadow-[0_5px_20px_rgba(6,66,75,0.025)] sm:p-6">
           <SectionTitle
-            title="Publishing Overview"
-            subtitle="Understand your course and content visibility."
+            title={translateValue("Publishing Overview")}
+            subtitle={translateValue("Understand your course and content visibility.")}
           />
 
           <div className="grid gap-7 lg:grid-cols-2">
@@ -698,18 +683,16 @@ export default function TeacherDashboard() {
 
                   <div>
                     <p className="text-[11px] font-bold text-[#31565B]">
-                      Published Courses
-                    </p>
+                      {translateValue("Published Courses")}</p>
                     <p className="text-[9px] text-[#92A0A2]">
-                      Visible to students
-                    </p>
+                      {translateValue("Visible to students")}</p>
                   </div>
                 </div>
 
                 <p className="text-[13px] font-extrabold text-[#17464D]">
-                  {visibleCourses}
+                  {translateValue(visibleCourses)}
                   <span className="text-[10px] font-medium text-[#A1ADAE]">
-                    {" "}/ {data.courses.length}
+                    {translateValue(" ")}{translateValue("/")}{" "}{translateValue(data.courses.length)}
                   </span>
                 </p>
               </div>
@@ -722,8 +705,7 @@ export default function TeacherDashboard() {
               </div>
 
               <p className="mt-1.5 text-right text-[9px] font-semibold text-[#829698]">
-                {publishedPercentage}% published
-              </p>
+                {translateValue(publishedPercentage)}{translateValue("% published")}</p>
             </div>
 
             <div>
@@ -735,18 +717,16 @@ export default function TeacherDashboard() {
 
                   <div>
                     <p className="text-[11px] font-bold text-[#31565B]">
-                      Published Learning Materials
-                    </p>
+                      {translateValue("Published Learning Materials")}</p>
                     <p className="text-[9px] text-[#92A0A2]">
-                      Visible lesson resources
-                    </p>
+                      {translateValue("Visible lesson resources")}</p>
                   </div>
                 </div>
 
                 <p className="text-[13px] font-extrabold text-[#17464D]">
-                  {visibleContent}
+                  {translateValue(visibleContent)}
                   <span className="text-[10px] font-medium text-[#A1ADAE]">
-                    {" "}/ {data.contents.length}
+                    {translateValue(" ")}{translateValue("/")}{" "}{translateValue(data.contents.length)}
                   </span>
                 </p>
               </div>
@@ -759,8 +739,7 @@ export default function TeacherDashboard() {
               </div>
 
               <p className="mt-1.5 text-right text-[9px] font-semibold text-[#829698]">
-                {contentPercentage}% published
-              </p>
+                {translateValue(contentPercentage)}{translateValue("% published")}</p>
             </div>
           </div>
 
@@ -769,12 +748,11 @@ export default function TeacherDashboard() {
               <div className="flex items-center gap-2 text-[#648A79]">
                 <Eye size={14} />
                 <span className="text-[9px] font-bold">
-                  Visible Modules
-                </span>
+                  {translateValue("Visible Modules")}</span>
               </div>
 
               <p className="mt-2 text-[22px] font-extrabold text-[#17464D]">
-                {visibleModules}
+                {translateValue(visibleModules)}
               </p>
             </div>
 
@@ -782,12 +760,11 @@ export default function TeacherDashboard() {
               <div className="flex items-center gap-2 text-[#A17A35]">
                 <EyeOff size={14} />
                 <span className="text-[9px] font-bold">
-                  Hidden Courses
-                </span>
+                  {translateValue("Hidden Courses")}</span>
               </div>
 
               <p className="mt-2 text-[22px] font-extrabold text-[#17464D]">
-                {data.courses.length - visibleCourses}
+                {translateValue(data.courses.length - visibleCourses)}
               </p>
             </div>
           </div>
@@ -797,15 +774,14 @@ export default function TeacherDashboard() {
 
         <section className="dashboard-enter rounded-[22px] border border-[#E3EBEB] bg-white p-5 shadow-[0_5px_20px_rgba(6,66,75,0.025)] sm:p-6">
           <SectionTitle
-            title="Recently Added Courses"
-            subtitle="Your latest courses and their current publishing status."
+            title={translateValue("Recently Added Courses")}
+            subtitle={translateValue("Your latest courses and their current publishing status.")}
             action={
               <Link
                 to="/teacher/courses"
                 className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#B27B20] transition-colors hover:text-[#06424B]"
               >
-                View all courses
-                <ArrowRight size={13} />
+                {translateValue("View all courses")}<ArrowRight size={13} />
               </Link>
             }
           />
@@ -842,27 +818,24 @@ export default function TeacherDashboard() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="truncate text-[12px] font-extrabold text-[#17464D]">
-                          {course.fullName || course.name}
+                          {translateValue(course.fullName || course.name)}
                         </h3>
 
                         <StatusPill visible={course.visible} />
                       </div>
 
                       <p className="mt-1 text-[10px] text-[#91A0A2]">
-                        {category?.name || "Uncategorised"}
-                        <span className="mx-2 text-[#CCD4D4]">•</span>
-                        {modules.length} modules
-                        <span className="mx-2 text-[#CCD4D4]">•</span>
-                        {contentCount} learning materials
-                      </p>
+                        {translateValue(category?.name || "Uncategorised")}
+                        <span className="mx-2 text-[#CCD4D4]">{translateValue("•")}</span>
+                        {translateValue(modules.length)} {translateValue("modules")}<span className="mx-2 text-[#CCD4D4]">{translateValue("•")}</span>
+                        {translateValue(contentCount)} {translateValue("learning materials")}</p>
                     </div>
 
                     <Link
                       to={`/teacher/courses/${course.id}/modules`}
                       className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#E3EBEB] px-3.5 py-2 text-[10px] font-bold text-[#52777B] transition-all hover:border-[#06424B] hover:bg-[#06424B] hover:text-white"
                     >
-                      Manage course
-                      <ArrowRight size={12} />
+                      {translateValue("Manage course")}<ArrowRight size={12} />
                     </Link>
                   </div>
                 );
@@ -875,20 +848,17 @@ export default function TeacherDashboard() {
               </div>
 
               <h3 className="mt-3 text-[12px] font-bold text-[#31565B]">
-                No courses yet
-              </h3>
+                {translateValue("No courses yet")}</h3>
 
               <p className="mt-1 text-[10px] text-[#92A0A2]">
-                Start building your learning catalogue.
-              </p>
+                {translateValue("Start building your learning catalogue.")}</p>
 
               <Link
                 to="/teacher/courses"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-[10px] font-bold text-white transition-all hover:bg-[#0B5963]"
               >
                 <Plus size={13} />
-                Create your first course
-              </Link>
+                {translateValue("Create your first course")}</Link>
             </div>
           )}
         </section>
@@ -905,13 +875,11 @@ export default function TeacherDashboard() {
             </div>
 
             <span className="text-[10px] font-extrabold text-[#52777B]">
-              SKILL NEXT
-            </span>
+              {translateValue("SKILL NEXT")}</span>
           </div>
 
           <p className="text-[9px] text-[#A0ADAF]">
-            © 2026 Skill Next Consulting Inc. All rights reserved.
-          </p>
+            {translateValue("© 2026 Skill Next Consulting Inc. All rights reserved.")}</p>
         </footer>
       </div>
 

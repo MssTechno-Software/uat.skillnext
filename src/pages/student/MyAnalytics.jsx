@@ -1,4 +1,6 @@
+import i18n, { getLocalizedValue, translateValue } from "../../i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
@@ -52,7 +54,7 @@ const prefersReducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const isTechnologyCourse = (categoryName = "") =>
-  /\b(it|technology|technical)\b/i.test(String(categoryName));
+  /\b(it|technology|technical|technolog(?:y|ie|ies)|technique|techniques|informatique)\b/i.test(String(categoryName));
 
 const ATTEMPT_LABELS = {
   attemptsUsed: "Attempts used",
@@ -94,13 +96,17 @@ const formatAttemptValue = (key, value) => {
       "not started": "Not started",
       submitted: "Submitted",
       pending: "Pending review",
+      "pending review": "Pending review",
     };
     return labels[status] || status.replace(/\b\w/g, (character) => character.toUpperCase());
   }
   if (/date|time|At$/i.test(key)) {
     const date = new Date(value);
     if (!Number.isNaN(date.getTime())) {
-      return date.toLocaleString("en-IN", {
+      const dateLocale = String(i18n.resolvedLanguage || i18n.language || "en").startsWith("fr")
+        ? "fr-FR"
+        : "en-IN";
+      return date.toLocaleString(dateLocale, {
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -189,7 +195,7 @@ function Reveal({ children, delay = 0, className = "", as: Tag = "div" }) {
         transition: `opacity .6s ease ${delay}ms, transform .6s cubic-bezier(.2,.7,.2,1) ${delay}ms`,
       }}
     >
-      {children}
+      {translateValue(children)}
     </Tag>
   );
 }
@@ -245,8 +251,8 @@ function AnimatedNumber({ value, suffix = "", decimals = 0 }) {
   const animated = useCountUp(value);
   return (
     <>
-      {Number(animated).toFixed(decimals)}
-      {suffix}
+      {translateValue(Number(animated).toFixed(decimals))}
+      {translateValue(suffix)}
     </>
   );
 }
@@ -269,7 +275,9 @@ function ScoreRing({ value, label = "Overall", ariaLabel = "Overall course score
         background: `conic-gradient(${color || (dark ? "#F2C35B" : "#0B5960")} ${animated}%, ${dark ? "rgba(255,255,255,0.14)" : "#E8EFEE"} ${animated}% 100%)`,
       }}
       role="progressbar"
-      aria-label={hasValue ? ariaLabel : `${ariaLabel} not available yet`}
+      aria-label={hasValue
+        ? translateValue(ariaLabel)
+        : translateValue("{{label}} not available yet", { label: translateValue(ariaLabel) })}
       aria-valuenow={hasValue ? safeValue : undefined}
       aria-valuemin={0}
       aria-valuemax={100}
@@ -279,9 +287,9 @@ function ScoreRing({ value, label = "Overall", ariaLabel = "Overall course score
         style={{ width: inner, height: inner }}
       >
         <span className={`font-extrabold leading-none ${dark ? "text-white" : "text-[#123F45]"} ${size > 100 ? "text-3xl" : size > 72 ? "text-xl" : "text-[15px]"}`}>
-          {hasValue ? `${Math.round(animated)}%` : "—"}
+          {translateValue(hasValue ? `${Math.round(animated)}%` : "—")}
         </span>
-        {label && <span className={`mt-1 text-[9px] font-bold ${dark ? "text-[#9FC7C5]" : "text-[#829596]"}`}>{label}</span>}
+        {label && <span className={`mt-1 text-[9px] font-bold ${dark ? "text-[#9FC7C5]" : "text-[#829596]"}`}>{translateValue(label)}</span>}
       </div>
     </div>
   );
@@ -297,7 +305,7 @@ function StatusPill({ label, tone = "muted" }) {
   };
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${styles[tone] || styles.muted}`}>
-      {label}
+      {translateValue(label)}
     </span>
   );
 }
@@ -327,7 +335,7 @@ function MetricCard({
 
           <div className="flex min-w-0 flex-1 flex-col">
             <p className="text-[11px] font-bold text-[#829596]">
-              {label}
+              {translateValue(label)}
             </p>
 
             <p className="mt-2 text-[27px] font-extrabold leading-none text-[#123F45]">
@@ -339,7 +347,7 @@ function MetricCard({
             </p>
 
             <p className="mt-2 min-h-[32px] line-clamp-2 text-[11px] font-medium leading-4 text-[#829596]">
-              {helper}
+              {translateValue(helper)}
             </p>
           </div>
 
@@ -367,13 +375,13 @@ function MarkRow({ label, earned, total, tone = "teal" }) {
   const valueLabel = hasBreakdown
     ? `${round1(safeEarned)} / ${round1(safeTotal)}`
     : hasEarned
-      ? `${round1(Number(earned))} marks earned`
-      : "Awaiting results";
+      ? translateValue("{{marks}} marks earned", { marks: round1(Number(earned)) })
+      : translateValue("Awaiting results");
 
   return (
     <div ref={ref}>
       <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
-        <span className="font-semibold text-[#60797C]">{label}</span>
+        <span className="font-semibold text-[#60797C]">{translateValue(label)}</span>
         <span className="font-extrabold tabular-nums text-[#234B50]">{valueLabel}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-[#EDF1F0]">
@@ -396,7 +404,7 @@ function JourneyLink({ to, children, muted = false }) {
         : "bg-[#0B5960] hover:bg-[#08484E]"
         }`}
     >
-      {children}
+      {translateValue(children)}
     </Link>
   );
 }
@@ -407,22 +415,22 @@ function StepAction({ step }) {
   if (Cta) {
     return (
       <JourneyLink to={Cta.to} muted={Cta.muted}>
-        <Cta.icon size={13} /> {Cta.label}
+        <Cta.icon size={13} /> {translateValue(Cta.label)}
       </JourneyLink>
     );
   }
-  if (step.pillInstead) return <StatusPill label={step.pillInstead.label} tone={step.pillInstead.tone} />;
+  if (step.pillInstead) return <StatusPill label={translateValue(step.pillInstead.label)} tone={step.pillInstead.tone} />;
   if (step.doneText) {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#28765E]">
-        <CheckCircle2 size={14} /> {step.doneText}
+        <CheckCircle2 size={14} /> {translateValue(step.doneText)}
       </span>
     );
   }
   if (step.lockedText) {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#91A1A2]">
-        <LockKeyhole size={13} /> {step.lockedText}
+        <LockKeyhole size={13} /> {translateValue(step.lockedText)}
       </span>
     );
   }
@@ -435,12 +443,14 @@ function StepAction({ step }) {
 
 function buildCourseModel(chapter) {
   const courseId = chapter?.courseId;
+  const localizedCourseName = getLocalizedValue(chapter?.courseName);
+  const localizedCategoryName = getLocalizedValue(chapter?.categoryName);
   const course = {
     id: courseId,
-    name: chapter?.courseName || "Course details coming soon",
-    category: chapter?.categoryName || "Course",
+    name: localizedCourseName || "Course details coming soon",
+    category: localizedCategoryName || "Course",
   };
-  const isIT = isTechnologyCourse(chapter?.categoryName);
+  const isIT = isTechnologyCourse(localizedCategoryName);
   const stats = {
     done: Math.max(0, Number(chapter?.topicsCompleted) || 0),
     total: Math.max(0, Number(chapter?.totalTopics) || 0),
@@ -476,8 +486,15 @@ function buildCourseModel(chapter) {
       );
       const score = scoreRecord?.bestPercentage ?? null;
       const scoreText = score === null || score === undefined
-        ? "Your quiz result will appear here once it is available."
-        : `Best score: ${round1(score)}%${scoreRecord?.passed === true ? " · Passed" : scoreRecord?.passed === false ? " · Not passed" : ""}`;
+        ? { key: "Your quiz result will appear here once it is available.", values: {} }
+        : {
+            key: scoreRecord?.passed === true
+              ? "Best score: {{score}}% · Passed"
+              : scoreRecord?.passed === false
+                ? "Best score: {{score}}% · Not passed"
+                : "Best score: {{score}}%",
+            values: { score: round1(score) },
+          };
       const moduleId = item?.moduleId;
       const assignmentId = item?.assignmentId;
       const isNextFromApi = Boolean(
@@ -514,8 +531,8 @@ function buildCourseModel(chapter) {
           : { label: "Locked", tone: "muted" };
 
       const marksLabel = score === null || score === undefined
-        ? "Result not available yet"
-        : `${round1(score)}% best score`;
+        ? { key: "Result not available yet", values: {} }
+        : { key: "{{score}}% best score", values: { score: round1(score) } };
 
       return {
         key: `${kind}-${moduleId ?? assignmentId ?? index}`,
@@ -524,7 +541,8 @@ function buildCourseModel(chapter) {
         kind,
         number: Number(item?.order) || index + 1,
         state,
-        title: item?.title || `Learning step ${index + 1}`,
+        title: getLocalizedValue(item?.title) || "",
+        titleFallback: { key: "Learning step {{number}}", values: { number: index + 1 } },
         score: score === null || score === undefined ? null : Number(score),
         description: scoreText,
         ring: { value: score === null || score === undefined ? null : Number(score), label: "Best score", marks: marksLabel },
@@ -563,18 +581,37 @@ function buildCourseModel(chapter) {
     steps,
     nextStep,
     overall: optionalNumber(performance?.overallPercentage),
-    nextTopicName: chapter?.nextTopicName || null,
-    categoryName: chapter?.categoryName || "",
+    nextTopicName: getLocalizedValue(chapter?.nextTopicName) || null,
+    categoryName: localizedCategoryName || "",
   };
 }
 
 /** One friendly sentence about where the student is in this chapter. */
+function getStepTitle(step) {
+  if (!step) return "";
+  return step.title || translateValue(step.titleFallback?.key || "Learning step {{number}}", step.titleFallback?.values || { number: step.number });
+}
+
 function chapterStory(model) {
-  if (model.coursePassed) return "Course completed. You have achieved the required overall score.";
-  if (model.stats.total === 0) return "You are enrolled in this course. Your lessons and learning activities will appear here once they are available.";
-  if (model.stats.done === 0) return "Start with the first available lesson to begin making progress in this course.";
-  if (model.nextStep) return `You have completed ${model.stats.done} of ${model.stats.total} topics. Next, continue with ${model.nextStep.title}.`;
-  return `You have completed ${model.stats.done} of ${model.stats.total} topics. Continue learning to make further progress.`;
+  if (model.coursePassed) {
+    return { key: "Course completed. You have achieved the required overall score.", values: {} };
+  }
+  if (model.stats.total === 0) {
+    return { key: "You are enrolled in this course. Your lessons and learning activities will appear here once they are available.", values: {} };
+  }
+  if (model.stats.done === 0) {
+    return { key: "Start with the first available lesson to begin making progress in this course.", values: {} };
+  }
+  if (model.nextStep) {
+    return {
+      key: "You have completed {{completed}} of {{total}} topics. Next, continue with {{title}}.",
+      values: { completed: model.stats.done, total: model.stats.total, title: getStepTitle(model.nextStep) },
+    };
+  }
+  return {
+    key: "You have completed {{completed}} of {{total}} topics. Continue learning to make further progress.",
+    values: { completed: model.stats.done, total: model.stats.total },
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -594,14 +631,33 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses, focusCou
   ) || models.find((model) => model.nextStep) || null;
   const allPassed = models.length > 0 && passedCourses === models.length;
 
-  let headline = "Your learning journey starts here";
-  let sub = "Begin with your first lesson. Your progress will grow as you complete topics and assessments.";
+  let headline = { key: "Your learning journey starts here", values: {} };
+  let sub = { key: "Begin with your first lesson. Your progress will grow as you complete topics and assessments.", values: {} };
   if (allPassed) {
-    headline = "You have completed all your courses. Well done!";
-    sub = `You have successfully completed ${passedCourses} course${passedCourses === 1 ? "" : "s"}. Review your results below or explore another course.`;
+    headline = { key: "You have completed all your courses. Well done!", values: {} };
+    sub = passedCourses === 1
+      ? {
+          key: "You have successfully completed {{count}} course. Review your results below or explore another course.",
+          values: { count: passedCourses },
+        }
+      : {
+          key: "You have successfully completed {{count}} courses. Review your results below or explore another course.",
+          values: { count: passedCourses },
+        };
   } else if (completedUnits > 0) {
-    headline = `You are ${Math.round(journeyPercent)}% through your learning journey`;
-    sub = `You have completed ${completedUnits} of ${totalUnits} topics across ${models.length} course${models.length === 1 ? "" : "s"}. Review your progress and next steps below.`;
+    headline = {
+      key: "You are {{percentage}}% through your learning journey",
+      values: { percentage: Math.round(journeyPercent) },
+    };
+    sub = models.length === 1
+      ? {
+          key: "You have completed {{completed}} of {{total}} topics across {{courseCount}} course. Review your progress and next steps below.",
+          values: { completed: completedUnits, total: totalUnits, courseCount: models.length },
+        }
+      : {
+          key: "You have completed {{completed}} of {{total}} topics across {{courseCount}} courses. Review your progress and next steps below.",
+          values: { completed: completedUnits, total: totalUnits, courseCount: models.length },
+        };
   }
 
   return (
@@ -620,20 +676,19 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses, focusCou
       <div className="relative grid gap-7 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)] lg:items-center">
         <div>
           <p className="sp-hero-1 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold text-[#F6D88B]">
-            <Sparkles size={13} /> Your learning overview
-          </p>
-          <h2 className="sp-hero-2 mt-4 max-w-xl text-2xl font-extrabold leading-tight sm:text-[34px] sm:leading-[1.15]">{headline}</h2>
-          <p className="sp-hero-3 mt-3 max-w-lg text-sm leading-6 text-[#C6DEDC]">{sub}</p>
+            <Sparkles size={13} /> {translateValue("Your learning overview")}</p>
+          <h2 className="sp-hero-2 mt-4 max-w-xl text-2xl font-extrabold leading-tight sm:text-[34px] sm:leading-[1.15]">{translateValue(headline.key, headline.values)}</h2>
+          <p className="sp-hero-3 mt-3 max-w-lg text-sm leading-6 text-[#C6DEDC]">{translateValue(sub.key, sub.values)}</p>
 
           <div className="sp-hero-4 mt-6">
-            <p className="text-[11px] font-bold text-[#9FC7C5]">Your course progress</p>
+            <p className="text-[11px] font-bold text-[#9FC7C5]">{translateValue("Your course progress")}</p>
             <ol className="mt-3 flex flex-wrap items-center gap-y-2">
               {models.map((m, index) => {
                 const state = m.coursePassed ? "done" : m.stats.done > 0 ? "current" : "locked";
                 return (
                   <li key={m.course.id} className="flex items-center">
                     <span
-                      title={m.course.name}
+                      title={translateValue(m.course.name)}
                       className={`flex h-8 max-w-[190px] items-center gap-2 rounded-full border px-3 text-[11px] font-bold ${state === "done"
                         ? "border-[#F2C35B] bg-[#F2C35B] text-[#4A3305]"
                         : state === "current"
@@ -641,8 +696,8 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses, focusCou
                           : "border-white/15 bg-white/5 text-[#9FC7C5]"
                         }`}
                     >
-                      {state === "done" ? <CheckCircle2 size={13} /> : <span>{pad2(index + 1)}</span>}
-                      <span className="truncate">{m.course.name}</span>
+                      {state === "done" ? <CheckCircle2 size={13} /> : <span>{translateValue(pad2(index + 1))}</span>}
+                      <span className="truncate">{translateValue(m.course.name)}</span>
                     </span>
                     {index < models.length - 1 && <span aria-hidden="true" className="mx-1.5 h-px w-4 bg-white/20" />}
                   </li>
@@ -654,12 +709,12 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses, focusCou
 
         <div className="sp-hero-4 flex flex-col items-center gap-5 sm:flex-row lg:flex-col lg:items-stretch">
           <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm lg:justify-between">
-            <ScoreRing value={journeyPercent} label="Journey" ariaLabel="Overall journey completion" size={104} dark />
+            <ScoreRing value={journeyPercent} label={translateValue("Journey")} ariaLabel="Overall journey completion" size={104} dark />
             <div>
-              <p className="text-[11px] font-bold text-[#9FC7C5]">Topics completed</p>
+              <p className="text-[11px] font-bold text-[#9FC7C5]">{translateValue("Topics completed")}</p>
               <p className="mt-1 text-2xl font-extrabold">
                 <AnimatedNumber value={completedUnits} />
-                <span className="text-base font-bold text-[#9FC7C5]"> / {totalUnits}</span>
+                <span className="text-base font-bold text-[#9FC7C5]"> {translateValue("/")}{" "}{translateValue(totalUnits)}</span>
               </p>
             </div>
           </div>
@@ -667,23 +722,22 @@ function StoryHero({ models, completedUnits, totalUnits, passedCourses, focusCou
           {focus ? (
             <div className="w-full rounded-2xl bg-[#FFF8E6] p-4 text-[#123F45] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-[#94650C]">
-                <Target size={13} /> Your next learning step
-              </p>
-              <p className="mt-1.5 text-sm font-extrabold leading-snug">{focus.nextStep.title}</p>
-              <p className="mt-0.5 truncate text-[11px] text-[#74898B]">in {focus.course.name}</p>
+                <Target size={13} /> {translateValue("Your next learning step")}</p>
+              <p className="mt-1.5 text-sm font-extrabold leading-snug">{translateValue(getStepTitle(focus.nextStep))}</p>
+              <p className="mt-0.5 truncate text-[11px] text-[#74898B]">{translateValue("in")}{" "}{translateValue(focus.course.name)}</p>
               <Link
                 to={focus.nextStep.cta.to}
                 style={{ color: "#3F2B03" }}
                 className="sp-cta mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#E8B33D] px-4 py-2.5 text-xs font-extrabold transition hover:bg-[#F0BD4C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0B5960]"
               >
-                {focus.nextStep.cta.label} <ArrowRight size={14} />
+                {translateValue(focus.nextStep.cta.label)} <ArrowRight size={14} />
               </Link>
             </div>
           ) : (
             <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-5 text-[#C6DEDC]">
-              {allPassed ? "You have completed your current courses. Explore another course to continue building your skills." : "Choose a course to view your progress and next learning steps."}
+              {translateValue(allPassed ? "You have completed your current courses. Explore another course to continue building your skills." : "Choose a course to view your progress and next learning steps.")}
               <Link to="/student/topics" style={{ color: "#F6D88B" }} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-extrabold hover:underline">
-                Explore courses <ArrowRight size={13} />
+                {translateValue("Explore courses")}{" "}<ArrowRight size={13} />
               </Link>
             </div>
           )}
@@ -735,7 +789,7 @@ function RoadmapNode({ step, index, x, y, boxW, selected, shown, onSelect }) {
   if (step.state === "locked") inner = <LockKeyhole size={isFinal ? 24 : 20} />;
   else if (step.state === "done") inner = isFinal ? <Trophy size={26} /> : Icon ? <Icon size={22} /> : <CheckCircle2 size={24} />;
   else if (Icon) inner = <Icon size={isFinal ? 26 : 22} />;
-  else inner = <span className="text-base font-extrabold">{step.number}</span>;
+  else inner = <span className="text-base font-extrabold">{translateValue(step.number)}</span>;
 
   return (
     <div
@@ -754,8 +808,7 @@ function RoadmapNode({ step, index, x, y, boxW, selected, shown, onSelect }) {
           className="sp-bob absolute -top-7 whitespace-nowrap rounded-full bg-[#123F45] px-2.5 py-1 text-[10px] font-extrabold text-[#F6D88B] shadow-[0_6px_14px_rgba(18,63,69,0.25)]"
           style={{ zIndex: 2 }}
         >
-          You are here
-          <span aria-hidden="true" className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-[#123F45]" />
+          {translateValue("You are here")}<span aria-hidden="true" className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-[#123F45]" />
         </span>
       )}
 
@@ -763,7 +816,7 @@ function RoadmapNode({ step, index, x, y, boxW, selected, shown, onSelect }) {
         type="button"
         onClick={() => onSelect(step.key)}
         aria-pressed={selected}
-        aria-label={`${step.title}: ${step.badge.label}`}
+        aria-label={translateValue("{{title}}: {{badge}}", { title: translateValue(getStepTitle(step)), badge: translateValue(step.badge.label) })}
         className={`sp-node flex items-center justify-center rounded-full border-4 border-white focus:outline-none focus-visible:ring-4 focus-visible:ring-[#E8B33D]/60 ${step.state === "current" ? "sp-pulse" : ""}`}
         style={{
           width: size,
@@ -775,7 +828,7 @@ function RoadmapNode({ step, index, x, y, boxW, selected, shown, onSelect }) {
             : "0 6px 16px rgba(18,63,69,0.14)",
         }}
       >
-        {inner}
+        {translateValue(inner)}
       </button>
 
       <span
@@ -788,7 +841,7 @@ function RoadmapNode({ step, index, x, y, boxW, selected, shown, onSelect }) {
           overflow: "hidden",
         }}
       >
-        {step.title}
+        {translateValue(getStepTitle(step))}
       </span>
     </div>
   );
@@ -906,10 +959,10 @@ function Roadmap({ steps, selectedKey, onSelect }) {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] font-semibold text-[#60797C]">
-        <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#0B5960]" /> Completed</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#E8B33D]" /> Up next</span>
-        <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#DCE5E3]" /> Locked</span>
-        <span className="text-[#829596]">Select a topic or assessment to view its details.</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#0B5960]" /> {translateValue("Completed")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#E8B33D]" /> {translateValue("Up next")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-[#DCE5E3]" /> {translateValue("Locked")}</span>
+        <span className="text-[#829596]">{translateValue("Select a topic or assessment to view its details.")}</span>
       </div>
     </div>
   );
@@ -924,7 +977,7 @@ function StepScoreRing({ ring }) {
     <ScoreRing
       value={ring.value}
       label=""
-      ariaLabel={`${ring.label}: ${ring.value}%`}
+      ariaLabel={translateValue("{{label}}: {{score}}%", { label: translateValue(ring.label), score: ring.value })}
       size={size}
       color={ring.value >= 80 ? "#0B5960" : "#E8B33D"}
     />
@@ -933,10 +986,9 @@ function StepScoreRing({ ring }) {
       className="flex shrink-0 items-center justify-center rounded-full border-[6px] border-[#E8EFEE] bg-white text-lg font-extrabold text-[#B5C3C4]"
       style={{ width: size, height: size }}
       role="img"
-      aria-label="Not scored yet"
+      aria-label={translateValue("Not scored yet")}
     >
-      –
-    </div>
+      {translateValue("–")}</div>
   );
 }
 
@@ -957,13 +1009,22 @@ function StepDetail({ step }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-[11px] font-extrabold text-[#A77916]">
-                {step.kind === "topic" ? `Topic ${step.number}` : step.kind === "coding" ? "Practical assessment" : "Final assessment"}
+                {step.kind === "topic"
+                  ? translateValue("Topic {{number}}", { number: step.number })
+                  : translateValue(step.kind === "coding" ? "Practical assessment" : "Final assessment")}
               </p>
-              <StatusPill label={step.badge.label} tone={step.badge.tone} />
-              {hasScore && <StatusPill label={step.ring.marks} tone="info" />}
+              <StatusPill label={translateValue(step.badge.label)} tone={step.badge.tone} />
+              {hasScore && (
+                <StatusPill
+                  label={translateValue(step.ring.marks.key, step.ring.marks.values)}
+                  tone="info"
+                />
+              )}
             </div>
-            <h4 className="mt-1 text-base font-extrabold leading-snug text-[#123F45]">{step.title}</h4>
-            <p className="mt-0.5 text-xs leading-5 text-[#74898B]">{step.description}</p>
+            <h4 className="mt-1 text-base font-extrabold leading-snug text-[#123F45]">{translateValue(getStepTitle(step))}</h4>
+            <p className="mt-0.5 text-xs leading-5 text-[#74898B]">
+              {translateValue(step.description.key, step.description.values)}
+            </p>
           </div>
         </div>
 
@@ -988,29 +1049,28 @@ function TopicScoreChart({ steps }) {
     <div ref={ref} className="rounded-[18px] border border-[#E7EEEC] bg-white p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-extrabold text-[#A77916]">Quiz performance</p>
-          <h3 className="mt-1 text-sm font-extrabold text-[#123F45]">Best score per topic</h3>
+          <p className="text-[11px] font-extrabold text-[#A77916]">{translateValue("Quiz performance")}</p>
+          <h3 className="mt-1 text-sm font-extrabold text-[#123F45]">{translateValue("Best score per topic")}</h3>
         </div>
         <TrendingUp size={18} className="text-[#0B5960]" />
       </div>
 
       {topics.length === 0 ? (
         <div className="mt-4 flex h-[118px] items-center justify-center rounded-xl bg-[#F8FAFA] px-4 text-center text-[11px] text-[#829596]">
-          Complete a topic quiz to see your score here.
-        </div>
+          {translateValue("Complete a topic quiz to see your score here.")}</div>
       ) : (
         <div className="relative mt-4" style={{ height: maxH + 22 }}>
           {/* 80% guide line */}
           <div aria-hidden="true" className="absolute left-0 right-0 border-t border-dashed border-[#E0B85A]" style={{ bottom: 22 + maxH * 0.8 }}>
-            <span className="absolute -top-4 right-0 text-[9px] font-bold text-[#A77916]">80%</span>
+            <span className="absolute -top-4 right-0 text-[9px] font-bold text-[#A77916]">{translateValue("80%")}</span>
           </div>
           <div className="absolute inset-x-0 bottom-0 flex items-end gap-1.5" style={{ height: maxH + 22 }}>
             {topics.map((t, i) => {
               const has = t.score !== null && t.score !== undefined;
               const h = has ? Math.max(6, (t.score / 100) * maxH) : 6;
               return (
-                <div key={t.key} className="flex min-w-0 flex-1 flex-col items-center justify-end" title={`${t.title}: ${has ? `${t.score}%` : "not attempted"}`} style={{ height: "100%" }}>
-                  {has && <span className="mb-1 text-[9px] font-extrabold tabular-nums text-[#234B50]">{t.score}</span>}
+                <div key={t.key} className="flex min-w-0 flex-1 flex-col items-center justify-end" title={translateValue("{{title}}: {{result}}", { title: translateValue(getStepTitle(t)), result: has ? `${t.score}%` : translateValue("not attempted") })} style={{ height: "100%" }}>
+                  {has && <span className="mb-1 text-[9px] font-extrabold tabular-nums text-[#234B50]">{translateValue(t.score)}</span>}
                   <div
                     className="w-full max-w-[26px] rounded-t-md"
                     style={{
@@ -1019,7 +1079,7 @@ function TopicScoreChart({ steps }) {
                       transition: `height .9s cubic-bezier(.2,.7,.2,1) ${i * 70}ms`,
                     }}
                   />
-                  <span className="mt-1.5 h-3 text-[9px] font-bold text-[#829596]">{i + 1}</span>
+                  <span className="mt-1.5 h-3 text-[9px] font-bold text-[#829596]">{translateValue(i + 1)}</span>
                 </div>
               );
             })}
@@ -1027,8 +1087,7 @@ function TopicScoreChart({ steps }) {
         </div>
       )}
       <p className="mt-2 text-[10px] leading-5 text-[#829596]">
-        Teal bars show scores of 80% or higher. Gold bars show scores below 80%. The line is a guide; your course result is based on the overall marks above.
-      </p>
+        {translateValue("Teal bars show scores of 80% or higher. Gold bars show scores below 80%. The line is a guide; your course result is based on the overall marks above.")}</p>
     </div>
   );
 }
@@ -1074,6 +1133,7 @@ function CourseChapterCard({ model, courseNumber }) {
       )
       : [];
   const passMark = assessment.passMark ?? 80;
+  const courseStory = chapterStory(model);
 
   return (
     <Reveal>
@@ -1088,24 +1148,22 @@ function CourseChapterCard({ model, courseNumber }) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-[11px] font-extrabold text-[#A77916]">
-                    Course {courseNumber} · {course.category || "Course"}
+                    {translateValue("Course")}{" "}{translateValue(courseNumber)} {translateValue("·")}{" "}{translateValue(course.category || "Course")}
                   </p>
-                  <StatusPill label={statusLabel} tone={statusTone} />
+                  <StatusPill label={translateValue(statusLabel)} tone={statusTone} />
                 </div>
-                <h2 className="mt-1 text-lg font-extrabold text-[#123F45] sm:text-xl">{course.name}</h2>
-                <p className="mt-1 max-w-md text-xs leading-5 text-[#60797C]">{chapterStory(model)}</p>
+                <h2 className="mt-1 text-lg font-extrabold text-[#123F45] sm:text-xl">{translateValue(course.name)}</h2>
+                <p className="mt-1 max-w-md text-xs leading-5 text-[#60797C]">{translateValue(courseStory.key, courseStory.values)}</p>
                 <p className="mt-1 text-[11px] text-[#829596]">
-                  {stats.done} of {stats.total} topics completed
-                </p>
+                  {translateValue(stats.done)} {translateValue("of")}{" "}{translateValue(stats.total)} {translateValue("topics completed")}</p>
               </div>
             </div>
             <div className="flex items-center justify-between gap-4 sm:justify-end">
               <div className="min-w-0 sm:text-right">
-                <p className="text-[11px] font-bold text-[#829596]">Overall course score</p>
+                <p className="text-[11px] font-bold text-[#829596]">{translateValue("Overall course score")}</p>
                 <p className="mt-1 text-sm font-extrabold text-[#234B50]">
-                  {assessment.totalMarks === null ? "—" : round1(assessment.totalMarks)} / {assessment.outOf > 0 ? round1(assessment.outOf) : "—"} marks
-                </p>
-                <p className="mt-0.5 text-[10px] text-[#829596]">Pass mark: {passMark}% overall</p>
+                  {translateValue(assessment.totalMarks === null ? "—" : round1(assessment.totalMarks))} {translateValue("/")}{" "}{translateValue(assessment.outOf > 0 ? round1(assessment.outOf) : "—")} {translateValue("marks")}</p>
+                <p className="mt-0.5 text-[10px] text-[#829596]">{translateValue("Pass mark:")}{" "}{translateValue(passMark)}{translateValue("% overall")}</p>
               </div>
               <ScoreRing value={overall} />
             </div>
@@ -1113,19 +1171,18 @@ function CourseChapterCard({ model, courseNumber }) {
 
           {coursePassed && (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#D8EAE1] bg-[#F0F8F4] px-3.5 py-3 text-[11px] font-bold text-[#28765E]">
-              <Award size={15} /> Congratulations! You have passed this course.
-            </div>
+              <Award size={15} /> {translateValue("Congratulations! You have passed this course.")}</div>
           )}
         </div>
 
         <div className="p-5 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-extrabold text-[#A77916]">Your learning journey</p>
-              <h3 className="mt-1 text-base font-extrabold text-[#123F45]">Learning roadmap</h3>
+              <p className="text-[11px] font-extrabold text-[#A77916]">{translateValue("Your learning journey")}</p>
+              <h3 className="mt-1 text-base font-extrabold text-[#123F45]">{translateValue("Learning roadmap")}</h3>
             </div>
             <Link to={coursePath} style={{ color: "#0B5960" }} className="inline-flex items-center gap-1 text-[11px] font-extrabold hover:underline">
-              Open My Learning <ArrowRight size={13} />
+              {translateValue("Open My Learning")}{" "}<ArrowRight size={13} />
             </Link>
           </div>
 
@@ -1137,8 +1194,8 @@ function CourseChapterCard({ model, courseNumber }) {
           ) : (
             <div className="rounded-[18px] border border-dashed border-[#DCE7E5] bg-[#F8FAFA] px-4 py-7 text-center">
               <BookOpen size={22} className="mx-auto text-[#829596]" />
-              <p className="mt-2 text-sm font-bold text-[#365B5F]">Your learning path will appear here</p>
-              <p className="mt-1 text-xs text-[#829596]">Your lessons and assessments are not available yet. Please check back soon.</p>
+              <p className="mt-2 text-sm font-bold text-[#365B5F]">{translateValue("Your learning path will appear here")}</p>
+              <p className="mt-1 text-xs text-[#829596]">{translateValue("Your lessons and assessments are not available yet. Please check back soon.")}</p>
             </div>
           )}
 
@@ -1146,24 +1203,24 @@ function CourseChapterCard({ model, courseNumber }) {
             <div className="rounded-[18px] border border-[#E7EEEC] bg-[#FBFCFC] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-extrabold text-[#A77916]">Your results</p>
-                  <h3 className="mt-1 text-sm font-extrabold text-[#123F45]">Marks breakdown</h3>
+                  <p className="text-[11px] font-extrabold text-[#A77916]">{translateValue("Your results")}</p>
+                  <h3 className="mt-1 text-sm font-extrabold text-[#123F45]">{translateValue("Marks breakdown")}</h3>
                 </div>
                 <BarChart3 size={18} className="text-[#0B5960]" />
               </div>
               <div className="mt-4 space-y-4">
-                <MarkRow label="Topic quizzes" earned={assessment.topicMarks} total={marks.topics} />
-                <MarkRow label="Final assessment" earned={assessment.finalMarks} total={marks.final} tone="gold" />
+                <MarkRow label={translateValue("Topic quizzes")} earned={assessment.topicMarks} total={marks.topics} />
+                <MarkRow label={translateValue("Final assessment")} earned={assessment.finalMarks} total={marks.final} tone="gold" />
               </div>
               <div className="mt-4 border-t border-[#E6EDEB] pt-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-[#60797C]">Overall score</span>
-                  <span className="text-base font-extrabold text-[#123F45]">{overall === null ? "—" : `${round1(overall)}%`}</span>
+                  <span className="font-bold text-[#60797C]">{translateValue("Overall score")}</span>
+                  <span className="text-base font-extrabold text-[#123F45]">{translateValue(overall === null ? "—" : `${round1(overall)}%`)}</span>
                 </div>
                 <p className="mt-1 text-[10px] leading-5 text-[#829596]">
-                  {assessment.topicMarks !== null || assessment.finalMarks !== null
+                  {translateValue(assessment.topicMarks !== null || assessment.finalMarks !== null
                     ? "These results show the marks you have earned so far in this course."
-                    : "Your marks will appear here once your assessments have been reviewed."}
+                    : "Your marks will appear here once your assessments have been reviewed.")}
                 </p>
               </div>
             </div>
@@ -1175,32 +1232,29 @@ function CourseChapterCard({ model, courseNumber }) {
                 <div className="flex items-center gap-2">
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFF5DE] text-[#94650C]"><Target size={16} /></span>
                   <div>
-                    <p className="text-[11px] font-extrabold text-[#A77916]">Final assessment</p>
-                    <h3 className="text-sm font-extrabold text-[#123F45]">Assessment attempts</h3>
+                    <p className="text-[11px] font-extrabold text-[#A77916]">{translateValue("Final assessment")}</p>
+                    <h3 className="text-sm font-extrabold text-[#123F45]">{translateValue("Assessment attempts")}</h3>
                   </div>
                 </div>
                 {trackerEntries.length > 0 ? (
                   <div className="mt-4 space-y-2">
                     {trackerEntries.map(([key, value]) => (
                       <div key={key} className="flex items-center justify-between gap-3 border-b border-[#F0F3F2] pb-2 text-[10px] last:border-0">
-                        <span className="font-semibold text-[#74898B]">{formatAttemptLabel(key)}</span>
-                        <span className="font-extrabold text-[#234B50]">{formatAttemptValue(key, value)}</span>
+                        <span className="font-semibold text-[#74898B]">{translateValue(formatAttemptLabel(key))}</span>
+                        <span className="font-extrabold text-[#234B50]">{translateValue(formatAttemptValue(key, value))}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="mt-4 rounded-xl bg-[#F7FAF9] px-3 py-3 text-[10px] leading-5 text-[#829596]">
-                    Your assessment attempt details are being prepared and will appear here once available.
-                  </p>
+                    {translateValue("Your assessment attempt details are being prepared and will appear here once available.")}</p>
                 )}
                 <p className="mt-3 text-[10px] leading-5 text-[#829596]">
-                  Your final assessment score will appear here once your submission has been reviewed.
-                </p>
+                  {translateValue("Your final assessment score will appear here once your submission has been reviewed.")}</p>
               </div>
 
               <LinkButton to={coursePath} variant="outline" icon={BookOpen} className="w-full">
-                Continue this course
-              </LinkButton>
+                {translateValue("Continue this course")}</LinkButton>
             </div>
           </div>
         </div>
@@ -1220,7 +1274,7 @@ function MyAnalyticsLoading() {
         aria-hidden="true"
         className="h-4 w-4 animate-spin rounded-full border-2 border-[#E8EFEE] border-t-[#FFAB0B]"
       />
-      <span>Loading your learning progress...</span>
+      <span>{translateValue("Loading your learning progress...")}</span>
     </div>
   );
 
@@ -1228,7 +1282,7 @@ function MyAnalyticsLoading() {
     <div
       className="mx-auto w-full max-w-[1320px] space-y-6"
       role="status"
-      aria-label="Loading your learning progress"
+      aria-label={translateValue("Loading your learning progress")}
       aria-busy="true"
     >
       {/* Page header skeleton + the same inline loading indicator as MyLearning. */}
@@ -1237,7 +1291,7 @@ function MyAnalyticsLoading() {
           <div className="h-7 w-48 rounded-lg bg-[#E9EFEE]" />
           <div className="h-3 w-full max-w-[520px] rounded-full bg-[#EEF2F1]" />
         </div>
-        {loadingIndicator}
+        {translateValue(loadingIndicator)}
       </div>
 
       {/* Story hero skeleton — keeps the dark analytics hero proportions. */}
@@ -1381,8 +1435,8 @@ function AnalyticsErrorState({ title, message, onRetry }) {
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF1EE] text-[#A85A50]">
         <AlertCircle size={25} />
       </div>
-      <h2 className="mt-4 text-xl font-extrabold text-[#06424B]">{title}</h2>
-      <p className="mx-auto mt-2 max-w-[520px] text-sm leading-6 text-[#718486]">{message}</p>
+      <h2 className="mt-4 text-xl font-extrabold text-[#06424B]">{translateValue(title)}</h2>
+      <p className="mx-auto mt-2 max-w-[520px] text-sm leading-6 text-[#718486]">{translateValue(message)}</p>
       {onRetry && (
         <div className="mt-6 flex justify-center">
           <button
@@ -1390,8 +1444,7 @@ function AnalyticsErrorState({ title, message, onRetry }) {
             onClick={onRetry}
             className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-bold text-[#06424B] transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
           >
-            <RefreshCw size={15} /> Try again
-          </button>
+            <RefreshCw size={15} /> {translateValue("Try again")}</button>
         </div>
       )}
     </Card>
@@ -1403,6 +1456,8 @@ function AnalyticsErrorState({ title, message, onRetry }) {
 /* -------------------------------------------------------------------------- */
 
 function MyAnalytics() {
+  const { i18n: activeI18n } = useTranslation("ui");
+  const activeLanguage = activeI18n.resolvedLanguage || activeI18n.language || "en";
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -1480,7 +1535,7 @@ function MyAnalytics() {
   const summary = analyticsData?.summary || {};
   const chapters = Array.isArray(analyticsData?.chapters) ? analyticsData.chapters : [];
 
-  const models = useMemo(() => chapters.map(buildCourseModel), [chapters]);
+  const models = useMemo(() => chapters.map(buildCourseModel), [chapters, activeLanguage]);
   const completedUnits = Number(summary.topicsCompleted) || 0;
   const totalUnits = Number(summary.totalTopics) || 0;
   const passedCourses = Number(summary.coursesPassed) || 0;
@@ -1497,30 +1552,30 @@ function MyAnalytics() {
           {loading ? (
             <>
               <MyAnalyticsLoading />
-              <Loader open={loading} text="Loading your learning progress..." />
+              <Loader open={loading} text={translateValue("Loading your learning progress...")} />
             </>
           ) : (
             <>
               <StudentPageHeader
-                title="My Analytics"
-                subtitle="Review your course progress, assessment results and next learning steps."
+                title={translateValue("My Analytics")}
+                subtitle={translateValue("Review your course progress, assessment results and next learning steps.")}
               />
 
               {error ? (
                 <AnalyticsErrorState
-                  title="We couldn't load your progress"
-                  message={error}
+                  title={translateValue("We couldn't load your progress")}
+                  message={translateValue(error)}
                   onRetry={loadAnalytics}
                 />
               ) : chapters.length === 0 ? (
                 <Card className="mt-5 p-6 sm:p-9">
                   <EmptyState
                     icon={BarChart3}
-                    title={Number(enrolledCourses) > 0 ? "Your course progress is getting ready" : "Your learning journey starts with a course"}
-                    text={Number(enrolledCourses) > 0
+                    title={translateValue(Number(enrolledCourses) > 0 ? "Your course progress is getting ready" : "Your learning journey starts with a course")}
+                    text={translateValue(Number(enrolledCourses) > 0
                       ? "Your course details are still being prepared. Your lessons, assessments and progress will appear here once they are available."
-                      : "You haven't enrolled in a course yet. Explore the available courses and add one to your learning space. Your progress and assessment results will appear here as you learn."}
-                    action={<LinkButton to="/student/topics" variant="gold" icon={BookOpen}>Explore courses</LinkButton>}
+                      : "You haven't enrolled in a course yet. Explore the available courses and add one to your learning space. Your progress and assessment results will appear here as you learn.")}
+                    action={<LinkButton to="/student/topics" variant="gold" icon={BookOpen}>{translateValue("Explore courses")}</LinkButton>}
                   />
                 </Card>
               ) : (
@@ -1533,37 +1588,36 @@ function MyAnalytics() {
                     focusCourseId={focusCourseId}
                     overallPercentage={summary.overallPercentage}
                   />
-
                   <div className="mt-5 grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <MetricCard
                       icon={GraduationCap}
-                      label="Enrolled courses"
+                      label={translateValue("Enrolled courses")}
                       value={enrolledCourses}
-                      helper="Courses you have joined"
+                      helper={translateValue("Courses you have joined")}
                       tone="teal"
                     />
                     <MetricCard
                       icon={CheckCircle2}
-                      label="Topics completed"
+                      label={translateValue("Topics completed")}
                       value={summary.topicsCompleted ?? null}
                       suffix={summary.totalTopics !== undefined ? `/${summary.totalTopics}` : ""}
-                      helper="Across your enrolled courses"
+                      helper={translateValue("Across your enrolled courses")}
                       tone="green"
                       delay={80}
                     />
                     <MetricCard
                       icon={ClipboardCheck}
-                      label="Assessment attempts"
+                      label={translateValue("Assessment attempts")}
                       value={assessmentAttempts}
-                      helper="Quizzes and assessments you have taken"
+                      helper={translateValue("Quizzes and assessments you have taken")}
                       tone="gold"
                       delay={160}
                     />
                     <MetricCard
                       icon={Trophy}
-                      label="Courses passed"
+                      label={translateValue("Courses passed")}
                       value={summary.coursesPassed ?? null}
-                      helper="Courses where you have met the passing requirement"
+                      helper={translateValue("Courses where you have met the passing requirement")}
                       tone="slate"
                       delay={240}
                     />
@@ -1571,13 +1625,13 @@ function MyAnalytics() {
 
                   <Reveal className="mt-9 flex flex-wrap items-end justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-extrabold text-[#A77916]">Your courses</p>
-                      <h2 className="mt-1 text-lg font-extrabold text-[#123F45]">Course progress and learning paths</h2>
-                      <p className="mt-1 text-xs text-[#829596]">Review each course to see completed topics, assessment results and your next learning step.</p>
+                      <p className="text-[11px] font-extrabold text-[#A77916]">{translateValue("Your courses")}</p>
+                      <h2 className="mt-1 text-lg font-extrabold text-[#123F45]">{translateValue("Course progress and learning paths")}</h2>
+                      <p className="mt-1 text-xs text-[#829596]">{translateValue("Review each course to see completed topics, assessment results and your next learning step.")}</p>
                     </div>
                     <div className="flex items-center gap-2 rounded-xl border border-[#E3EBE9] bg-white px-3 py-2">
                       <TrendingUp size={15} className="text-[#0B5960]" />
-                      <span className="text-[11px] font-bold text-[#60797C]">Average assessment score</span>
+                      <span className="text-[11px] font-bold text-[#60797C]">{translateValue("Average assessment score")}</span>
                       <span className="text-sm font-extrabold text-[#123F45]">
                         {averageAssessmentScore === null || averageAssessmentScore === undefined
                           ? "—"
@@ -1599,8 +1653,8 @@ function MyAnalytics() {
               )}
 
               <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#E4EBE9] pt-5">
-                <p className="text-[11px] text-[#829596]">Your progress is updated as you complete lessons and assessments.</p>
-                <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>Continue learning</LinkButton>
+                <p className="text-[11px] text-[#829596]">{translateValue("Your progress is updated as you complete lessons and assessments.")}</p>
+                <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>{translateValue("Continue learning")}</LinkButton>
               </div>
             </>
           )}

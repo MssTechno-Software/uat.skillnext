@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Check, Gauge, Sparkles, Target, Zap } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -69,21 +70,21 @@ function InterviewPrepDifficulty() {
     
       <PageShell max="max-w-[1400px]">
         <StudentPageHeader
-          title="Refine Your Focus"
-          subtitle="Select the interview difficulty before starting your course-specific theory practice."
+          title={translateValue("Refine Your Focus")}
+          subtitle={translateValue("Select the interview difficulty before starting your course-specific theory practice.")}
         />
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#DCE6E5] bg-white px-4 py-3 shadow-sm">
           <div className="min-w-0">
-            <p className="text-[9px] font-extrabold tracking-[0.15em] text-[#B07A06]">INTERVIEW PREP <span className="px-1 text-[#9BAEAD]">›</span> {courseName.toUpperCase()} <span className="px-1 text-[#9BAEAD]">›</span> {topic.title.toUpperCase()}</p>
-            <p className="mt-1 text-sm font-bold text-[#06424B]">10 theory questions · One subtopic</p>
+            <p className="text-[9px] font-extrabold tracking-[0.15em] text-[#B07A06]">{translateValue("INTERVIEW PREP")}{" "}<span className="px-1 text-[#9BAEAD]">{translateValue("›")}</span> {translateValue(courseName).toUpperCase()} <span className="px-1 text-[#9BAEAD]">{translateValue("›")}</span> {translateValue(topic.title).toUpperCase()}</p>
+            <p className="mt-1 text-sm font-bold text-[#06424B]">{translateValue("10 theory questions · One subtopic")}</p>
           </div>
-          <button type="button" onClick={() => navigate(`/student/ai-practice/topic-theory/${courseId}/topics`)} className="inline-flex items-center gap-2 text-xs font-bold text-[#527477] transition hover:text-[#06424B]"><ArrowLeft size={14}/> Change subtopic</button>
+          <button type="button" onClick={() => navigate(`/student/ai-practice/topic-theory/${courseId}/topics`)} className="inline-flex items-center gap-2 text-xs font-bold text-[#527477] transition hover:text-[#06424B]"><ArrowLeft size={14}/> {translateValue("Change subtopic")}</button>
         </div>
 
         <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,0.8fr)]">
           <section>
-            <SectionHeading title="Select difficulty" subtitle="Choose the level that best matches the practice you want." />
+            <SectionHeading title={translateValue("Select difficulty")} subtitle={translateValue("Choose the level that best matches the practice you want.")} />
             <div className="grid gap-3 sm:grid-cols-2">
               {difficultyOptions.map(({ id, title, subtitle, Icon, surface, tone }) => {
                 const active = difficulty === id;
@@ -93,8 +94,8 @@ function InterviewPrepDifficulty() {
                       <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${surface} ${tone}`}><Icon size={20}/></span>
                       {active && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#06424B] text-white"><Check size={14}/></span>}
                     </div>
-                    <h3 className="mt-4 text-base font-extrabold text-[#06424B]">{title}</h3>
-                    <p className="mt-1 text-xs leading-5 text-[#718486]">{subtitle}</p>
+                    <h3 className="mt-4 text-base font-extrabold text-[#06424B]">{translateValue(title)}</h3>
+                    <p className="mt-1 text-xs leading-5 text-[#718486]">{translateValue(subtitle)}</p>
                   </button>
                 );
               })}
@@ -105,18 +106,18 @@ function InterviewPrepDifficulty() {
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF3F2] text-[#06424B]"><Target size={22}/></span>
               <div>
-                <p className="text-[9px] font-extrabold tracking-[0.15em] text-[#B07A06]">INTERVIEW CONFIGURATION</p>
-                <h2 className="text-lg font-extrabold text-[#06424B]">Ready to practise</h2>
+                <p className="text-[9px] font-extrabold tracking-[0.15em] text-[#B07A06]">{translateValue("INTERVIEW CONFIGURATION")}</p>
+                <h2 className="text-lg font-extrabold text-[#06424B]">{translateValue("Ready to practise")}</h2>
               </div>
             </div>
             <div className="mt-5 space-y-3 rounded-xl bg-[#F5F8F7] p-4">
-              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">COURSE</p><p className="mt-1 text-sm font-bold text-[#2F4A4E]">{courseName}</p></div>
-              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">SUBTOPIC</p><p className="mt-1 text-sm font-bold text-[#2F4A4E]">{topic.title}</p></div>
-              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">DIFFICULTY</p><p className="mt-1 inline-flex rounded-lg bg-[#FFAB0B] px-3 py-1.5 text-xs font-extrabold text-[#06424B]">{difficulty}</p></div>
-              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">QUESTION FORMAT</p><p className="mt-1 text-sm font-semibold text-[#2F4A4E]">10 open-ended theory questions</p></div>
+              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">{translateValue("COURSE")}</p><p className="mt-1 text-sm font-bold text-[#2F4A4E]">{translateValue(courseName)}</p></div>
+              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">{translateValue("SUBTOPIC")}</p><p className="mt-1 text-sm font-bold text-[#2F4A4E]">{translateValue(topic.title)}</p></div>
+              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">{translateValue("DIFFICULTY")}</p><p className="mt-1 inline-flex rounded-lg bg-[#FFAB0B] px-3 py-1.5 text-xs font-extrabold text-[#06424B]">{translateValue(difficulty)}</p></div>
+              <div><p className="text-[9px] font-extrabold tracking-wide text-[#829596]">{translateValue("QUESTION FORMAT")}</p><p className="mt-1 text-sm font-semibold text-[#2F4A4E]">{translateValue("10 open-ended theory questions")}</p></div>
             </div>
             <button type="button" onClick={startInterview} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 py-3 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#0A515C]">
-              Start Interview <ArrowRight size={15}/>
+              {translateValue("Start Interview")}{" "}<ArrowRight size={15}/>
             </button>
           </Card>
         </div>

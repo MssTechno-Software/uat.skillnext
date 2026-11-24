@@ -1,3 +1,4 @@
+import { translateValue } from "../i18n";
 import {
   useLayoutEffect,
   useEffect,
@@ -36,12 +37,13 @@ import { clearCourseApiCache } from "../api/course.api";
 import { useEnrolledCourses } from "../data/studentCourseEnrollment";
 import { useTeacherData } from "../data/teacherMockData";
 import StudentProfileMenu from "./student/StudentProfileMenu";
+import LanguageSwitcher from "./common/LanguageSwitcher";
 
 const EXPANDED_STORAGE_KEY = "skillnext_sidebar_expanded";
 const SCROLL_STORAGE_KEY = "skillnext_sidebar_scroll";
 
 // Page that opens in the main area when you click "Course Explorer".
-// Make sure a route exists for it (list of categories / courses).
+
 const EXPLORER_PATH = "/teacher/categories";
 
 // ============================================
@@ -288,7 +290,7 @@ function SidebarLink({
       to={item.path}
       end={item.end || false}
       onClick={onClick}
-      title={!openSidebar ? item.label : undefined}
+      title={translateValue(!openSidebar ? item.label : undefined)}
       className={({ isActive }) => {
         const active = activeOverride || isActive;
 
@@ -345,7 +347,7 @@ function SidebarLink({
 
             {openSidebar && (
               <span className={`min-w-0 flex-1 truncate ${textColor}`}>
-                {item.label}
+                {translateValue(item.label)}
               </span>
             )}
 
@@ -359,12 +361,9 @@ function SidebarLink({
   );
 }
 
-// ============================================
 // RECURSIVE TEACHER TREE (category > course > module)
-//
 // - Clicking the label navigates and makes ONLY that item active.
 // - The dropdown opens / closes ONLY from the arrow button.
-// ============================================
 
 function TeacherTreeItem({
   item,
@@ -397,7 +396,7 @@ function TeacherTreeItem({
         {hasChildren && openSidebar && (
           <button
             type="button"
-            aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
+            aria-label={translateValue("{{action}} {{label}}", { action: translateValue(expanded ? "Collapse" : "Expand"), label: translateValue(item.label) })}
             aria-expanded={expanded}
             onClick={() => toggleNode(item.key)}
             className="
@@ -437,11 +436,7 @@ function TeacherTreeItem({
     </div>
   );
 }
-
-// ============================================
 // MAIN SIDEBAR
-// ============================================
-
 function Sidebar({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -609,7 +604,7 @@ function Sidebar({ children }) {
       {mobileSidebar && (
         <button
           type="button"
-          aria-label="Close sidebar"
+          aria-label={translateValue("Close sidebar")}
           onClick={closeMobileSidebar}
           className="
             fixed inset-0 z-40
@@ -646,7 +641,7 @@ function Sidebar({ children }) {
         >
           <img
             src="/logo.png"
-            alt="Skill Next Consulting Inc."
+            alt={translateValue("Skill Next Consulting Inc.")}
             className={`
               shrink-0 object-contain
               transition-all duration-300
@@ -657,10 +652,10 @@ function Sidebar({ children }) {
           {openSidebar && (
             <div className="min-w-0 border-l border-[#D5DCD5] pl-3.5">
               <p className="whitespace-nowrap text-[13px] font-semibold tracking-[-0.2px] text-[#243746]">
-                {portalTitle}
+                {translateValue(portalTitle)}
               </p>
               <p className="mt-1 whitespace-nowrap text-[11px] font-normal text-[#77858A]">
-                {portalSubtitle}
+                {translateValue(portalSubtitle)}
               </p>
             </div>
           )}
@@ -668,7 +663,7 @@ function Sidebar({ children }) {
           <button
             type="button"
             onClick={() => setOpenSidebar((value) => !value)}
-            aria-label={openSidebar ? "Collapse sidebar" : "Expand sidebar"}
+            aria-label={translateValue(openSidebar ? "Collapse sidebar" : "Expand sidebar")}
             className="
               absolute -right-4 top-[31px] z-50
               hidden h-[32px] w-[32px]
@@ -691,7 +686,7 @@ function Sidebar({ children }) {
           <button
             type="button"
             onClick={closeMobileSidebar}
-            aria-label="Close sidebar"
+            aria-label={translateValue("Close sidebar")}
             className="
               ml-auto rounded-lg p-2
               text-[#607A7E]
@@ -717,7 +712,7 @@ function Sidebar({ children }) {
               {openSidebar && (
                 <div className="mb-[11px] px-[13px]">
                   <p className="whitespace-nowrap text-[10px] font-bold tracking-[1.15px] text-[#8A795E]">
-                    {group.title}
+                    {translateValue(group.title)}
                   </p>
                 </div>
               )}
@@ -745,7 +740,7 @@ function Sidebar({ children }) {
                           <NavLink
                             to={EXPLORER_PATH}
                             end
-                            title={!openSidebar ? item.label : undefined}
+                            title={translateValue(!openSidebar ? item.label : undefined)}
                             onClick={closeMobileSidebar}
                             className={`
                               flex min-h-[50px] min-w-0 flex-1
@@ -767,7 +762,7 @@ function Sidebar({ children }) {
 
                             {openSidebar && (
                               <span className="min-w-0 flex-1 truncate">
-                                {item.label}
+                                {translateValue(item.label)}
                               </span>
                             )}
                           </NavLink>
@@ -776,7 +771,7 @@ function Sidebar({ children }) {
                           {openSidebar && (
                             <button
                               type="button"
-                              aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
+                              aria-label={translateValue("{{action}} {{label}}", { action: translateValue(expanded ? "Collapse" : "Expand"), label: translateValue(item.label) })}
                               aria-expanded={expanded}
                               onClick={() => toggleNode(item.key)}
                               className={`
@@ -848,10 +843,14 @@ function Sidebar({ children }) {
             pb-[7px] pt-[15px]
           "
         >
+          <div className="mb-3">
+            <LanguageSwitcher compact={!openSidebar} />
+          </div>
+
           <NavLink
             to={supportPath}
             onClick={closeMobileSidebar}
-            title={!openSidebar ? "Help & Support" : undefined}
+            title={translateValue(!openSidebar ? "Help & Support" : undefined)}
             className={({ isActive }) => `
               group flex min-h-[48px]
               items-center gap-3
@@ -874,8 +873,7 @@ function Sidebar({ children }) {
                 />
                 {openSidebar && (
                   <span className="text-[12px] font-medium">
-                    Help & Support
-                  </span>
+                    {translateValue("Help & Support")}</span>
                 )}
               </>
             )}
@@ -884,7 +882,7 @@ function Sidebar({ children }) {
           <button
             type="button"
             onClick={handleLogout}
-            title={!openSidebar ? "Sign out" : undefined}
+            title={translateValue(!openSidebar ? "Sign out" : undefined)}
             className={`
               group mt-[5px] flex min-h-[68px]
               w-full items-center gap-[13px]
@@ -914,11 +912,9 @@ function Sidebar({ children }) {
               <>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[12px] font-semibold text-[#243746]">
-                    Sign out
-                  </span>
+                    {translateValue("Sign out")}</span>
                   <span className="mt-1 block text-[10px] font-normal text-[#7B898B]">
-                    End your session
-                  </span>
+                    {translateValue("End your session")}</span>
                 </span>
 
                 <ChevronRight
@@ -953,7 +949,7 @@ function Sidebar({ children }) {
           <button
             type="button"
             onClick={() => setMobileSidebar(true)}
-            aria-label="Open sidebar"
+            aria-label={translateValue("Open sidebar")}
             className="
               flex h-10 w-10
               items-center justify-center
@@ -967,13 +963,13 @@ function Sidebar({ children }) {
           </button>
 
           <p className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[13px] font-semibold text-[#06424B]">
-            {portalTitle}
+            {translateValue(portalTitle)}
           </p>
 
           <StudentProfileMenu className="shrink-0 lg:hidden" />
         </header>
 
-        <main className="min-h-dvh">{children}</main>
+        <main className="min-h-dvh">{translateValue(children)}</main>
       </div>
     </div>
   );

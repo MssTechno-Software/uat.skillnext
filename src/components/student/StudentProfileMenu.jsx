@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
@@ -234,14 +235,14 @@ function MessageDialog({ dialog, onClose }) {
             id="message-dialog-title"
             className="mt-4 text-lg font-bold text-[#06424B]"
           >
-            {isError ? "Something went wrong" : "Profile updated"}
+            {translateValue(isError ? "Something went wrong" : "Profile updated")}
           </h2>
 
           <p
             id="message-dialog-text"
             className="mt-2 break-words text-sm leading-6 text-[#5A7478]"
           >
-            {dialog.message}
+            {translateValue(dialog.message)}
           </p>
 
           <button
@@ -254,7 +255,7 @@ function MessageDialog({ dialog, onClose }) {
                 : "bg-[#06424B] text-white hover:bg-[#0A515B] focus:ring-[#FFAB0B]/30"
             }`}
           >
-            {isError ? "Close" : "Done"}
+            {translateValue(isError ? "Close" : "Done")}
           </button>
         </div>
       </div>
@@ -290,10 +291,10 @@ function MenuItem({ icon: Icon, title, description, iconClass }) {
 
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] font-semibold text-[#06424B]">
-          {title}
+          {translateValue(title)}
         </span>
         <span className="mt-0.5 block text-[11px] text-[#6C8589]">
-          {description}
+          {translateValue(description)}
         </span>
       </span>
 
@@ -311,8 +312,8 @@ function FormField({ field, value, error, disabled, onChange }) {
         htmlFor={id}
         className="mb-1.5 block text-[12px] font-semibold text-[#06424B]"
       >
-        {field.label}
-        {field.required && <span className="ml-1 text-[#C0392B]">*</span>}
+        {translateValue(field.label)}
+        {field.required && <span className="ml-1 text-[#C0392B]">{translateValue("*")}</span>}
       </label>
 
       <input
@@ -321,7 +322,7 @@ function FormField({ field, value, error, disabled, onChange }) {
         type={field.type || "text"}
         value={value}
         onChange={(event) => onChange(field.name, event.target.value)}
-        placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+        placeholder={translateValue(field.placeholder || `Enter ${field.label.toLowerCase()}`)}
         autoComplete={field.autoComplete}
         maxLength={field.maxLength ?? DEFAULT_MAX_LENGTH}
         aria-required={field.required || undefined}
@@ -340,7 +341,7 @@ function FormField({ field, value, error, disabled, onChange }) {
           id={`${id}-error`}
           className="mt-1.5 text-[11px] font-medium text-[#C0392B]"
         >
-          {error}
+          {translateValue(error)}
         </p>
       )}
     </div>
@@ -397,18 +398,16 @@ function EditProfileModal({
               id="edit-profile-title"
               className="text-xl font-bold text-[#06424B]"
             >
-              Edit {roleLabel} profile
-            </h2>
+              {translateValue("Edit")}{" "}{translateValue(roleLabel)} {translateValue("profile")}</h2>
             <p className="mt-1 text-xs text-[#6C8589]">
-              Update your personal, contact and education details.
-            </p>
+              {translateValue("Update your personal, contact and education details.")}</p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            aria-label="Close"
+            aria-label={translateValue("Close")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#E2EAEA] bg-white text-[#62797C] transition-colors hover:bg-[#FFF4D6] hover:text-[#06424B] disabled:opacity-50"
           >
             <X size={18} />
@@ -428,15 +427,15 @@ function EditProfileModal({
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-[#06424B]">
-                  {fullName || `${roleLabel} profile`}
+                  {translateValue(fullName || `${roleLabel} profile`)}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-[#6C8589]">
-                  {email || `${roleLabel} account`}
+                  {translateValue(email || `${roleLabel} account`)}
                 </p>
               </div>
 
               <span className="rounded-full bg-[#FFF4D6] px-3 py-1 text-[11px] font-bold text-[#8A5F00]">
-                {roleLabel}
+                {translateValue(roleLabel)}
               </span>
             </div>
 
@@ -445,7 +444,7 @@ function EditProfileModal({
               <section key={group.title}>
                 <h3 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#06424B]">
                   <span className="h-4 w-1 rounded-full bg-[#FFAB0B]" />
-                  {group.title}
+                  {translateValue(group.title)}
                 </h3>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -467,15 +466,13 @@ function EditProfileModal({
             <section>
               <h3 className="mb-3 flex items-center gap-2 text-[13px] font-bold text-[#06424B]">
                 <span className="h-4 w-1 rounded-full bg-[#FFAB0B]" />
-                Account Information
-              </h3>
+                {translateValue("Account Information")}</h3>
 
               <label
                 htmlFor="profile-email"
                 className="mb-1.5 block text-[12px] font-semibold text-[#06424B]"
               >
-                Email Address
-              </label>
+                {translateValue("Email Address")}</label>
 
               <div className="relative">
                 <input
@@ -485,7 +482,7 @@ function EditProfileModal({
                   readOnly
                   disabled
                   tabIndex={-1}
-                  placeholder="Email not available"
+                  placeholder={translateValue("Email not available")}
                   className="h-11 w-full cursor-not-allowed rounded-xl border border-[#D5E4E2] bg-[#F5F7F7] pl-4 pr-10 text-[13px] text-[#718486] outline-none"
                 />
                 <Lock
@@ -495,17 +492,14 @@ function EditProfileModal({
               </div>
 
               <p className="mt-1.5 text-[11px] text-[#6C8589]">
-                Your email cannot be changed here.
-              </p>
+                {translateValue("Your email cannot be changed here.")}</p>
             </section>
           </div>
 
           {/* Footer */}
           <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-[#EAF0EE] bg-[#FAFCFB] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-[#6C8589]">
-              Fields marked with <span className="text-[#C0392B]">*</span> are
-              required.
-            </p>
+              {translateValue("Fields marked with")}{" "}<span className="text-[#C0392B]">{translateValue("*")}</span> {translateValue("are required.")}</p>
 
             <div className="flex items-center justify-end gap-3">
               <button
@@ -514,8 +508,7 @@ function EditProfileModal({
                 disabled={isSaving}
                 className="h-10 rounded-lg border border-[#D5E4E2] bg-white px-4 text-xs font-semibold text-[#06424B] transition-colors hover:bg-[#F2F6F5] disabled:opacity-50"
               >
-                Cancel
-              </button>
+                {translateValue("Cancel")}</button>
 
               <button
                 type="submit"
@@ -527,7 +520,7 @@ function EditProfileModal({
                 ) : (
                   <Save size={15} />
                 )}
-                {isSaving ? "Saving..." : "Save changes"}
+                {translateValue(isSaving ? "Saving..." : "Save changes")}
               </button>
             </div>
           </div>
@@ -683,7 +676,7 @@ function StudentProfileMenu({ className = "", showProfileErrorDialog = false }) 
       <div className={`relative z-[80] ${className}`} ref={menuRef}>
             <button
               type="button"
-              aria-label="Open profile menu"
+              aria-label={translateValue("Open profile menu")}
               aria-expanded={profileMenuOpen}
               aria-haspopup="menu"
               onClick={() => setProfileMenuOpen((open) => !open)}
@@ -704,26 +697,25 @@ function StudentProfileMenu({ className = "", showProfileErrorDialog = false }) 
 
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-[#06424B]">
-                        {isProfileLoading
+                        {translateValue(isProfileLoading
                           ? "Loading profile..."
-                          : fullName || `${roleLabel} profile`}
+                          : fullName || `${roleLabel} profile`)}
                       </p>
                       <p className="mt-0.5 truncate text-xs text-[#6C8589]">
-                        {profile.email || `${roleLabel} account`}
+                        {translateValue(profile.email || `${roleLabel} account`)}
                       </p>
                     </div>
                   </div>
 
                   {profileError && (
                     <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-[#FFF1EE] px-3 py-2 text-xs text-[#A65349]">
-                      <span>Profile could not be loaded.</span>
+                      <span>{translateValue("Profile could not be loaded.")}</span>
                       <button
                         type="button"
                         onClick={() => refreshProfile(true).catch(() => {})}
                         className="font-bold underline"
                       >
-                        Retry
-                      </button>
+                        {translateValue("Retry")}</button>
                     </div>
                   )}
                 </div>
@@ -739,8 +731,8 @@ function StudentProfileMenu({ className = "", showProfileErrorDialog = false }) 
                   >
                     <MenuItem
                       icon={Pencil}
-                      title="Edit profile"
-                      description="Update your personal and account details"
+                      title={translateValue("Edit profile")}
+                      description={translateValue("Update your personal and account details")}
                       iconClass="bg-[#FFF4D6] text-[#8A5F00]"
                     />
                   </button>
@@ -753,8 +745,8 @@ function StudentProfileMenu({ className = "", showProfileErrorDialog = false }) 
                   >
                     <MenuItem
                       icon={Settings}
-                      title="Account settings"
-                      description="Manage your preferences"
+                      title={translateValue("Account settings")}
+                      description={translateValue("Manage your preferences")}
                       iconClass="bg-[#EAF2F1] text-[#06424B]"
                     />
                   </Link>
@@ -762,8 +754,7 @@ function StudentProfileMenu({ className = "", showProfileErrorDialog = false }) 
 
                 <div className="border-t border-[#EAF0EE] px-4 py-3">
                   <p className="text-center text-[11px] text-[#8A9A9C]">
-                    Skill Next {roleLabel} Portal
-                  </p>
+                    {translateValue("Skill Next")}{" "}{translateValue(roleLabel)} {translateValue("Portal")}</p>
                 </div>
               </div>
             )}

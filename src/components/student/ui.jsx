@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -38,7 +39,7 @@ function inner(Icon, IconRight, children) {
   return (
     <>
       {Icon && <Icon size={16} strokeWidth={2} />}
-      {children}
+      {translateValue(children)}
       {IconRight && <IconRight size={16} strokeWidth={2} />}
     </>
   );
@@ -75,14 +76,14 @@ export function LinkButton({
         className={classes}
         {...rest}
       >
-        {inner(icon, iconRight, children)}
+        {translateValue(inner(icon, iconRight, children))}
       </a>
     );
   }
 
   return (
     <Link to={to} className={classes} {...rest}>
-      {inner(icon, iconRight, children)}
+      {translateValue(inner(icon, iconRight, children))}
     </Link>
   );
 }
@@ -113,7 +114,7 @@ export function Btn({
       )}
       {...rest}
     >
-      {inner(icon, iconRight, children)}
+      {translateValue(inner(icon, iconRight, children))}
     </button>
   );
 }
@@ -136,7 +137,7 @@ export function PageShell({
       lg:px-10 lg:py-8
     ">
       <div className={cx("mx-auto", max)}>
-        {children}
+        {translateValue(children)}
       </div>
     </main>
   );
@@ -161,7 +162,7 @@ export function Card({
       )}
       {...rest}
     >
-      {children}
+      {translateValue(children)}
     </div>
   );
 }
@@ -277,7 +278,7 @@ export function Hero({
               text-[#06424B]
             ">
               {Icon && <Icon size={14} />}
-              {eyebrow}
+              {translateValue(eyebrow)}
             </span>
           )}
 
@@ -287,7 +288,7 @@ export function Hero({
             leading-tight tracking-[-0.6px]
             text-white sm:text-[36px]
           ">
-            {title}
+            {translateValue(title)}
           </h2>
 
           {text && (
@@ -296,13 +297,13 @@ export function Hero({
               text-[15px] leading-7
               text-white/80
             ">
-              {text}
+              {translateValue(text)}
             </p>
           )}
 
           {children && (
             <div className="mt-6 flex flex-wrap gap-3">
-              {children}
+              {translateValue(children)}
             </div>
           )}
 
@@ -364,7 +365,7 @@ export function SectionHeading({
             h-5 w-1.5 rounded-full
             bg-[#FFAB0B]
           " />
-          {title}
+          {translateValue(title)}
         </h2>
 
         {subtitle && (
@@ -373,13 +374,13 @@ export function SectionHeading({
             text-sm leading-6
             text-[#718589]
           ">
-            {subtitle}
+            {translateValue(subtitle)}
           </p>
         )}
 
       </div>
 
-      {right}
+      {translateValue(right)}
     </div>
   );
 }
@@ -415,7 +416,7 @@ export function Note({
         />
       )}
 
-      <div>{children}</div>
+      <div>{translateValue(children)}</div>
     </div>
   );
 }
@@ -451,7 +452,7 @@ export function EmptyState({
         tracking-[-0.3px]
         text-[#06424B]
       ">
-        {title}
+        {translateValue(title)}
       </h3>
 
       <p className="
@@ -459,12 +460,12 @@ export function EmptyState({
         text-sm leading-6
         text-[#718589]
       ">
-        {text}
+        {translateValue(text)}
       </p>
 
       {action && (
         <div className="mt-5">
-          {action}
+          {translateValue(action)}
         </div>
       )}
 
@@ -533,7 +534,7 @@ export function BackLink({
       "
     >
       <ArrowLeft size={15} />
-      {children}
+      {translateValue(children)}
     </Link>
   );
 }

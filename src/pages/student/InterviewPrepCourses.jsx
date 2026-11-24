@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import {
   ArrowRight,
   BookOpen,
@@ -11,7 +12,6 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
- 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import { Card, EmptyState, IconBadge, PageShell, SectionHeading } from "../../components/student/ui";
 import { courseCategories, technologies } from "../../data/studentLearningData";
@@ -45,8 +45,8 @@ function InterviewPrepCourses() {
     
       <PageShell max="max-w-[1400px]">
         <StudentPageHeader
-          title="Course-Specific Interview Prep"
-          subtitle="Choose a course you have enrolled in, select a subtopic and practise explaining your knowledge."
+          title={translateValue("Course-Specific Interview Prep")}
+          subtitle={translateValue("Choose a course you have enrolled in, select a subtopic and practise explaining your knowledge.")}
         />
 
         <section className="relative mt-5 overflow-hidden rounded-[22px] bg-[#06424B] px-6 py-7 text-white shadow-[0_10px_28px_rgba(6,66,75,0.12)] sm:px-8">
@@ -55,12 +55,10 @@ function InterviewPrepCourses() {
           <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
             <div className="max-w-[760px]">
               <p className="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] text-[#FFAB0B]">
-                <Sparkles size={13} /> SKILL NEXT · INTERVIEW PREPARATION
-              </p>
-              <h2 className="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl">Practise what you have learned</h2>
+                <Sparkles size={13} /> {translateValue("SKILL NEXT · INTERVIEW PREPARATION")}</p>
+              <h2 className="mt-2 text-2xl font-extrabold leading-tight sm:text-3xl">{translateValue("Practise what you have learned")}</h2>
               <p className="mt-3 text-sm leading-7 text-white/75">
-                Your interview practice is based on the courses in My Learning. Choose one course and focus on a single subtopic at a time.
-              </p>
+                {translateValue("Your interview practice is based on the courses in My Learning. Choose one course and focus on a single subtopic at a time.")}</p>
             </div>
             <div className="hidden h-[92px] w-[92px] shrink-0 items-center justify-center rounded-[25px] border border-white/10 bg-white/[0.08] text-[#FFAB0B] sm:flex">
               <GraduationCap size={44} strokeWidth={1.5} />
@@ -70,24 +68,24 @@ function InterviewPrepCourses() {
 
         <section className="mt-7">
           <SectionHeading
-            title="Your enrolled courses"
-            subtitle="Select the course you want to prepare for. Only enrolled courses are shown here."
-            right={<span className="rounded-lg border border-[#DCE7E5] bg-white px-3 py-2 text-[10px] font-extrabold tracking-wide text-[#527477]">{enrolledCourses.length} ENROLLED</span>}
+            title={translateValue("Your enrolled courses")}
+            subtitle={translateValue("Select the course you want to prepare for. Only enrolled courses are shown here.")}
+            right={<span className="rounded-lg border border-[#DCE7E5] bg-white px-3 py-2 text-[10px] font-extrabold tracking-wide text-[#527477]">{translateValue(enrolledCourses.length)} {translateValue("ENROLLED")}</span>}
           />
 
           {enrolledCourses.length === 0 ? (
             <Card className="p-6 sm:p-9">
               <EmptyState
                 icon={BookOpen}
-                title="No enrolled courses yet"
-                text="Add a course to My Learning first. Your enrolled courses will appear here automatically for interview practice."
+                title={translateValue("No enrolled courses yet")}
+                text={translateValue("Add a course to My Learning first. Your enrolled courses will appear here automatically for interview practice.")}
                 action={(
                   <button
                     type="button"
                     onClick={() => navigate("/student/topics")}
                     className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-xs font-extrabold text-[#06424B] transition hover:bg-[#FFC13C]"
                   >
-                    Explore Courses <ArrowRight size={15}/>
+                    {translateValue("Explore Courses")}{" "}<ArrowRight size={15}/>
                   </button>
                 )}
               />
@@ -112,19 +110,19 @@ function InterviewPrepCourses() {
                         <span className="flex h-12 w-12 items-center justify-center rounded-[14px] border border-white/10 bg-white/10 text-[#FFAB0B]">
                           <Icon size={24} strokeWidth={1.8}/>
                         </span>
-                        <span className="rounded-lg bg-[#FFAB0B] px-3 py-1.5 text-[9px] font-extrabold tracking-wide text-[#06424B]">ENROLLED</span>
+                        <span className="rounded-lg bg-[#FFAB0B] px-3 py-1.5 text-[9px] font-extrabold tracking-wide text-[#06424B]">{translateValue("ENROLLED")}</span>
                       </div>
                       <div className="relative mt-4">
-                        <p className="text-[9px] font-extrabold tracking-[0.15em] text-white/65">{course.category?.toUpperCase()}</p>
-                        <h3 className="mt-1 text-xl font-extrabold text-white">{course.name}</h3>
+                        <p className="text-[9px] font-extrabold tracking-[0.15em] text-white/65">{translateValue(course.category).toUpperCase()}</p>
+                        <h3 className="mt-1 text-xl font-extrabold text-white">{translateValue(course.name)}</h3>
                       </div>
                     </div>
                     <div className="flex flex-1 flex-col p-5">
-                      <p className="text-xs leading-6 text-[#718486]">{course.description}</p>
+                      <p className="text-xs leading-6 text-[#718486]">{translateValue(course.description)}</p>
                       <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                        <span className="text-[11px] font-semibold text-[#527477]">{itemCount} {itemLabel}</span>
+                        <span className="text-[11px] font-semibold text-[#527477]">{translateValue(itemCount)} {translateValue(itemLabel)}</span>
                         <span className="inline-flex items-center gap-2 rounded-xl bg-[#FFAB0B] px-3.5 py-2.5 text-[10px] font-extrabold text-[#06424B] transition group-hover:bg-[#FFC13C]">
-                          Choose course <ArrowRight size={14}/>
+                          {translateValue("Choose course")}{" "}<ArrowRight size={14}/>
                         </span>
                       </div>
                     </div>

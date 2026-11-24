@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../../api/auth.api";
 import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 import Loader from "../../components/Loader";
@@ -17,7 +17,6 @@ import {
     ChevronDown,
     GraduationCap,
     Globe2,
-    Loader2,
     Mail,
     MapPin,
     Phone,
@@ -78,10 +77,63 @@ const ACADEMIC_YEARS = [
     "Completed",
 ].map((value) => ({ value, label: value }));
 
-const TECHNOLOGIES = ["A", "B", "C", "D"].map((value) => ({
-    value,
-    label: value,
-}));
+const TECHNOLOGY_DATA = {
+    "IT Courses": [
+        "Artificial Intelligence and Machine Learning",
+        "Cloud Computing and DevOps",
+        "Cybersecurity and Ethical Hacking",
+        "Data Analytics and Business Intelligence",
+        "Full Stack Web Development",
+        "Python Programming and Software Development",
+    ],
+
+    Hairstyling: [
+        "Professional Hair Cutting",
+        "Hair Coloring and Styling",
+    ],
+
+    Welding: [
+        "MIG and TIG Welding",
+        "Arc Welding and Fabrication",
+    ],
+
+    "CNC and Toolmaking": [
+        "CNC Programming and Machining",
+        "Tool Design and Manufacturing",
+    ],
+
+    Esthetics: [
+        "Professional Skincare and Facials",
+        "Makeup and Beauty Techniques",
+    ],
+
+    "POS Training": [
+        "Retail POS Operations",
+        "Restaurant POS Management",
+    ],
+
+    "Healthcare and Medical Training": [
+        "Healthcare Assistant Training",
+        "Medical Office Administration",
+    ],
+
+    "Construction and Skilled Trades": [
+        "Carpentry and Woodworking",
+        "Electrical Installation and Plumbing",
+    ],
+
+    "Automotive and Electric Vehicle Technology": [
+        "Automotive Repair and Diagnostics",
+        "Electric Vehicle Maintenance",
+    ],
+};
+
+const TECHNOLOGY_SUBCATEGORIES = Object.keys(TECHNOLOGY_DATA).map(
+    (value) => ({
+        value,
+        label: value,
+    })
+);
 
 const styles = `
 @keyframes sg-pop {
@@ -131,6 +183,26 @@ const styles = `
 
 const labelClass = "mb-2 block text-[12px] font-semibold text-[#344B4F]";
 
+/**
+ * Translation hook for the Signup page. Each component that displays translated
+ * content subscribes to the same i18next instance, so changing EN/FR updates
+ * visible labels and errors immediately without a page refresh.
+ */
+function useUiText() {
+    const { t } = useTranslation("ui");
+
+    return (value, options = {}) => {
+        if (value === null || value === undefined) return "";
+        if (typeof value === "number") return String(value);
+        if (typeof value !== "string") return value;
+
+        return t(value, {
+            defaultValue: value,
+            ...options,
+        });
+    };
+}
+
 const formatPhone = (raw) => {
     let digits = raw.replace(/\D/g, "");
     if (digits.length > 10 && digits.startsWith("1")) digits = digits.slice(1);
@@ -141,12 +213,20 @@ const formatPhone = (raw) => {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
-const nameError = (value, label) => {
+const nameError = (value, field) => {
     const text = value.trim();
-    if (!text) return `Enter your ${label}.`;
-    if (text.length < 2) return `Your ${label} must be at least 2 characters.`;
-    if (!NAME_PATTERN.test(text))
-        return `Your ${label} can only include letters, spaces, hyphens and apostrophes.`;
+
+    if (!text) {
+        return field === "firstName"
+            ? "Please enter your first name."
+            : "Please enter your last name.";
+    }
+
+    if (text.length < 2) return "Enter at least 2 characters.";
+    if (!NAME_PATTERN.test(text)) {
+        return "Please use letters, spaces, hyphens or apostrophes only.";
+    }
+
     return "";
 };
 
@@ -162,6 +242,8 @@ const requiredText = (value, message) => {
 ========================================= */
 
 function FieldError({ id, message }) {
+    const tr = useUiText();
+
     return (
         <p
             id={`${id}-error`}
@@ -169,7 +251,7 @@ function FieldError({ id, message }) {
             className="sg-rise mt-1.5 flex items-start gap-1.5 text-[10px] font-medium text-[#C2553F]"
         >
             <AlertCircle size={12} className="mt-px shrink-0" />
-            {message}
+            {tr(message)}
         </p>
     );
 }
@@ -179,6 +261,8 @@ function RequiredMark() {
 }
 
 function SectionHeader({ icon: Icon, title, subtitle, number }) {
+    const tr = useUiText();
+
     return (
         <div className="mb-[19px] flex items-center gap-3 border-b border-[#E8EEEE] pb-[15px] max-[640px]:gap-[9px]">
             <div className="flex h-[39px] w-[39px] shrink-0 items-center justify-center rounded-[10px] bg-[#EEF3F4] text-[#06424B]">
@@ -186,14 +270,14 @@ function SectionHeader({ icon: Icon, title, subtitle, number }) {
             </div>
 
             <div>
-                <h3 className="text-[13px] font-[750] text-[#06424B]">{title}</h3>
+                <h3 className="text-[13px] font-[750] text-[#06424B]">{tr(title)}</h3>
                 <p className="mt-1 text-[11px] text-[#929FA1] max-[640px]:text-[10px]">
-                    {subtitle}
+                    {tr(subtitle)}
                 </p>
             </div>
 
             <span className="ml-auto text-[11px] font-extrabold tracking-[1.5px] text-[#C38A13]">
-                {number}
+                {tr(number)}
             </span>
         </div>
     );
@@ -214,10 +298,12 @@ function TextField({
     hint,
     required = true,
 }) {
+    const tr = useUiText();
+
     return (
         <div>
             <label htmlFor={id} className={labelClass}>
-                {label} {required && <RequiredMark />}
+                {tr(label)} {required && <RequiredMark />}
             </label>
 
             <div
@@ -234,7 +320,7 @@ function TextField({
                     value={value}
                     onChange={onChange}
                     onBlur={onBlur}
-                    placeholder={placeholder}
+                    placeholder={tr(placeholder)}
                     autoComplete={autoComplete}
                     inputMode={inputMode}
                     aria-invalid={Boolean(error)}
@@ -246,7 +332,7 @@ function TextField({
             {error ? (
                 <FieldError id={id} message={error} />
             ) : (
-                hint && <p className="mt-1.5 text-[10px] text-[#98A3A4]">{hint}</p>
+                hint && <p className="mt-1.5 text-[10px] text-[#98A3A4]">{tr(hint)}</p>
             )}
         </div>
     );
@@ -305,6 +391,7 @@ function SearchableDropdown({
     emptyMessage = "No matching results found",
     maxVisibleOptions = 100,
 }) {
+    const tr = useUiText();
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
 
@@ -317,7 +404,7 @@ function SearchableDropdown({
     );
 
     const filteredOptions = options.filter((option) =>
-        option.label.toLowerCase().includes(search.trim().toLowerCase())
+        String(tr(option.label)).toLowerCase().includes(search.trim().toLowerCase())
     );
 
     const visibleOptions = filteredOptions.slice(0, maxVisibleOptions);
@@ -423,14 +510,18 @@ function SearchableDropdown({
                         }`}
                 >
                     {loading
-                        ? "Loading..."
-                        : selectedOption?.label || (allowCustom && value ? value : placeholder)}
+                        ? tr("Loading...")
+                        : selectedOption
+                            ? tr(selectedOption.label)
+                            : allowCustom && value
+                                ? value
+                                : tr(placeholder)}
                 </span>
 
                 {value && !disabled && !loading && (
                     <span
                         role="button"
-                        aria-label="Clear selection"
+                        aria-label={tr("Clear selection")}
                         tabIndex={0}
                         className="flex h-[23px] w-[23px] shrink-0 items-center justify-center rounded-full text-[#8A9897] transition-all duration-200 hover:bg-[#EEF3F4] hover:text-[#06424B]"
                         onClick={(event) => {
@@ -472,7 +563,7 @@ function SearchableDropdown({
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             onKeyDown={handleSearchKeyDown}
-                            placeholder={searchPlaceholder}
+                            placeholder={tr(searchPlaceholder)}
                             className="h-full w-full min-w-0 border-0 bg-transparent text-[12px] text-[#33464A] !border-0 !outline-none !shadow-none placeholder:text-[#9BA8A5] focus:!border-0 focus:bg-transparent focus:!shadow-none focus:!outline-none"
                         />
 
@@ -481,7 +572,7 @@ function SearchableDropdown({
                                 type="button"
                                 onClick={() => setSearch("")}
                                 className="flex items-center justify-center text-[#8A9897]"
-                                aria-label="Clear search"
+                                aria-label={tr("Clear search")}
                             >
                                 <X size={15} />
                             </button>
@@ -489,8 +580,7 @@ function SearchableDropdown({
                     </div>
 
                     <div className="px-[9px] pb-[7px] pt-3 text-[9px] font-extrabold tracking-[1.2px] text-[#9AA7A1]">
-                        {filteredOptions.length}{" "}
-                        {filteredOptions.length === 1 ? "RESULT" : "RESULTS"}
+                        {filteredOptions.length} {tr(filteredOptions.length === 1 ? "RESULT" : "RESULTS")}
                     </div>
 
                     <div
@@ -513,10 +603,10 @@ function SearchableDropdown({
                                     <span className="flex min-w-0 items-center gap-[9px]">
                                         {option.emoji && (
                                             <span className="w-[22px] shrink-0 text-[16px]">
-                                                {option.emoji}
+                                                {tr(option.emoji)}
                                             </span>
                                         )}
-                                        {option.label}
+                                        {tr(option.label)}
                                     </span>
 
                                     {isSelected && (
@@ -532,7 +622,7 @@ function SearchableDropdown({
                             search.trim() &&
                             !options.some(
                                 (option) =>
-                                    option.label.toLowerCase() === search.trim().toLowerCase()
+                                    String(tr(option.label)).toLowerCase() === search.trim().toLowerCase()
                             ) && (
                                 <button
                                     type="button"
@@ -540,28 +630,24 @@ function SearchableDropdown({
                                     className="mt-[5px] flex w-full items-center gap-2 rounded-lg border-0 bg-[#FFF7E7] p-[11px] text-left text-[11px] font-bold text-[#795B19] hover:bg-[#FFF0CD]"
                                 >
                                     <MapPin size={15} />
-                                    Use "{search.trim()}"
-                                </button>
+                                    {tr('Use "{{value}}"', { value: search.trim() })}</button>
                             )}
 
                         {filteredOptions.length === 0 && !allowCustom && (
                             <div className="px-3 py-[22px] text-center text-[11px] text-[#8D9A95]">
-                                {emptyMessage}
+                                {tr(emptyMessage)}
                             </div>
                         )}
 
                         {filteredOptions.length > visibleOptions.length && (
                             <p className="p-2 text-center text-[10px] text-[#8D9A95]">
-                                Showing {visibleOptions.length} of {filteredOptions.length}. Type
-                                more to narrow your search.
-                            </p>
+                                {tr("Showing")}{" "}{tr(visibleOptions.length)} {tr("of")}{" "}{tr(filteredOptions.length)}{tr(". Type more to narrow your search.")}</p>
                         )}
                     </div>
 
                     <div className="mt-[7px] flex items-center gap-[7px] border-t border-[#EDF1EC] px-2 pb-0 pt-[10px] text-[9px] text-[#9AA6A0]">
                         <Globe2 size={12} />
-                        Search and select an option
-                    </div>
+                        {tr("Search and select an option")}</div>
                 </div>
             )}
         </div>
@@ -573,6 +659,8 @@ function SearchableDropdown({
 ========================================= */
 
 function Signup() {
+    const tr = useUiText();
+    const { i18n } = useTranslation("ui");
     const navigate = useNavigate();
 
     const [role, setRole] = useState("student");
@@ -599,7 +687,8 @@ function Signup() {
     const [educationLevel, setEducationLevel] = useState("");
     const [course, setCourse] = useState("");
     const [studyYear, setStudyYear] = useState("");
-    const [technology, setTechnology] = useState("");
+   const [selectedCourses, setSelectedCourses] = useState([]);
+    const [technologySubcategory, setTechnologySubcategory] = useState("");
 
     const [department, setDepartment] = useState("");
     const [subject, setSubject] = useState("");
@@ -621,7 +710,7 @@ function Signup() {
        LOAD ONLY USA AND CANADA
     ====================================== */
 
-    const loadCountries = async () => {
+    const loadCountries = useCallback(async () => {
         try {
             setLoadingCountries(true);
             setLocationError("");
@@ -659,11 +748,11 @@ function Signup() {
         } finally {
             setLoadingCountries(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         loadCountries();
-    }, []);
+    }, [loadCountries]);
 
     useEffect(() => {
         if (!countryCode) {
@@ -738,7 +827,12 @@ function Signup() {
 
     const countryOptions = countries.map((item) => ({
         value: item.iso2,
-        label: item.iso2 === "US" ? "USA" : item.name,
+        label:
+            item.iso2 === "US"
+                ? "USA"
+                : item.iso2 === "CA"
+                    ? "Canada"
+                    : item.name,
         emoji: item.emoji || "",
     }));
 
@@ -762,15 +856,15 @@ function Signup() {
         if (message) errors[key] = message;
     };
 
-    addError("firstName", nameError(firstName, "first name"));
-    addError("lastName", nameError(lastName, "last name"));
+    addError("firstName", nameError(firstName, "firstName"));
+    addError("lastName", nameError(lastName, "lastName"));
 
     addError(
         "email",
         !email.trim()
             ? "Enter your email address."
             : !EMAIL_PATTERN.test(email.trim())
-                ? "Enter a valid email address, like name@example.com."
+                ? "Enter a valid email address, like name@company.com."
                 : ""
     );
 
@@ -778,9 +872,9 @@ function Signup() {
     addError(
         "phone",
         !phoneDigits
-            ? "Enter your phone number."
+            ? "Enter your phone number"
             : !NANP_PATTERN.test(phoneDigits)
-                ? "Enter a valid 10-digit."
+                ? "Enter a valid 10-digit phone number."
                 : ""
     );
 
@@ -818,7 +912,12 @@ function Signup() {
     if (isStudent) {
         addError("educationLevel", !educationLevel ? "Select your education level." : "");
         addError("course", requiredText(course, "Enter your course or program."));
-        addError("technology", !technology ? "Select a technology option." : "");
+        addError(
+    "technology",
+    selectedCourses.length === 0
+        ? "Select at least one course."
+        : ""
+);
     } else {
         addError("department", requiredText(department, "Enter your department."));
         addError("subject", requiredText(subject, "Enter your teaching subject."));
@@ -899,7 +998,8 @@ function Signup() {
         setEducationLevel("");
         setCourse("");
         setStudyYear("");
-        setTechnology("");
+        
+        setTechnologySubcategory("");
         setDepartment("");
         setSubject("");
         setDesignation("");
@@ -927,7 +1027,8 @@ function Signup() {
         educationLevel,
         course,
         studyYear,
-        technology,
+        technologySubcategory,
+        selectedCourses.length > 0,
         department,
         subject,
         designation,
@@ -982,7 +1083,6 @@ function Signup() {
                     educationLevel,
                     course: course.trim(),
                     studyYear,
-                    technology,
                 }
                 : {
                     department: department.trim(),
@@ -1003,11 +1103,17 @@ function Signup() {
 
         } catch (error) {
             // Centralized backend/API error message
+            const apiMessage = getApiErrorMessage(
+                error,
+                "We couldn't complete your registration. Please try again."
+            );
+
+            // Show backend detail only when it has a central translation; otherwise
+            // use the translated, consistent registration error message.
             setFormError(
-                getApiErrorMessage(
-                    error,
-                    "We couldn't complete your registration. Please try again."
-                )
+                typeof apiMessage === "string" && i18n.exists(apiMessage, { ns: "ui" })
+                    ? apiMessage
+                    : "We couldn't complete your registration. Please try again."
             );
 
         } finally {
@@ -1015,11 +1121,14 @@ function Signup() {
         }
     };
 
-    const goToVerification = () =>
-        navigate(VERIFY_ROUTE, {
-            replace: true,
-            state: { email: email.trim(), role, firstName: firstName.trim() },
-        });
+    const goToVerification = useCallback(
+        () =>
+            navigate(VERIFY_ROUTE, {
+                replace: true,
+                state: { email: email.trim(), role, firstName: firstName.trim() },
+            }),
+        [navigate, email, role, firstName]
+    );
 
     useEffect(() => {
         if (!success) return undefined;
@@ -1031,8 +1140,7 @@ function Signup() {
 
         const timer = setTimeout(() => setCountdown((value) => value - 1), 1000);
         return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [success, countdown]);
+    }, [success, countdown, goToVerification]);
 
     const cityDisabled =
         !countryCode ||
@@ -1061,12 +1169,10 @@ function Signup() {
                             size={16}
                             className="transition-transform group-hover:-translate-x-1"
                         />
-                        Back to login
-                    </button>
+                        {tr("Back to login")}</button>
 
                     <span className="text-[10px] font-bold tracking-[1.8px] text-[#06424B]/60">
-                        ACCOUNT REGISTRATION
-                    </span>
+                        {tr("ACCOUNT REGISTRATION")}</span>
                 </div>
 
                 {/* Main Card */}
@@ -1080,33 +1186,29 @@ function Signup() {
                     <header className="border-b border-[#EDF0F0] px-6 pb-7 pt-7 text-center sm:px-12 sm:pb-9 sm:pt-9">
                         <img
                             src="/logo.png"
-                            alt="Skill Next Consulting Inc."
+                            alt={tr("Skill Next Consulting Inc.")}
                             className="mx-auto h-[82px] w-auto max-w-[230px] object-contain"
                         />
 
                         <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full bg-[#FFF5DC] px-3.5 py-2">
                             <Sparkles size={14} className="text-[#9E700C]" />
                             <span className="text-[10px] font-bold tracking-[1.5px] text-[#795B19]">
-                                START YOUR JOURNEY
-                            </span>
+                                {tr("START YOUR JOURNEY")}</span>
                         </div>
 
                         <h1 className="mt-4 text-[31px] font-bold tracking-[-1px] text-[#06424B] sm:text-[37px]">
-                            Create your account
-                            <span className="text-[#FFAB0B]">.</span>
+                            {tr("Create your account")}<span className="text-[#FFAB0B]">{"."}</span>
                         </h1>
 
                         <p className="mt-2.5 text-[13px] text-[#839194] sm:text-sm">
-                            Enter your details to join the Skill Next learning community.
-                        </p>
+                            {tr("Enter your details to join the Skill Next learning community.")}</p>
                     </header>
 
                     <div className="px-6 py-8 sm:px-12 sm:py-10 md:px-16 lg:px-20">
                         {/* Role selection */}
                         <div className="mb-9">
                             <p className="mb-4 text-center text-[10px] font-bold tracking-[1.7px] text-[#647B7F]">
-                                CHOOSE YOUR ACCOUNT TYPE
-                            </p>
+                                {tr("CHOOSE YOUR ACCOUNT TYPE")}</p>
 
                             <div className="mx-auto grid max-w-[530px] grid-cols-2 gap-4">
                                 {[
@@ -1127,7 +1229,7 @@ function Signup() {
                                                 }`}
                                         >
                                             <RoleIcon size={21} />
-                                            <span>{label}</span>
+                                            <span>{tr(label)}</span>
 
                                             {active && (
                                                 <span className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FFAB0B] text-[#06424B]">
@@ -1232,22 +1334,21 @@ function Signup() {
 
                                     {locationError && (
                                         <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-[#FFAB0B]/35 bg-[#FFF5DC] p-3">
-                                            <p className="text-xs text-[#795B19]">{locationError}</p>
+                                            <p className="text-xs text-[#795B19]">{tr(locationError)}</p>
 
                                             <button
                                                 type="button"
                                                 onClick={loadCountries}
                                                 className="shrink-0 text-xs font-bold text-[#06424B] underline"
                                             >
-                                                Retry
-                                            </button>
+                                                {tr("Retry")}</button>
                                         </div>
                                     )}
 
                                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                                         <div>
                                             <label htmlFor="country" className={labelClass}>
-                                                Country <RequiredMark />
+                                                {tr("Country")}{" "}<RequiredMark />
                                             </label>
 
                                             <SearchableDropdown
@@ -1270,14 +1371,13 @@ function Signup() {
                                                 <FieldError id="country" message={showError("country")} />
                                             ) : (
                                                 <p className="mt-1.5 text-[10px] text-[#98A3A4]">
-                                                    Available: USA and Canada
-                                                </p>
+                                                    {tr("Available: USA and Canada")}</p>
                                             )}
                                         </div>
 
                                         <div>
                                             <label htmlFor="state" className={labelClass}>
-                                                State / Province <RequiredMark />
+                                                {tr("State / Province")}{" "}<RequiredMark />
                                             </label>
 
                                             <SearchableDropdown
@@ -1286,13 +1386,7 @@ function Signup() {
                                                 options={stateOptions}
                                                 onChange={handleStateChange}
                                                 onBlur={() => touch("state")}
-                                                placeholder={
-                                                    countryCode === "US"
-                                                        ? "Select US state"
-                                                        : countryCode === "CA"
-                                                            ? "Select Canadian province"
-                                                            : "Select country first"
-                                                }
+                                                placeholder="Select your state or province."
                                                 searchPlaceholder="Search state / province..."
                                                 icon={MapPin}
                                                 loading={loadingStates}
@@ -1311,15 +1405,13 @@ function Signup() {
                                                 countryCode &&
                                                 stateOptions.length === 0 && (
                                                     <p className="mt-1.5 text-[10px] text-[#98A3A4]">
-                                                        No region data available. You can enter your city
-                                                        directly.
-                                                    </p>
+                                                        {tr("No region data available. You can enter your city directly.")}</p>
                                                 )}
                                         </div>
 
                                         <div className="sm:col-span-2">
                                             <label htmlFor="city" className={labelClass}>
-                                                City <RequiredMark />
+                                                {tr("City")}{" "}<RequiredMark />
                                             </label>
 
                                             <SearchableDropdown
@@ -1346,8 +1438,7 @@ function Signup() {
                                                 <FieldError id="city" message={showError("city")} />
                                             ) : (
                                                 <p className="mt-1.5 text-[10px] text-[#98A3A4]">
-                                                    Search available cities or enter your city manually.
-                                                </p>
+                                                    {tr("Search available cities or enter your city manually.")}</p>
                                             )}
                                         </div>
                                     </div>
@@ -1357,9 +1448,7 @@ function Signup() {
                                 <section>
                                     <SectionHeader
                                         icon={isStudent ? GraduationCap : BriefcaseBusiness}
-                                        title={
-                                            isStudent ? "Academic Information" : "Professional Information"
-                                        }
+                                        title={isStudent ? "Academic Information" : "Professional Information"}
                                         subtitle={
                                             isStudent
                                                 ? "Tell us about your education."
@@ -1397,7 +1486,7 @@ function Signup() {
                                             <>
                                                 <div>
                                                     <label htmlFor="educationLevel" className={labelClass}>
-                                                        Education Level <RequiredMark />
+                                                        {tr("Education Level")}{" "}<RequiredMark />
                                                     </label>
 
                                                     <SearchableDropdown
@@ -1440,10 +1529,9 @@ function Signup() {
 
                                                 <div>
                                                     <label htmlFor="studyYear" className={labelClass}>
-                                                         Year of Pursuing{" "}
+                                                         {tr("Year of Pursuing")}{" "}
                                                         <span className="font-normal text-[#98A3A4]">
-                                                            (optional)
-                                                        </span>
+                                                            {tr("(optional)")}</span>
                                                     </label>
 
                                                     <SearchableDropdown
@@ -1458,34 +1546,97 @@ function Signup() {
                                                     />
                                                 </div>
 
-                                                <div>
-                                                    <label htmlFor="technology" className={labelClass}>
-                                                        Technology <RequiredMark />
-                                                    </label>
+                                            {/* Technology Category */}
+                                            <div>
+                                                <label
+                                                    htmlFor="technologySubcategory"
+                                                    className={labelClass}
+                                                >
+                                                    {tr("Technology Category")}{" "}<RequiredMark />
+                                                </label>
 
-                                                    <SearchableDropdown
+                                                <SearchableDropdown
+                                                    id="technologySubcategory"
+                                                    value={technologySubcategory}
+                                                    options={TECHNOLOGY_SUBCATEGORIES}
+                                                    onChange={(value) => {
+                                                        setTechnologySubcategory(value);
+                                                        setSelectedCourses([]);
+                                                        clearFormError();
+                                                    }}
+                                                    placeholder="Select category"
+                                                    searchPlaceholder="Search category..."
+                                                    icon={Sparkles}
+                                                    maxVisibleOptions={10}
+                                                />
+                                            </div>
+
+                                            {/* Available Courses - Multiple Selection */}
+                                            <div className="sm:col-span-2" id="technology">
+                                                <label className={labelClass}>
+                                                    {tr("Select Courses")}{" "}<RequiredMark />
+                                                </label>
+
+                                                {!technologySubcategory ? (
+                                                    <div className="rounded-xl border border-dashed border-[#D9E2E3] bg-[#F7FAFA] p-4">
+                                                        <p className="text-xs text-[#829092]">
+                                                            {tr("Please select a technology category first.")}</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2 rounded-xl border border-[#D9E2E3] bg-white p-3">
+                                                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                                            <p className="text-[11px] text-[#829092]">
+                                                                {tr("Select one or more courses")}</p>
+                                                            <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1 text-[10px] font-semibold text-[#06424B]">
+                                                                {tr(selectedCourses.length)} {tr("selected")}</span>
+                                                        </div>
+
+                                                        {(TECHNOLOGY_DATA[technologySubcategory] || []).map(
+                                                            (item) => {
+                                                                const checked = selectedCourses.includes(item);
+
+                                                                return (
+                                                                    <label
+                                                                        key={item}
+                                                                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                                                                            checked
+                                                                                ? "border-[#06424B]/35 bg-[#F1F7F6]"
+                                                                                : "border-[#E8EEEE] hover:border-[#A7C0BD] hover:bg-[#F7FAFA]"
+                                                                        }`}
+                                                                    >
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={checked}
+                                                                            onChange={(event) => {
+                                                                                setSelectedCourses((previous) =>
+                                                                                    event.target.checked
+                                                                                        ? [...previous, item]
+                                                                                        : previous.filter(
+                                                                                            (courseName) => courseName !== item
+                                                                                        )
+                                                                                );
+                                                                                touch("technology");
+                                                                                clearFormError();
+                                                                            }}
+                                                                            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#06424B]"
+                                                                        />
+                                                                        <span className="text-xs font-medium leading-5 text-[#344B4F]">
+                                                                            {tr(item)}
+                                                                        </span>
+                                                                    </label>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {showError("technology") && (
+                                                    <FieldError
                                                         id="technology"
-                                                        value={technology}
-                                                        options={TECHNOLOGIES}
-                                                        onChange={(value) => {
-                                                            setTechnology(value);
-                                                            clearFormError();
-                                                        }}
-                                                        onBlur={() => touch("technology")}
-                                                        placeholder="Select technology"
-                                                        searchPlaceholder="Search technology..."
-                                                        icon={Sparkles}
-                                                        maxVisibleOptions={4}
-                                                        error={showError("technology")}
+                                                        message={showError("technology")}
                                                     />
-
-                                                    {showError("technology") && (
-                                                        <FieldError
-                                                            id="technology"
-                                                            message={showError("technology")}
-                                                        />
-                                                    )}
-                                                </div>
+                                                )}
+                                            </div>
                                             </>
                                         ) : (
                                             <>
@@ -1553,26 +1704,23 @@ function Signup() {
                                         />
 
                                         <span className="text-[12px] leading-6 text-[#829092]">
-                                            I agree to the{" "}
+                                            {tr("I agree to the")}{" "}
                                             <Link
                                                 to="/terms-and-conditions"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="font-bold text-[#06424B] hover:text-[#B87800]"
                                             >
-                                                Terms of Service
-                                            </Link>
-                                            {" "}and{" "}
+                                                {tr("Terms of Service")}</Link>
+                                                {" "}{tr("and")}{" "}
                                             <Link
                                                 to="/privacy-policy"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="font-bold text-[#06424B] hover:text-[#B87800]"
                                             >
-                                                Privacy Policy
-                                            </Link>
-                                            {" "}of Skill Next Consulting Inc.
-                                        </span>
+                                                {tr("Privacy Policy")}</Link>
+                                            {" "}{tr("of Skill Next Consulting Inc.")}</span>
                                     </label>
 
                                     {showError("terms") && (
@@ -1588,9 +1736,7 @@ function Signup() {
                                     >
                                         <p className="flex items-center gap-2 text-[12px] font-bold text-[#C2553F]">
                                             <AlertCircle size={16} className="shrink-0" />
-                                            {invalidFields.length === 1
-                                                ? "1 field needs your attention"
-                                                : `${invalidFields.length} fields need your attention`}
+                                            {tr("Please correct the highlighted fields.")}
                                         </p>
 
                                         <div className="mt-2.5 flex flex-wrap gap-2">
@@ -1601,7 +1747,7 @@ function Signup() {
                                                     onClick={() => focusField(key)}
                                                     className="rounded-full border border-[#E3A99D] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#C2553F] transition-colors hover:bg-[#FFEFEA]"
                                                 >
-                                                    {FIELD_LABELS[key]}
+                                                    {tr(FIELD_LABELS[key])}
                                                 </button>
                                             ))}
                                         </div>
@@ -1615,7 +1761,7 @@ function Signup() {
                                         className="sg-rise flex items-start gap-2 rounded-xl border border-[#E3A99D] bg-[#FFF8F6] p-4 text-xs leading-6 text-[#C2553F]"
                                     >
                                         <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                                        <span>{formError}</span>
+                                        <span>{tr(formError)}</span>
                                     </div>
                                 )}
 
@@ -1626,22 +1772,19 @@ function Signup() {
                                     className="group flex h-[56px] w-full items-center justify-center gap-[14px] rounded-[11px] border-0 bg-[#FFAB0B] text-[13px] font-extrabold text-[#06424B] shadow-[0_9px_22px_rgba(255,171,11,.25)] transition-all duration-[250ms] hover:-translate-y-0.5 hover:bg-[#F5A000] hover:shadow-[0_13px_27px_rgba(255,171,11,.32)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <span>
-                                        Continue with {isStudent ? "Student" : "Teacher"} Registration
-                                    </span>
+                                        {tr("Continue with")}{" "}{tr(isStudent ? "Student" : "Teacher")} {tr("Registration")}</span>
                                     <ArrowRight
                                         size={19}
                                         className="transition-transform group-hover:translate-x-1"
                                     />
                                 </button>
                                 <p className="pt-1 text-center text-[13px] text-gray-500">
-                                    Already have an account?
-                                    <button
+                                    {tr("Already have an account?")}<button
                                         type="button"
                                         onClick={() => requestLeave("/login")}
                                         className="ml-1.5 font-bold text-[#06424B] hover:text-[#B87800]"
                                     >
-                                        Sign in
-                                    </button>
+                                        {tr("Sign in")}</button>
                                 </p>
                             </fieldset>
                         </form>
@@ -1651,8 +1794,7 @@ function Signup() {
                     <footer className="border-t border-[#E7ECEC] bg-[#FAFCFC] px-5 py-5 text-center">
                         <p className="flex items-center justify-center gap-2 text-[10px] text-[#879497]">
                             <ShieldCheck size={15} className="text-[#06424B]" />
-                            © 2026 Skill Next Consulting Inc. · Learning without limits.
-                        </p>
+                            {tr("© 2026 Skill Next Consulting Inc. · Learning without limits.")}</p>
                     </footer>
                 </section>
             </div>
@@ -1669,13 +1811,10 @@ function Signup() {
                             id="leave-title"
                             className="mt-5 text-[20px] font-bold tracking-[-0.5px] text-[#06424B]"
                         >
-                            Leave registration?
-                        </h2>
+                            {tr("Leave registration?")}</h2>
 
                         <p className="mx-auto mt-2 max-w-[290px] text-[11px] leading-5 text-[#839194]">
-                            Your details haven't been saved. If you leave now, you'll need to
-                            enter them again.
-                        </p>
+                            {tr("Your details haven't been saved. If you leave now, you'll need to enter them again.")}</p>
 
                         <div className="mt-6 grid gap-2">
                             <button
@@ -1684,16 +1823,14 @@ function Signup() {
                                 onClick={() => setLeaveTarget("")}
                                 className="flex min-h-[47px] items-center justify-center rounded-xl bg-[#06424B] text-[12px] font-bold text-white shadow-[0_9px_22px_rgba(6,66,75,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#042E35]"
                             >
-                                Stay and continue
-                            </button>
+                                {tr("Stay and continue")}</button>
 
                             <button
                                 type="button"
                                 onClick={() => navigate(leaveTarget)}
                                 className="flex min-h-[47px] items-center justify-center rounded-xl border border-[#DCE6E8] bg-white text-[12px] font-bold text-[#647477] transition-all hover:border-[#06424B] hover:text-[#06424B]"
                             >
-                                Leave page
-                            </button>
+                                {tr("Leave page")}</button>
                         </div>
                     </div>
                 </ModalShell>
@@ -1731,13 +1868,10 @@ function Signup() {
                             id="success-title"
                             className="mt-5 text-[22px] font-bold tracking-[-0.6px] text-[#06424B]"
                         >
-                            Registration complete
-                        </h2>
+                            {tr("Registration complete")}</h2>
 
                         <p className="mx-auto mt-2 max-w-[290px] text-[11px] leading-5 text-[#839194]">
-                            {firstName.trim()
-                                ? `Thanks, ${firstName.trim()}. Next, verify your email to activate your account.`
-                                : "Next, verify your email to activate your account."}
+                            {tr("Your account is not active yet. Please verify your email.")}
                         </p>
 
                         <button
@@ -1745,13 +1879,11 @@ function Signup() {
                             onClick={goToVerification}
                             className="mt-6 flex min-h-[47px] w-full items-center justify-center gap-2 rounded-xl bg-[#06424B] text-[12px] font-bold text-white shadow-[0_9px_22px_rgba(6,66,75,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#042E35]"
                         >
-                            Continue to verification
-                            <ArrowRight size={16} />
+                            {tr("Continue to verification")}<ArrowRight size={16} />
                         </button>
 
                         <p className="mt-3 text-[10px] text-[#879497]" aria-live="polite">
-                            Redirecting in {countdown}s
-                        </p>
+                            {tr("Redirecting in")} {countdown}s</p>
 
                         <div className="absolute inset-x-0 bottom-0 h-1 bg-[#E3ECEC]">
                             <div className="sg-drain h-full bg-[#FFAB0B]" />
@@ -1761,7 +1893,7 @@ function Signup() {
             )}
             <Loader
                 open={submitting}
-                text="Creating your account..."
+                text={tr("Creating your account...")}
             />
         </main>
     );

@@ -1,3 +1,4 @@
+import { translateValue } from "../i18n";
 
 const TEAL = "#06424B";
 const YELLOW = "#FFAB0B";
@@ -40,15 +41,15 @@ export default function Loader({
 
                 <p className="text-sm font-semibold tracking-wide text-center">
                     <span className="text-[#FFAB0B]">
-                        {text.split(" ")[0]}
-                    </span>{" "}
+                        {translateValue(text.split(" ")[0])}
+                    </span>{translateValue(" ")}
                     <span className="text-[#06424B]">
-                        {text.split(" ").slice(1).join(" ")}
+                        {translateValue(text.split(" ").slice(1).join(" "))}
                     </span>
                 </p>
             </div>
 
-            <span className="sr-only">{text}</span>
+            <span className="sr-only">{translateValue(text)}</span>
         </div>
     );
 }

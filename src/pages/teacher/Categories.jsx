@@ -1,3 +1,4 @@
+import i18n, { translateValue } from "../../i18n";
 
 import { useMemo, useState } from "react";
 import {
@@ -260,7 +261,7 @@ export default function Categories() {
   const handleDelete = async (category) => {
     if (
       !window.confirm(
-        `Delete the category "${category.name}"?`
+        i18n.t("Delete the category \"{{name}}\"?", { name: category.name, ns: "ui" })
       )
     ) {
       return;
@@ -291,20 +292,19 @@ export default function Categories() {
 
         {/* Page Header */}
         <PageHeader
-          title="Course Categories"
-          description="Organise your learning catalogue with structured subject categories."
+          title={translateValue("Course Categories")}
+          description={translateValue("Organise your learning catalogue with structured subject categories.")}
           actions={
             <Button onClick={openCreate}>
               <Plus size={15} />
-              Add Category
-            </Button>
+              {translateValue("Add Category")}</Button>
           }
         />
 
         {/* Notification */}
         {notice && (
           <div className="flex items-start justify-between gap-3 rounded-2xl border border-[#EAD9AE] bg-[#FFF9EC] px-4 py-3 text-[12px] font-medium text-[#89651F]">
-            <p>{notice}</p>
+            <p>{translateValue(notice)}</p>
             <button
               type="button"
               onClick={() => setNotice("")}
@@ -326,17 +326,15 @@ export default function Categories() {
                 <Layers3 size={20} />
               </div>
               <span className="rounded-full bg-[#EAF2F1] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#06424B]">
-                Catalogue
-              </span>
+                {translateValue("Catalogue")}</span>
             </div>
 
             <div className="relative mt-5">
               <p className="text-[29px] font-extrabold tracking-tight text-[#06424B]">
-                {totalCategories.toString().padStart(2, "0")}
+                {translateValue(totalCategories.toString().padStart(2, "0"))}
               </p>
               <p className="mt-1 text-[11px] font-semibold text-[#819497]">
-                Total Categories
-              </p>
+                {translateValue("Total Categories")}</p>
             </div>
           </div>
 
@@ -348,17 +346,15 @@ export default function Categories() {
                 <BookOpen size={20} />
               </div>
               <span className="rounded-full bg-[#FFF8E8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#AD811E]">
-                Learning
-              </span>
+                {translateValue("Learning")}</span>
             </div>
 
             <div className="relative mt-5">
               <p className="text-[29px] font-extrabold tracking-tight text-[#06424B]">
-                {totalCourses.toString().padStart(2, "0")}
+                {translateValue(totalCourses.toString().padStart(2, "0"))}
               </p>
               <p className="mt-1 text-[11px] font-semibold text-[#819497]">
-                Total Courses
-              </p>
+                {translateValue("Total Courses")}</p>
             </div>
           </div>
 
@@ -370,20 +366,17 @@ export default function Categories() {
                 <Eye size={20} />
               </div>
               <span className="rounded-full bg-[#EAF2F1] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[#06424B]">
-                Published
-              </span>
+                {translateValue("Published")}</span>
             </div>
 
             <div className="relative mt-5">
               <p className="text-[29px] font-extrabold tracking-tight text-[#06424B]">
-                {visibleCategories.toString().padStart(2, "0")}
+                {translateValue(visibleCategories.toString().padStart(2, "0"))}
               </p>
               <p className="mt-1 text-[11px] font-semibold text-[#819497]">
-                Visible Categories
-                {hiddenCategories > 0 && (
+                {translateValue("Visible Categories")}{hiddenCategories > 0 && (
                   <span className="ml-2 font-medium text-[#A1ADAF]">
-                    · {hiddenCategories} hidden
-                  </span>
+                    {translateValue("·")}{" "}{translateValue(hiddenCategories)} {translateValue("hidden")}</span>
                 )}
               </p>
             </div>
@@ -397,15 +390,13 @@ export default function Categories() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-[15px] font-extrabold tracking-tight text-[#06424B]">
-                  All Categories
-                </h2>
+                  {translateValue("All Categories")}</h2>
                 <span className="rounded-full bg-[#FFAB0B]/15 px-2.5 py-1 text-[10px] font-extrabold text-[#946A12]">
-                  {categories.length}
+                  {translateValue(categories.length)}
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-[#8A9B9D]">
-                Manage your subject areas and their course collections.
-              </p>
+                {translateValue("Manage your subject areas and their course collections.")}</p>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -418,7 +409,7 @@ export default function Categories() {
                   type="text"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search categories..."
+                  placeholder={translateValue("Search categories...")}
                   className="h-10 w-full rounded-xl border border-[#E3EBEA] bg-white pl-10 pr-4 text-[11px] font-medium text-[#06424B] outline-none transition placeholder:text-[#A6B3B4] focus:border-[#FFAB0B] focus:ring-2 focus:ring-[#FFAB0B]/10"
                 />
               </div>
@@ -430,9 +421,9 @@ export default function Categories() {
                 }
                 className="h-10 rounded-xl border border-[#E3EBEA] bg-white px-3 text-[11px] font-semibold text-[#06424B] outline-none transition focus:border-[#FFAB0B]"
               >
-                <option value="all">All categories</option>
-                <option value="visible">Visible</option>
-                <option value="hidden">Hidden</option>
+                <option value="all">{translateValue("All categories")}</option>
+                <option value="visible">{translateValue("Visible")}</option>
+                <option value="hidden">{translateValue("Hidden")}</option>
               </select>
             </div>
           </div>
@@ -466,10 +457,10 @@ export default function Categories() {
 
                         <div className="min-w-0">
                           <h3 className="truncate text-[13px] font-extrabold text-[#06424B]">
-                            {category.name}
+                            {translateValue(category.name)}
                           </h3>
                           <p className="mt-1 truncate text-[10px] font-semibold tracking-wide text-[#8A9B9D]">
-                            {category.idNumber || "Category"}
+                            {translateValue(category.idNumber || "Category")}
                           </p>
                         </div>
                       </div>
@@ -488,14 +479,14 @@ export default function Categories() {
                               : "bg-[#9CA9AA]"
                           }`}
                         />
-                        {category.visible ? "Visible" : "Hidden"}
+                        {translateValue(category.visible ? "Visible" : "Hidden")}
                       </span>
                     </div>
 
                     {/* Description */}
                     <p className="mt-5 min-h-[36px] text-[11px] leading-[19px] text-[#819497] line-clamp-2">
-                      {category.description ||
-                        "A main category for organising related courses and learning content."}
+                      {translateValue(category.description ||
+                        "A main category for organising related courses and learning content.")}
                     </p>
 
                     <div className="my-4 border-t border-dashed border-[#E8EEEE]" />
@@ -509,14 +500,12 @@ export default function Categories() {
 
                         <div>
                           <p className="text-[12px] font-extrabold text-[#06424B]">
-                            {courseCount.toString().padStart(2, "0")}
+                            {translateValue(courseCount.toString().padStart(2, "0"))}
                             <span className="ml-1 font-semibold text-[#91A3A5]">
-                              Courses
-                            </span>
+                              {translateValue("Courses")}</span>
                           </p>
                           <p className="mt-0.5 text-[9px] text-[#A1ADAF]">
-                            In this category
-                          </p>
+                            {translateValue("In this category")}</p>
                         </div>
                       </div>
 
@@ -525,7 +514,7 @@ export default function Categories() {
                         <button
                           type="button"
                           onClick={() => openEdit(category)}
-                          title="Edit category"
+                          title={translateValue("Edit category")}
                           className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E8EEEE] bg-white text-[#06424B] transition-all hover:border-[#FFAB0B] hover:bg-[#FFF8E8]"
                         >
                           <Pencil size={14} />
@@ -534,7 +523,7 @@ export default function Categories() {
                         <button
                           type="button"
                           onClick={() => handleDelete(category)}
-                          title="Delete category"
+                          title={translateValue("Delete category")}
                           className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E8EEEE] bg-white text-[#819497] transition-all hover:border-[#F0D8D4] hover:bg-[#FFF1EF] hover:text-[#B65345]"
                         >
                           <Trash2 size={14} />
@@ -549,13 +538,12 @@ export default function Categories() {
             <div className="rounded-[20px] border border-[#E4EBEB] bg-white py-10">
               <EmptyState
                 icon={BookOpen}
-                title="No categories found"
-                description="Try another search or create your first main category."
+                title={translateValue("No categories found")}
+                description={translateValue("Try another search or create your first main category.")}
                 action={
                   <Button onClick={openCreate}>
                     <Plus size={14} />
-                    Add Category
-                  </Button>
+                    {translateValue("Add Category")}</Button>
                 }
               />
             </div>
@@ -568,16 +556,16 @@ export default function Categories() {
           open={modalOpen}
           onClose={() => !busy && setModalOpen(false)}
           title={
-            editing
+            translateValue(editing
               ? "Edit Main Category"
-              : "Create Main Category"
+              : "Create Main Category")
           }
-          description="Set up your category details and control its visibility in the course catalogue."
+          description={translateValue("Set up your category details and control its visibility in the course catalogue.")}
         >
           <form onSubmit={handleSubmit} className="space-y-5">
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Category Name" required>
+              <Field label={translateValue("Category Name")} required>
                 <input
                   required
                   maxLength={100}
@@ -588,12 +576,12 @@ export default function Categories() {
                       name: event.target.value,
                     })
                   }
-                  placeholder="e.g. Hair & Beauty"
+                  placeholder={translateValue("e.g. Hair & Beauty")}
                   className={inputClass}
                 />
               </Field>
 
-              <Field label="Category ID">
+              <Field label={translateValue("Category ID")}>
                 <input
                   maxLength={40}
                   value={form.idNumber}
@@ -603,13 +591,13 @@ export default function Categories() {
                       idNumber: event.target.value,
                     })
                   }
-                  placeholder="e.g. BEAUTY"
+                  placeholder={translateValue("e.g. BEAUTY")}
                   className={inputClass}
                 />
               </Field>
             </div>
 
-            <Field label="Description">
+            <Field label={translateValue("Description")}>
               <textarea
                 value={form.description}
                 onChange={(event) =>
@@ -618,13 +606,13 @@ export default function Categories() {
                     description: event.target.value,
                   })
                 }
-                placeholder="Briefly describe this category..."
+                placeholder={translateValue("Briefly describe this category...")}
                 className={textareaClass}
               />
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Display Position">
+              <Field label={translateValue("Display Position")}>
                 <input
                   type="number"
                   min="1"
@@ -652,8 +640,7 @@ export default function Categories() {
                     }
                     className="h-4 w-4 accent-[#06424B]"
                   />
-                  Visible in catalogue
-                </label>
+                  {translateValue("Visible in catalogue")}</label>
               </div>
             </div>
 
@@ -663,8 +650,7 @@ export default function Categories() {
                 onClick={() => setModalOpen(false)}
                 disabled={busy}
               >
-                Cancel
-              </Button>
+                {translateValue("Cancel")}</Button>
 
               <Button type="submit" disabled={busy}>
                 {busy ? (
@@ -672,13 +658,11 @@ export default function Categories() {
                 ) : editing ? (
                   <>
                     <Pencil size={14} />
-                    Save Changes
-                  </>
+                    {translateValue("Save Changes")}</>
                 ) : (
                   <>
                     <Plus size={14} />
-                    Create Category
-                  </>
+                    {translateValue("Create Category")}</>
                 )}
               </Button>
             </div>

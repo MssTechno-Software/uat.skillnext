@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -29,7 +30,7 @@ const defaultTeacherProfile = {
 export function TeacherPage({ children }) {
   return (
     <div className="min-h-dvh bg-[#F4F7F7] px-4 py-6 font-sans sm:px-6 lg:px-9 lg:py-8">
-      <div className="mx-auto w-full max-w-[1440px]">{children}</div>
+      <div className="mx-auto w-full max-w-[1440px]">{translateValue(children)}</div>
     </div>
   );
 }
@@ -100,19 +101,19 @@ export function PageHeader({
       <div className="relative z-30 mb-7 flex flex-col gap-5 border-b border-[#DDE8E8] pb-6 xl:flex-row xl:items-end xl:justify-between">
         {/* LEFT: PAGE TITLE */}
         <div className="min-w-0">
-          {backLink}
+          {translateValue(backLink)}
 
           <p className="mb-2 text-[10px] font-extrabold tracking-[1.8px] text-[#B27B20]">
-            {eyebrow}
+            {translateValue(eyebrow)}
           </p>
 
           <h1 className="text-[27px] font-extrabold tracking-[-0.8px] text-[#06424B] sm:text-[32px]">
-            {title}
+            {translateValue(title)}
           </h1>
 
           {description && (
             <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#71868A]">
-              {description}
+              {translateValue(description)}
             </p>
           )}
         </div>
@@ -128,7 +129,7 @@ export function PageHeader({
 
             <input
               type="search"
-              placeholder="Search workspace..."
+              placeholder={translateValue("Search workspace...")}
               className="h-11 w-[210px] rounded-xl border border-[#D5E4E2] bg-white pl-10 pr-3 text-sm text-[#2F4A4E] shadow-sm outline-none placeholder:text-[#8AA0A3] focus:border-[#06424B] focus:ring-4 focus:ring-[#FFAB0B]/25"
             />
           </label>
@@ -136,7 +137,7 @@ export function PageHeader({
           {/* NOTIFICATIONS */}
           <button
             type="button"
-            aria-label="Notifications"
+            aria-label={translateValue("Notifications")}
             className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-[#D5E4E2] bg-white text-[#06424B] shadow-sm transition-colors hover:bg-[#FFF4D6]"
           >
             <Bell size={18} />
@@ -151,14 +152,14 @@ export function PageHeader({
           <div className="relative">
             <button
               type="button"
-              aria-label="Open teacher profile"
+              aria-label={translateValue("Open teacher profile")}
               aria-expanded={profileMenuOpen}
               aria-haspopup="menu"
               onClick={() => setProfileMenuOpen((prev) => !prev)}
               className="group flex h-11 w-11 items-center justify-center rounded-full border border-[#D5E4E2] bg-white p-0.5 shadow-sm transition-all duration-200 hover:border-[#FFAB0B] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#FFAB0B]/20"
             >
               <span className="flex h-full w-full items-center justify-center rounded-full bg-[#06424B] text-sm font-bold text-[#FFAB0B] transition-colors group-hover:bg-[#0A515B]">
-                {initials}
+                {translateValue(initials)}
               </span>
             </button>
 
@@ -167,7 +168,7 @@ export function PageHeader({
               <>
                 <button
                   type="button"
-                  aria-label="Close profile menu"
+                  aria-label={translateValue("Close profile menu")}
                   onClick={() => setProfileMenuOpen(false)}
                   className="fixed inset-0 z-40 cursor-default"
                 />
@@ -177,16 +178,16 @@ export function PageHeader({
                   <div className="border-b border-[#EAF0EE] bg-[#FFFCF3] p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#06424B] text-sm font-bold text-[#FFAB0B]">
-                        {initials}
+                        {translateValue(initials)}
                       </div>
 
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-[#06424B]">
-                          {profile.name}
+                          {translateValue(profile.name)}
                         </p>
 
                         <p className="mt-1 truncate text-[11px] text-[#829092]">
-                          {profile.email || "Teacher Account"}
+                          {translateValue(profile.email || "Teacher Account")}
                         </p>
                       </div>
                     </div>
@@ -205,12 +206,10 @@ export function PageHeader({
 
                       <span className="min-w-0 flex-1">
                         <span className="block text-[12px] font-semibold text-[#344B4F]">
-                          Edit Profile
-                        </span>
+                          {translateValue("Edit Profile")}</span>
 
                         <span className="mt-0.5 block text-[10px] text-[#89999B]">
-                          Update your personal details
-                        </span>
+                          {translateValue("Update your personal details")}</span>
                       </span>
 
                       <ChevronRight size={15} className="text-[#A5B0B1]" />
@@ -227,12 +226,10 @@ export function PageHeader({
 
                       <span className="min-w-0 flex-1">
                         <span className="block text-[12px] font-semibold text-[#344B4F]">
-                          Account Settings
-                        </span>
+                          {translateValue("Account Settings")}</span>
 
                         <span className="mt-0.5 block text-[10px] text-[#89999B]">
-                          Manage your preferences
-                        </span>
+                          {translateValue("Manage your preferences")}</span>
                       </span>
 
                       <ChevronRight size={15} className="text-[#A5B0B1]" />
@@ -242,15 +239,14 @@ export function PageHeader({
                   {/* FOOTER */}
                   <div className="border-t border-[#EAF0EE] px-4 py-3">
                     <p className="text-center text-[10px] text-[#9AA7A8]">
-                      Skill Next Teacher Portal
-                    </p>
+                      {translateValue("Skill Next Teacher Portal")}</p>
                   </div>
                 </div>
               </>
             )}
           </div>
 
-          {actions}
+          {translateValue(actions)}
         </div>
       </div>
 
@@ -259,7 +255,7 @@ export function PageHeader({
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#063B43]/35 p-4 backdrop-blur-[3px]">
           <button
             type="button"
-            aria-label="Close edit profile"
+            aria-label={translateValue("Close edit profile")}
             onClick={() => setEditProfileOpen(false)}
             className="absolute inset-0 cursor-default"
           />
@@ -274,25 +270,22 @@ export function PageHeader({
             <div className="flex items-center justify-between border-b border-[#EAF0EE] bg-[#FFFCF3] px-6 py-5">
               <div>
                 <p className="text-[10px] font-bold tracking-[1.3px] text-[#B07A06]">
-                  ACCOUNT INFORMATION
-                </p>
+                  {translateValue("ACCOUNT INFORMATION")}</p>
 
                 <h2
                   id="teacher-edit-profile-title"
                   className="mt-1 text-[19px] font-bold text-[#06424B]"
                 >
-                  Edit Profile
-                </h2>
+                  {translateValue("Edit Profile")}</h2>
 
                 <p className="mt-1 text-[11px] text-[#829092]">
-                  Update your personal information.
-                </p>
+                  {translateValue("Update your personal information.")}</p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setEditProfileOpen(false)}
-                aria-label="Close modal"
+                aria-label={translateValue("Close modal")}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E2EAEA] bg-white text-[#62797C] transition-colors hover:bg-[#EEF5F4] hover:text-[#06424B]"
               >
                 <X size={18} />
@@ -305,17 +298,15 @@ export function PageHeader({
                 {/* PROFILE AVATAR */}
                 <div className="flex items-center gap-4 rounded-xl border border-[#E5ECEA] bg-[#F8FAF9] p-4">
                   <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#06424B] text-base font-bold text-[#FFAB0B]">
-                    {initials}
+                    {translateValue(initials)}
                   </div>
 
                   <div>
                     <p className="text-[13px] font-semibold text-[#06424B]">
-                      Teacher Profile
-                    </p>
+                      {translateValue("Teacher Profile")}</p>
 
                     <p className="mt-1 text-[11px] text-[#829092]">
-                      Your account information
-                    </p>
+                      {translateValue("Your account information")}</p>
                   </div>
                 </div>
 
@@ -325,8 +316,7 @@ export function PageHeader({
                     htmlFor="teacher-name"
                     className="mb-2 block text-[11px] font-semibold text-[#435D61]"
                   >
-                    Full Name
-                  </label>
+                    {translateValue("Full Name")}</label>
 
                   <input
                     id="teacher-name"
@@ -338,7 +328,7 @@ export function PageHeader({
                         name: event.target.value,
                       })
                     }
-                    placeholder="Enter your full name"
+                    placeholder={translateValue("Enter your full name")}
                     required
                     className="h-11 w-full rounded-xl border border-[#DCE7E5] bg-white px-4 text-[12px] text-[#344B4F] outline-none placeholder:text-[#A0ADAE] transition-all focus:border-[#06424B] focus:ring-4 focus:ring-[#FFAB0B]/15"
                   />
@@ -350,8 +340,7 @@ export function PageHeader({
                     htmlFor="teacher-email"
                     className="mb-2 block text-[11px] font-semibold text-[#435D61]"
                   >
-                    Email Address
-                  </label>
+                    {translateValue("Email Address")}</label>
 
                   <input
                     id="teacher-email"
@@ -363,7 +352,7 @@ export function PageHeader({
                         email: event.target.value,
                       })
                     }
-                    placeholder="Enter your email address"
+                    placeholder={translateValue("Enter your email address")}
                     className="h-11 w-full rounded-xl border border-[#DCE7E5] bg-white px-4 text-[12px] text-[#344B4F] outline-none placeholder:text-[#A0ADAE] transition-all focus:border-[#06424B] focus:ring-4 focus:ring-[#FFAB0B]/15"
                   />
                 </div>
@@ -374,8 +363,7 @@ export function PageHeader({
                     htmlFor="teacher-phone"
                     className="mb-2 block text-[11px] font-semibold text-[#435D61]"
                   >
-                    Phone Number
-                  </label>
+                    {translateValue("Phone Number")}</label>
 
                   <input
                     id="teacher-phone"
@@ -387,7 +375,7 @@ export function PageHeader({
                         phone: event.target.value,
                       })
                     }
-                    placeholder="Enter your phone number"
+                    placeholder={translateValue("Enter your phone number")}
                     className="h-11 w-full rounded-xl border border-[#DCE7E5] bg-white px-4 text-[12px] text-[#344B4F] outline-none placeholder:text-[#A0ADAE] transition-all focus:border-[#06424B] focus:ring-4 focus:ring-[#FFAB0B]/15"
                   />
                 </div>
@@ -400,16 +388,14 @@ export function PageHeader({
                   onClick={() => setEditProfileOpen(false)}
                   className="h-10 rounded-lg border border-[#DCE6E4] bg-white px-4 text-[11px] font-semibold text-[#60777A] transition-colors hover:bg-[#F2F6F5]"
                 >
-                  Cancel
-                </button>
+                  {translateValue("Cancel")}</button>
 
                 <button
                   type="submit"
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#06424B] px-5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-[#0A515B]"
                 >
                   <Save size={15} />
-                  Save Changes
-                </button>
+                  {translateValue("Save Changes")}</button>
               </div>
             </form>
           </div>
@@ -448,7 +434,7 @@ export function Button({
       disabled={disabled}
       className={`${base} ${variants[variant] || variants.primary} ${className}`}
     >
-      {children}
+      {translateValue(children)}
     </button>
   );
 }
@@ -457,14 +443,14 @@ export function SectionHeading({ title, description, action }) {
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 className="text-[16px] font-extrabold text-[#17464D]">{title}</h2>
+        <h2 className="text-[16px] font-extrabold text-[#17464D]">{translateValue(title)}</h2>
         {description && (
           <p className="mt-1 text-[11px] leading-5 text-[#85979A]">
-            {description}
+            {translateValue(description)}
           </p>
         )}
       </div>
-      {action}
+      {translateValue(action)}
     </div>
   );
 }
@@ -481,12 +467,12 @@ export function StatCard({ label, value, detail, icon: Icon, tone = "teal" }) {
     <div className="rounded-[20px] border border-[#E0E9E9] bg-white p-5 shadow-[0_5px_18px_rgba(18,59,67,0.035)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold text-[#829497]">{label}</p>
+          <p className="text-[11px] font-semibold text-[#829497]">{translateValue(label)}</p>
           <p className="mt-2 text-[27px] font-extrabold tracking-[-0.8px] text-[#17464D]">
-            {value}
+            {translateValue(value)}
           </p>
           {detail && (
-            <p className="mt-1 text-[10px] text-[#91A0A2]">{detail}</p>
+            <p className="mt-1 text-[10px] text-[#91A0A2]">{translateValue(detail)}</p>
           )}
         </div>
         <span
@@ -502,12 +488,10 @@ export function StatCard({ label, value, detail, icon: Icon, tone = "teal" }) {
 export function StatusPill({ visible }) {
   return visible ? (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF5EF] px-2.5 py-1 text-[10px] font-bold text-[#34866E]">
-      <CheckCircle2 size={12} /> Visible
-    </span>
+      <CheckCircle2 size={12} /> {translateValue("Visible")}</span>
   ) : (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F1F3F4] px-2.5 py-1 text-[10px] font-bold text-[#78898D]">
-      <EyeOff size={12} /> Hidden
-    </span>
+      <EyeOff size={12} /> {translateValue("Hidden")}</span>
   );
 }
 
@@ -525,7 +509,7 @@ export function SearchField({
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={translateValue(placeholder)}
         className="w-full min-w-0 bg-transparent text-[12px] text-[#244E54] outline-none placeholder:text-[#A2B0B2]"
       />
     </label>
@@ -552,31 +536,31 @@ export function Modal({
       <section
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={translateValue(title)}
         className={`my-auto w-full ${width} overflow-hidden rounded-[24px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(6,42,47,0.24)]`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#E8EEEE] px-5 py-5 sm:px-7">
           <div>
             <h2 className="text-[18px] font-extrabold text-[#06424B]">
-              {title}
+              {translateValue(title)}
             </h2>
             {description && (
               <p className="mt-1 text-[11px] leading-5 text-[#829497]">
-                {description}
+                {translateValue(description)}
               </p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close dialog"
+            aria-label={translateValue("Close dialog")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#809295] transition hover:bg-[#F0F5F5] hover:text-[#06424B]"
           >
             <X size={18} />
           </button>
         </div>
         <div className="max-h-[calc(100dvh-150px)] overflow-y-auto px-5 py-5 sm:px-7">
-          {children}
+          {translateValue(children)}
         </div>
       </section>
     </div>
@@ -587,13 +571,13 @@ export function Field({ label, required = false, hint, children }) {
   return (
     <label className="block">
       <span className="mb-2 block text-[11px] font-bold text-[#385D62]">
-        {label}
-        {required && <span className="ml-1 text-[#C47A43]">*</span>}
+        {translateValue(label)}
+        {required && <span className="ml-1 text-[#C47A43]">{translateValue("*")}</span>}
       </span>
-      {children}
+      {translateValue(children)}
       {hint && (
         <span className="mt-1.5 block text-[10px] leading-4 text-[#91A1A3]">
-          {hint}
+          {translateValue(hint)}
         </span>
       )}
     </label>
@@ -617,11 +601,11 @@ export function EmptyState({
       <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#EAF2F1] text-[#06424B]">
         <Icon size={25} strokeWidth={1.7} />
       </span>
-      <h3 className="text-[15px] font-extrabold text-[#17464D]">{title}</h3>
+      <h3 className="text-[15px] font-extrabold text-[#17464D]">{translateValue(title)}</h3>
       <p className="mt-2 max-w-sm text-[11px] leading-5 text-[#87999B]">
-        {description}
+        {translateValue(description)}
       </p>
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="mt-5">{translateValue(action)}</div>}
     </div>
   );
 }
@@ -638,24 +622,24 @@ export function WorkflowCard({
     <>
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-extrabold tracking-[1.2px] text-[#A0AFB0]">
-          STEP {step}
+          {translateValue("STEP")}{" "}{translateValue(step)}
         </span>
         <span className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#EAF2F1] text-[#06424B]">
           <Icon size={19} />
         </span>
       </div>
       <h3 className="mt-4 text-[14px] font-extrabold text-[#17464D]">
-        {title}
+        {translateValue(title)}
       </h3>
       <p className="mt-1 min-h-[34px] text-[10px] leading-5 text-[#87999B]">
-        {detail}
+        {translateValue(detail)}
       </p>
       <div className="mt-4 flex items-center justify-between border-t border-[#EDF1F1] pt-3">
         <span className="text-[11px] font-bold text-[#547277]">
-          {count} {count === 1 ? "item" : "items"}
+          {translateValue(count)} {translateValue(count === 1 ? "item" : "items")}
         </span>
         <span className="flex items-center gap-1 text-[10px] font-bold text-[#B27B20]">
-          Open <ArrowUpRight size={13} />
+          {translateValue("Open")}{" "}<ArrowUpRight size={13} />
         </span>
       </div>
     </>
@@ -666,7 +650,7 @@ export function WorkflowCard({
       to={to}
       className="group rounded-[18px] border border-[#E1EAEA] bg-white p-4 shadow-[0_5px_18px_rgba(18,59,67,0.025)] transition hover:-translate-y-0.5 hover:border-[#BBD2D1] hover:shadow-[0_12px_26px_rgba(18,59,67,0.07)]"
     >
-      {content}
+      {translateValue(content)}
     </Link>
   );
 }

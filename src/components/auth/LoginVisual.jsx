@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 const TEAL = "#06424B";
 
 const THEME_NAME = "mint";
@@ -73,6 +74,8 @@ const THEMES = {
 const T = THEMES[THEME_NAME];
 
 export function Logo({ style, className = "" }) {
+    const { t } = useTranslation("ui");
+
     return (
         <div
             className={`aspect-[17/10] overflow-hidden ${className}`}
@@ -80,7 +83,7 @@ export function Logo({ style, className = "" }) {
         >
             <img
                 src="/logo.png"
-                alt="Skill Next Consulting Inc."
+                alt={t("Skill Next Consulting Inc.", { defaultValue: "Skill Next Consulting Inc." })}
                 className="w-full h-full object-cover mix-blend-multiply"
             />
         </div>
@@ -89,9 +92,20 @@ export function Logo({ style, className = "" }) {
 
 /* Student learning skills in an online class (animated SVG) */
 function StudentScene() {
+    const { t, i18n } = useTranslation("ui");
+
+    // Keep the right edge of the skills card aligned in both languages.
+    // French needs a little more room for longer labels.
+    const isFrench = (i18n.resolvedLanguage || i18n.language || "en")
+        .toLowerCase()
+        .startsWith("fr");
+    const skillsCardWidth = isFrench ? 185 : 160;
+    const skillsCardX = isFrench ? 368 : 388;
+    const skillsProgressWidth = isFrench ? 128 : 108;
+
     return (
         <div className="flex-1 min-h-0 w-full">
-            <svg viewBox="0 0 560 440" className="w-full h-full" role="img" aria-label="A student learning new skills in an online class">
+            <svg viewBox="0 0 560 440" className="w-full h-full" role="img" aria-label={t("A student learning new skills in an online class", { defaultValue: "A student learning new skills in an online class" })}>
                 <style>{`
   @keyframes sn-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
   @keyframes sn-blink { 0%,93%,100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
@@ -220,35 +234,35 @@ function StudentScene() {
                     <rect x="88" y="31" width="40" height="5" rx="2.5" fill="#fff" fillOpacity="0.85" />
                     <rect x="88" y="42" width="56" height="5" rx="2.5" fill="#fff" fillOpacity="0.5" />
                     <rect x="88" y="53" width="30" height="5" rx="2.5" fill="#FFAB0B" />
-                    <rect x="16" y="15" width="36" height="14" rx="7" fill="#000" fillOpacity="0.3" />
+                    <rect x="16" y="15" width="52" height="14" rx="7" fill="#000" fillOpacity="0.3" />
                     <circle className="sn-live" cx="25" cy="22" r="3" fill="#FF5A5A" />
-                    <text x="31" y="25.5" fontSize="8" fontWeight="700" fill="#fff" fontFamily="system-ui, sans-serif">LIVE</text>
-                    <text x="12" y="97" fontSize="11" fontWeight="700" fill="#06424B" fontFamily="system-ui, sans-serif">Live class</text>
+                    <text x="31" y="25.5" fontSize="8" fontWeight="700" fill="#fff" fontFamily="system-ui, sans-serif">{t("LIVE", { defaultValue: "LIVE" })}</text>
+                    <text x="12" y="97" fontSize="11" fontWeight="700" fill="#06424B" fontFamily="system-ui, sans-serif">{t("Live class", { defaultValue: "Live class" })}</text>
                     <rect x="12" y="105" width="148" height="5" rx="2.5" fill="#E6ECEC" />
                     <rect className="sn-prog" x="12" y="105" width="148" height="5" rx="2.5" fill="#FFAB0B" />
                 </g></g>
 
                 {/* CARD: skills */}
-                <g transform="translate(388 34)"><g className="sn-float sn-d2" filter="url(#snShadow)">
-                    <rect width="160" height="136" rx="14" fill="#fff" />
-                    <text x="14" y="24" fontSize="10.5" fontWeight="800" fill="#06424B" fontFamily="system-ui, sans-serif">Skills in progress</text>
+                <g transform={`translate(${skillsCardX} 34)`}><g className="sn-float sn-d2" filter="url(#snShadow)">
+                    <rect width={skillsCardWidth} height="136" rx="14" fill="#fff" />
+                    <text x="14" y="24" fontSize="9.5" fontWeight="800" fill="#06424B" fontFamily="system-ui, sans-serif">{t("Skills in progress", { defaultValue: "Skills in progress" })}</text>
                     <g>
                         <circle cx="22" cy="46" r="8" fill="#E6ECEC" />
                         <g className="sn-pop sn-p1"><circle cx="22" cy="46" r="8" fill="#FFAB0B" /><path d="M18 46 l3 3 l6 -6" stroke="#06424B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></g>
-                        <text x="38" y="45" fontSize="10" fontWeight="600" fill="#33454A" fontFamily="system-ui, sans-serif">Communication</text>
-                        <rect x="38" y="51" width="108" height="4" rx="2" fill="#E6ECEC" /><rect className="sn-grow sn-p1" x="38" y="51" width="108" height="4" rx="2" fill="#06424B" />
+                        <text x="38" y="45" fontSize="10" fontWeight="600" fill="#33454A" fontFamily="system-ui, sans-serif">{t("Communication", { defaultValue: "Communication" })}</text>
+                        <rect x="38" y="51" width={skillsProgressWidth} height="4" rx="2" fill="#E6ECEC" /><rect className="sn-grow sn-p1" x="38" y="51" width={skillsProgressWidth} height="4" rx="2" fill="#06424B" />
                     </g>
                     <g>
                         <circle cx="22" cy="80" r="8" fill="#E6ECEC" />
                         <g className="sn-pop sn-p2"><circle cx="22" cy="80" r="8" fill="#FFAB0B" /><path d="M18 80 l3 3 l6 -6" stroke="#06424B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></g>
-                        <text x="38" y="79" fontSize="10" fontWeight="600" fill="#33454A" fontFamily="system-ui, sans-serif">Data analysis</text>
-                        <rect x="38" y="85" width="108" height="4" rx="2" fill="#E6ECEC" /><rect className="sn-grow sn-p2" x="38" y="85" width="108" height="4" rx="2" fill="#06424B" />
+                        <text x="38" y="79" fontSize="10" fontWeight="600" fill="#33454A" fontFamily="system-ui, sans-serif">{t("Data analysis", { defaultValue: "Data analysis" })}</text>
+                        <rect x="38" y="85" width={skillsProgressWidth} height="4" rx="2" fill="#E6ECEC" /><rect className="sn-grow sn-p2" x="38" y="85" width={skillsProgressWidth} height="4" rx="2" fill="#06424B" />
                     </g>
                     <g>
                         <circle cx="22" cy="114" r="8" fill="#E6ECEC" />
                         <g className="sn-pop sn-p3"><circle cx="22" cy="114" r="8" fill="#FFAB0B" /><path d="M18 114 l3 3 l6 -6" stroke="#06424B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></g>
-                        <text x="38" y="113" fontSize="10" fontWeight="600" fill="#33454A" fontFamily="system-ui, sans-serif">Leadership</text>
-                        <rect x="38" y="119" width="108" height="4" rx="2" fill="#E6ECEC" /><rect className="sn-grow sn-p3" x="38" y="119" width="108" height="4" rx="2" fill="#06424B" />
+                        <text x="38" y="113" fontSize="10" fontWeight="600" fill="#33454A" fontFamily="system-ui, sans-serif">{t("Leadership", { defaultValue: "Leadership" })}</text>
+                        <rect x="38" y="119" width={skillsProgressWidth} height="4" rx="2" fill="#E6ECEC" /><rect className="sn-grow sn-p3" x="38" y="119" width={skillsProgressWidth} height="4" rx="2" fill="#06424B" />
                     </g>
                 </g></g>
 
@@ -258,7 +272,7 @@ function StudentScene() {
                     <circle r="30" fill="#fff" /><circle r="23" fill="#FFAB0B" />
                     <polygon points="0,-13 4,-4 13,-3 6,3 8,12 0,7 -8,12 -6,3 -13,-3 -4,-4" fill="#06424B" />
                     <rect x="-27" y="31" width="54" height="17" rx="8.5" fill="#fff" />
-                    <text y="43" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#06424B" fontFamily="system-ui, sans-serif">Level 4</text>
+                    <text y="43" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#06424B" fontFamily="system-ui, sans-serif">{t("Level 4", { defaultValue: "Level 4" })}</text>
                 </g></g>
 
                 {/* XP */}
@@ -274,6 +288,8 @@ function StudentScene() {
 }
 
 export default function LoginVisual() {
+    const { t } = useTranslation("ui");
+
     return (
             <section
                 className="hidden lg:flex lg:w-[56%] flex-col items-center gap-3 p-5 xl:p-7"
@@ -326,12 +342,11 @@ export default function LoginVisual() {
                                 className="text-2xl xl:text-3xl font-bold tracking-tight"
                                 style={{ color: T.headline }}
                             >
-                                Learn smart.{" "}
-                                <span style={{ color: T.accent }}>Grow next.</span>
+                                {t("Learn smart.", { defaultValue: "Learn smart." })}{" "}
+                                <span style={{ color: T.accent }}>{t("Grow next.", { defaultValue: "Grow next." })}</span>
                             </h1>
                             <p className="mt-1.5 text-sm" style={{ color: T.sub }}>
-                                Your digital classroom for learning, teaching and achieving more.
-                            </p>
+                                {t("Your digital classroom for learning, teaching and achieving more.", { defaultValue: "Your digital classroom for learning, teaching and achieving more." })}</p>
                         </div>
                     </div>
                 </div>

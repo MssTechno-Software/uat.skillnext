@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 const env = import.meta.env || {};
 
 const trimSlash = (value) => String(value || "").replace(/\/$/, "");
@@ -60,6 +61,7 @@ async function request(path, options = {}) {
     method,
     credentials: "include",
     headers: {
+      "Accept-Language": i18n.resolvedLanguage || i18n.language || "en",
       ...(isFormData ? {} : body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${String(token).replace(/^Bearer\s+/i, "")}` } : {}),
       ...headers,

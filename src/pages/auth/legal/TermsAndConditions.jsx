@@ -1,3 +1,4 @@
+import { translateValue } from "../../../i18n";
 
 import { Link } from "react-router-dom";
 import {
@@ -291,7 +292,7 @@ function TermsAndConditions() {
           <Link to="/signup" className="flex items-center gap-3">
             <img
               src="/logo.png"
-              alt="Skill Next Consulting Inc."
+              alt={translateValue("Skill Next Consulting Inc.")}
               className="h-[48px] w-auto max-w-[170px] object-contain"
             />
           </Link>
@@ -302,15 +303,14 @@ function TermsAndConditions() {
               className="hidden items-center gap-2 rounded-xl border border-[#DCE6E8] px-4 py-2.5 text-[11px] font-bold text-[#06424B] transition-all hover:border-[#06424B] hover:bg-[#F5F8F7] sm:flex"
             >
               <ArrowLeft size={14} />
-              Back to Sign Up
-            </Link>
+              {translateValue("Back to Sign Up")}</Link>
 
             <Link
               to="/login"
               style={{ color: "#FFFFFF" }}
               className="flex items-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-[11px] font-bold !text-white shadow-[0_5px_14px_rgba(6,66,75,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#042E35]"
             >
-              <span className="text-white">Sign In</span>
+              <span className="text-white">{translateValue("Sign In")}</span>
 
               <ArrowUpRight
                 size={14}
@@ -327,29 +327,23 @@ function TermsAndConditions() {
 
         <div className="flex items-center gap-2 text-[9px] font-bold tracking-[2px] text-[#A17B28]">
           <FileText size={14} />
-          LEGAL INFORMATION
-        </div>
+          {translateValue("LEGAL INFORMATION")}</div>
 
         <div className="mt-3 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <h1 className="text-[32px] font-extrabold tracking-[-1.5px] text-[#06424B] sm:text-[42px]">
-              Terms & Conditions
-              <span className="text-[#FFAB0B]">.</span>
+              {translateValue("Terms & Conditions")}<span className="text-[#FFAB0B]">{translateValue(".")}</span>
             </h1>
 
             <p className="mt-2 max-w-[660px] text-[12px] leading-6 text-[#7B8C8F] sm:text-[13px]">
-              Please read these terms carefully before using the Skill Next
-              Consulting Inc. learning platform.
-            </p>
+              {translateValue("Please read these terms carefully before using the Skill Next Consulting Inc. learning platform.")}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="rounded-full border border-[#DCE6E8] bg-white px-3 py-2 text-[9px] font-bold text-[#647B7F]">
-              VERSION 1.0
-            </span>
+              {translateValue("VERSION 1.0")}</span>
             <span className="rounded-full bg-[#FFF5DC] px-3 py-2 text-[9px] font-bold text-[#795B19]">
-              LAST UPDATED · NOV 12, 2026
-            </span>
+              {translateValue("LAST UPDATED · NOV 12, 2026")}</span>
           </div>
         </div>
 
@@ -364,22 +358,16 @@ function TermsAndConditions() {
 
             <div className="flex-1">
               <h2 className="text-[15px] font-bold text-[#06424B]">
-                Learning with clarity and confidence
-              </h2>
+                {translateValue("Learning with clarity and confidence")}</h2>
 
               <p className="mt-1 max-w-[820px] text-[11px] leading-6 text-[#839194]">
-                These Terms explain the responsibilities of students,
-                teachers, and Skill Next Consulting Inc. when using our
-                learning platform, courses, assessments, and educational
-                services.
-              </p>
+                {translateValue("These Terms explain the responsibilities of students, teachers, and Skill Next Consulting Inc. when using our learning platform, courses, assessments, and educational services.")}</p>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 rounded-xl bg-[#F2F7F4] px-3 py-2.5">
               <ShieldCheck size={17} className="text-[#4D8B4F]" />
               <span className="text-[10px] font-bold text-[#4D7950]">
-                Platform Guidelines
-              </span>
+                {translateValue("Platform Guidelines")}</span>
             </div>
           </div>
         </div>
@@ -387,8 +375,7 @@ function TermsAndConditions() {
         {/* Mobile Section Navigation */}
         <div className="mt-6 lg:hidden">
           <p className="mb-2 text-[9px] font-bold tracking-[1.5px] text-[#849496]">
-            JUMP TO SECTION
-          </p>
+            {translateValue("JUMP TO SECTION")}</p>
 
           <nav className="flex gap-2 overflow-x-auto pb-2">
             {sections.map((section) => (
@@ -397,7 +384,7 @@ function TermsAndConditions() {
                 href={`#${section.id}`}
                 className="shrink-0 rounded-full border border-[#DCE6E8] bg-white px-3 py-2 text-[10px] font-semibold text-[#06424B] transition-colors hover:border-[#06424B]"
               >
-                {section.number}. {section.title}
+                {translateValue(section.number)}{translateValue(".")}{" "}{translateValue(section.title)}
               </a>
             ))}
           </nav>
@@ -418,11 +405,9 @@ function TermsAndConditions() {
 
               <div>
                 <p className="text-[11px] font-bold text-[#06424B]">
-                  On this page
-                </p>
+                  {translateValue("On this page")}</p>
                 <p className="text-[9px] text-[#9AA7A8]">
-                  20 sections
-                </p>
+                  {translateValue("20 sections")}</p>
               </div>
             </div>
 
@@ -434,11 +419,11 @@ function TermsAndConditions() {
                   className="group flex items-start gap-2 rounded-lg px-2.5 py-2 text-[10px] font-medium text-[#718386] transition-all hover:bg-[#F1F6F5] hover:text-[#06424B]"
                 >
                   <span className="mt-0.5 text-[9px] font-bold text-[#B5A06B]">
-                    {section.number}
+                    {translateValue(section.number)}
                   </span>
 
                   <span className="flex-1 leading-4">
-                    {section.title}
+                    {translateValue(section.title)}
                   </span>
 
                   <ChevronRight
@@ -463,19 +448,13 @@ function TermsAndConditions() {
             <div className="border-b border-[#E8EEEE] pb-7">
               <div className="flex items-center gap-2 text-[9px] font-bold tracking-[1.5px] text-[#A17B28]">
                 <GraduationCap size={15} />
-                SKILL NEXT CONSULTING INC.
-              </div>
+                {translateValue("SKILL NEXT CONSULTING INC.")}</div>
 
               <h2 className="mt-3 text-[19px] font-extrabold tracking-[-0.5px] text-[#06424B]">
-                Terms of Use for Students and Teachers
-              </h2>
+                {translateValue("Terms of Use for Students and Teachers")}</h2>
 
               <p className="mt-3 text-[11px] leading-6 text-[#839194]">
-                These Terms apply to the users of our online learning
-                environment, including individuals who register as students
-                or teachers and access the services made available through
-                the Platform.
-              </p>
+                {translateValue("These Terms apply to the users of our online learning environment, including individuals who register as students or teachers and access the services made available through the Platform.")}</p>
             </div>
 
             {/* Terms Sections */}
@@ -489,16 +468,16 @@ function TermsAndConditions() {
                   <div className="flex items-start gap-3">
 
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#EEF5F4] text-[10px] font-extrabold text-[#06424B]">
-                      {section.number}
+                      {translateValue(section.number)}
                     </span>
 
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] font-bold leading-6 text-[#06424B] sm:text-[15px]">
-                        {section.title}
+                        {translateValue(section.title)}
                       </h3>
 
                       <p className="mt-2 text-[11px] leading-[1.85] text-[#75878A] sm:text-[12px]">
-                        {section.intro}
+                        {translateValue(section.intro)}
                       </p>
 
                       {section.points.length > 0 && (
@@ -509,7 +488,7 @@ function TermsAndConditions() {
                               className="flex items-start gap-2.5 text-[11px] leading-[1.8] text-[#647B7F] sm:text-[12px]"
                             >
                               <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#FFAB0B]" />
-                              <span>{point}</span>
+                              <span>{translateValue(point)}</span>
                             </li>
                           ))}
                         </ul>
@@ -530,17 +509,10 @@ function TermsAndConditions() {
 
                 <div>
                   <h3 className="text-[11px] font-bold text-[#795B19]">
-                    Important before publishing
-                  </h3>
+                    {translateValue("Important before publishing")}</h3>
 
                   <p className="mt-1 text-[10px] leading-5 text-[#8A774E]">
-                    Confirm the company's registered legal entity details,
-                    governing jurisdiction, official support and grievance
-                    contact information, applicable payment terms, and
-                    course-specific refund rules. Have the final Terms and
-                    the separate Privacy Policy reviewed by a qualified
-                    legal professional before accepting users.
-                  </p>
+                    {translateValue("Confirm the company's registered legal entity details, governing jurisdiction, official support and grievance contact information, applicable payment terms, and course-specific refund rules. Have the final Terms and the separate Privacy Policy reviewed by a qualified legal professional before accepting users.")}</p>
                 </div>
               </div>
             </div>
@@ -555,8 +527,7 @@ function TermsAndConditions() {
                 />
 
                 <p className="text-[10px] leading-5 text-[#879497]">
-                  Thank you for being part of Skill Next Consulting Inc.
-                </p>
+                  {translateValue("Thank you for being part of Skill Next Consulting Inc.")}</p>
               </div>
 
               <Link
@@ -564,7 +535,7 @@ function TermsAndConditions() {
                 style={{ color: "#FFFFFF" }}
                 className="inline-flex min-h-[43px] items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-[11px] font-bold !text-white shadow-[0_5px_14px_rgba(6,66,75,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#042E35]"
               >
-                <span className="text-white">Back to Registration</span>
+                <span className="text-white">{translateValue("Back to Registration")}</span>
 
                 <ArrowUpRight
                   size={15}
@@ -583,23 +554,20 @@ function TermsAndConditions() {
 
           <p className="flex items-center gap-2 text-[10px] text-[#879497]">
             <ShieldCheck size={14} className="text-[#06424B]" />
-            © 2026 Skill Next Consulting Inc. All rights reserved.
-          </p>
+            {translateValue("© 2026 Skill Next Consulting Inc. All rights reserved.")}</p>
 
           <div className="flex items-center gap-5 text-[10px] font-semibold text-[#718386]">
             <Link
               to="/signup"
               className="transition-colors hover:text-[#06424B]"
             >
-              Sign Up
-            </Link>
+              {translateValue("Sign Up")}</Link>
 
             <Link
               to="/login"
               className="transition-colors hover:text-[#06424B]"
             >
-              Sign In
-            </Link>
+              {translateValue("Sign In")}</Link>
           </div>
         </div>
       </footer>

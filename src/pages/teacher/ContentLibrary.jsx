@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -155,8 +156,8 @@ export default function ContentLibrary() {
     <TeacherLayout>
       <div className="space-y-5">
         <PageHeader
-          title="Content library"
-          description="A consolidated view of the text lessons, videos and documents added to your course modules."
+          title={translateValue("Content library")}
+          description={translateValue("A consolidated view of the text lessons, videos and documents added to your course modules.")}
         />
 
         {/* Search and Content Type Filter */}
@@ -164,7 +165,7 @@ export default function ContentLibrary() {
           <SearchField
             value={search}
             onChange={setSearch}
-            placeholder="Search content, module or course..."
+            placeholder={translateValue("Search content, module or course...")}
           />
 
           <select
@@ -172,10 +173,10 @@ export default function ContentLibrary() {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="h-[43px] rounded-xl border border-[#DDE7E7] bg-white px-3.5 text-[12px] font-medium text-[#244E54] outline-none transition-all duration-200 hover:border-[#B8CACA] focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10"
           >
-            <option value="all">All content types</option>
-            <option value="text">Text lessons</option>
-            <option value="video">Videos</option>
-            <option value="document">Documents</option>
+            <option value="all">{translateValue("All content types")}</option>
+            <option value="text">{translateValue("Text lessons")}</option>
+            <option value="video">{translateValue("Videos")}</option>
+            <option value="document">{translateValue("Documents")}</option>
           </select>
         </div>
 
@@ -183,14 +184,11 @@ export default function ContentLibrary() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[13px] font-bold text-[#17464D]">
-              Course content structure
-            </p>
+              {translateValue("Course content structure")}</p>
 
             <p className="mt-1 text-[11px] text-[#91A1A3]">
-              {groupedCourses.length} courses
-              <span className="mx-1.5">·</span>
-              {totalFilteredContents} content items
-            </p>
+              {translateValue(groupedCourses.length)} {translateValue("courses")}<span className="mx-1.5">{translateValue("·")}</span>
+              {translateValue(totalFilteredContents)} {translateValue("content items")}</p>
           </div>
 
           {groupedCourses.length > 0 && (
@@ -200,7 +198,7 @@ export default function ContentLibrary() {
               className="group flex items-center gap-2 rounded-lg border border-[#DDE7E7] bg-white px-3.5 py-2 text-[11px] font-bold text-[#06424B] transition-all duration-200 hover:border-[#E7C66D] hover:bg-[#FFFAEB] hover:text-[#9A7017] active:scale-[0.97]"
             >
               <Layers3 size={14} />
-              {allExpanded ? "Collapse all" : "Expand all"}
+              {translateValue(allExpanded ? "Collapse all" : "Expand all")}
             </button>
           )}
         </div>
@@ -230,19 +228,17 @@ export default function ContentLibrary() {
 
                       <div className="min-w-0">
                         <p className="truncate text-[13px] font-extrabold text-[#17464D]">
-                          {course.fullName || course.name}
+                          {translateValue(course.fullName || course.name)}
                         </p>
 
                         <p className="mt-1 text-[10px] font-medium text-[#91A1A3]">
-                          {course.modules.length} modules
-                          <span className="mx-1.5">·</span>
-                          {courseContentCount} content items
-                        </p>
+                          {translateValue(course.modules.length)} {translateValue("modules")}<span className="mx-1.5">{translateValue("·")}</span>
+                          {translateValue(courseContentCount)} {translateValue("content items")}</p>
                       </div>
                     </div>
 
                     <span className="rounded-lg border border-[#F0DFAE] bg-[#FFF7E1] px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-wide text-[#9B741B]">
-                      Course {String(courseIndex + 1).padStart(2, "0")}
+                      {translateValue("Course")}{" "}{translateValue(String(courseIndex + 1).padStart(2, "0"))}
                     </span>
                   </div>
 
@@ -286,7 +282,7 @@ export default function ContentLibrary() {
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <p className="truncate text-[12px] font-bold text-[#244E54]">
-                                    {module.name}
+                                    {translateValue(module.name)}
                                   </p>
 
                                   <span
@@ -296,23 +292,22 @@ export default function ContentLibrary() {
                                         : "bg-[#F3F6F6] text-[#829598]"
                                     }`}
                                   >
-                                    Module {moduleIndex + 1}
+                                    {translateValue("Module")}{" "}{translateValue(moduleIndex + 1)}
                                   </span>
                                 </div>
 
                                 <p className="mt-1 text-[10px] text-[#91A1A3]">
-                                  {module.contents.length}{" "}
-                                  {module.contents.length === 1
+                                  {translateValue(module.contents.length)}{translateValue(" ")}
+                                  {translateValue(module.contents.length === 1
                                     ? "content item"
-                                    : "content items"}
+                                    : "content items")}
                                 </p>
                               </div>
                             </div>
 
                             <div className="flex shrink-0 items-center gap-2">
                               <span className="hidden rounded-lg border border-[#E9EEEE] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#668084] sm:inline-flex">
-                                {module.contents.length} items
-                              </span>
+                                {translateValue(module.contents.length)} {translateValue("items")}</span>
 
                               <div
                                 className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-300 ${
@@ -343,8 +338,7 @@ export default function ContentLibrary() {
                                   />
 
                                   <span className="text-[9px] font-extrabold uppercase tracking-[1px] text-[#91A1A3]">
-                                    Learning contents
-                                  </span>
+                                    {translateValue("Learning contents")}</span>
 
                                   <div className="ml-auto h-px flex-1 max-w-[70px] bg-[#E9EEEE]" />
                                 </div>
@@ -396,12 +390,12 @@ export default function ContentLibrary() {
 
                                             <div className="min-w-0">
                                               <p className="truncate text-[11px] font-bold text-[#244E54] transition-colors group-hover/item:text-[#06424B]">
-                                                {content.title}
+                                                {translateValue(content.title)}
                                               </p>
 
                                               <p className="mt-1 truncate text-[10px] text-[#91A1A3]">
-                                                {content.url ||
-                                                  "Learning content"}
+                                                {translateValue(content.url ||
+                                                  "Learning content")}
                                               </p>
                                             </div>
                                           </div>
@@ -410,7 +404,7 @@ export default function ContentLibrary() {
                                             <span
                                               className={`rounded-md px-2 py-1.5 text-[9px] font-extrabold uppercase tracking-wide ${styles.labelBg} ${styles.labelColor}`}
                                             >
-                                              {content.contentType}
+                                              {translateValue(content.contentType)}
                                             </span>
 
                                             <StatusPill
@@ -419,7 +413,7 @@ export default function ContentLibrary() {
 
                                             <Link
                                               to={`/teacher/courses/${course.id}/modules/${module.id}`}
-                                              title="Open module content"
+                                              title={translateValue("Open module content")}
                                               className="flex h-8 w-8 items-center justify-center rounded-lg text-[#829598] transition-all duration-200 hover:bg-[#FFF3D5] hover:text-[#A87914] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B]/40"
                                             >
                                               <ArrowUpRight
@@ -447,8 +441,8 @@ export default function ContentLibrary() {
         ) : (
           <EmptyState
             icon={Search}
-            title="No content found"
-            description="Content you add inside a course module will appear here. Try changing the search or type filter."
+            title={translateValue("No content found")}
+            description={translateValue("Content you add inside a course module will appear here. Try changing the search or type filter.")}
           />
         )}
 
@@ -456,40 +450,37 @@ export default function ContentLibrary() {
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="group rounded-[16px] border border-[#E3EBEB] bg-white p-4 shadow-[0_3px_12px_rgba(18,59,67,0.025)] transition-all duration-300 hover:-translate-y-1 hover:border-[#EAD59B] hover:shadow-[0_7px_18px_rgba(18,59,67,0.06)]">
             <p className="text-[10px] font-medium text-[#91A1A3]">
-              Text lessons
-            </p>
+              {translateValue("Text lessons")}</p>
 
             <p className="mt-2 flex items-center gap-2 text-[19px] font-extrabold text-[#17464D]">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFF4D8] text-[#B27B12] transition-transform duration-300 group-hover:scale-110">
                 <BookOpen size={16} />
               </span>
-              {textCount}
+              {translateValue(textCount)}
             </p>
           </div>
 
           <div className="group rounded-[16px] border border-[#E3EBEB] bg-white p-4 shadow-[0_3px_12px_rgba(18,59,67,0.025)] transition-all duration-300 hover:-translate-y-1 hover:border-[#C8DDDB] hover:shadow-[0_7px_18px_rgba(18,59,67,0.06)]">
             <p className="text-[10px] font-medium text-[#91A1A3]">
-              Videos
-            </p>
+              {translateValue("Videos")}</p>
 
             <p className="mt-2 flex items-center gap-2 text-[19px] font-extrabold text-[#17464D]">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E8F1F1] text-[#06424B] transition-transform duration-300 group-hover:scale-110">
                 <Video size={16} />
               </span>
-              {videoCount}
+              {translateValue(videoCount)}
             </p>
           </div>
 
           <div className="group rounded-[16px] border border-[#E3EBEB] bg-white p-4 shadow-[0_3px_12px_rgba(18,59,67,0.025)] transition-all duration-300 hover:-translate-y-1 hover:border-[#D9CEE8] hover:shadow-[0_7px_18px_rgba(18,59,67,0.06)]">
             <p className="text-[10px] font-medium text-[#91A1A3]">
-              Documents
-            </p>
+              {translateValue("Documents")}</p>
 
             <p className="mt-2 flex items-center gap-2 text-[19px] font-extrabold text-[#17464D]">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F0ECF7] text-[#8063A6] transition-transform duration-300 group-hover:scale-110">
                 <FileText size={16} />
               </span>
-              {documentCount}
+              {translateValue(documentCount)}
             </p>
           </div>
         </div>

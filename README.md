@@ -1,16 +1,90 @@
-# React + Vite
+# Skill Next LMS — English and French
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The LMS uses one centralized `i18next` instance with `react-i18next` integration.
 
-Currently, two official plugins are available:
+## Languages
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- English (`en`) is the default and fallback language.
+- French (`fr`) is the secondary language.
+- The selected language is stored under the `skillnext_language` local-storage key.
+- Language selection is shared across Student, Teacher, authentication, and standalone pages.
 
-## React Compiler
+## Requirements and setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Use Node.js 22.12 or later.
 
-## Expanding the ESLint configuration
+```bash
+npm ci
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The project root contains `.env` and `.env.example`. The default API base URL is configured using `VITE_API_BASE_URL`. Keep your local `.env` file when merging or replacing project files; do not commit secrets to source control.
+
+## Central translation architecture
+
+- `src/i18n/index.js` creates and initializes the only i18next instance, registers both locales, restores/saves the selected language, and synchronizes language changes across browser tabs.
+- `src/i18n/locales/en/ui.json` contains the English source phrases.
+- `src/i18n/locales/fr/ui.json` contains the French translations for the same keys.
+- `src/components/common/LanguageSwitcher.jsx` is the reusable global language selector.
+- Existing JSX text, visible attributes, dynamic labels, and accessible labels use `translateValue()`, which delegates every lookup to `i18next.t()`; it is not a second translation engine or a DOM mutation observer.
+- New components should use `useTranslation('ui')` and `t()` directly. Use i18next interpolation for dynamic values, for example `t('Welcome, {{name}}', { name })`.
+- `src/i18n/LocalizedText.jsx` renders bilingual API values such as `{ "en": "HTML basics", "fr": "Notions de base du HTML" }`.
+
+## Update an existing translation
+
+Edit only the French value in `src/i18n/locales/fr/ui.json`. Keep the key unchanged because existing components refer to the English source phrase.
+
+```json
+{
+  "My Learning": "Mon apprentissage"
+}
+```
+
+Both locale files must contain matching keys. Do not add a French-only key.
+
+## Add a new phrase
+
+Add the same key to both files:
+
+```json
+// en/ui.json
+{
+  "Welcome, {{name}}": "Welcome, {{name}}"
+}
+
+// fr/ui.json
+{
+  "Welcome, {{name}}": "Bienvenue, {{name}}"
+}
+```
+
+Then use it in a component:
+
+```jsx
+import { useTranslation } from "react-i18next";
+
+function WelcomeMessage({ name }) {
+  const { t } = useTranslation("ui");
+  return <p>{t("Welcome, {{name}}", { name })}</p>;
+}
+```
+
+## Popups, errors, and validations
+
+- API error messages are returned as source phrases by `src/utils/apiErrorHandler.js` and translated when rendered through the shared catalog.
+- The API error modal and session-expired popup use the i18next catalog.
+- Existing form labels, placeholders, inline validation text, buttons, modal headings, toast/notice messages, and accessible labels are included in the UI translation catalog when their source phrase is present.
+- `src/components/common/NativeValidationLanguage.jsx` localizes native HTML form-validation messages (required, email, URL, length, pattern, and range errors) and updates a visible validation message when the language changes.
+- Native browser `alert()` / `confirm()` strings should be passed through `i18n.t()` or the helpers in `src/i18n/dialogs.js`.
+- Code samples, editor contents, and learner-authored code are not translated.
+
+## Backend-authored learning content
+
+Axios and Teacher API requests send `Accept-Language: en|fr`. Course caches are language-specific. The backend must return localized course, module, lesson, quiz, assessment, and assignment content or bilingual values. The frontend does not automatically machine-translate assessment questions and answers, because changing their wording without a reviewed translation could affect learning meaning and scoring.
+
+## Validation
+
+```bash
+npm run lint
+npm run build
+```

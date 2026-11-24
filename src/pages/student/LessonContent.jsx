@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -46,14 +47,14 @@ const normalizeModules = (payload) => (Array.isArray(payload?.modules) ? payload
   .sort((a, b) => Number(a.position || 0) - Number(b.position || 0));
 
 
-const normalizeLearningPath = (response) => {
+const normalizeLearningPath = (response, t) => {
   if (!response || response.success === false) {
-    throw new Error(response?.message || "Your course progress could not be loaded.");
+    throw new Error(response?.message || t("Your course progress could not be loaded."));
   }
 
   const payload = response.data ?? response;
   if (!payload?.course?.id || !Array.isArray(payload.modules)) {
-    throw new Error("The Learning Path API returned an unexpected response.");
+    throw new Error(t("The Learning Path API returned an unexpected response."));
   }
 
   const modules = payload.modules
@@ -103,10 +104,10 @@ const mergeContentWithLearningPath = (contentModules, progressModules) => {
   });
 };
 
-const normalizeAssessments = (response) => {
+const normalizeAssessments = (response, t) => {
   const payload = response;
   if (!payload || payload.success === false) {
-    throw new Error("We couldn't load your assessment. Please try again.");
+    throw new Error(t("We couldn't load your assessment. Please try again."));
   }
 
   const data = payload.data ?? payload;
@@ -188,7 +189,7 @@ const PYODIDE_VERSION = "v0.27.7";
 const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/`;
 const PYODIDE_LOAD_TIMEOUT_MS = 60000;
 
-const loadPyodideRuntime = () => {
+const loadPyodideRuntime = (t) => {
   if (pyodidePromise) return pyodidePromise;
 
   pyodidePromise = new Promise((resolve, reject) => {
@@ -210,7 +211,7 @@ const loadPyodideRuntime = () => {
     const initialize = async () => {
       try {
         if (typeof window.loadPyodide !== "function") {
-          throw new Error("Python runtime script loaded, but the Python engine was not found. Please refresh and try again.");
+          throw new Error(t("Python runtime script loaded, but the Python engine was not found. Please refresh and try again."));
         }
 
         const runtime = await window.loadPyodide({ indexURL: PYODIDE_BASE_URL });
@@ -222,7 +223,7 @@ const loadPyodideRuntime = () => {
     };
 
     timeoutId = window.setTimeout(
-      () => fail("Python is taking too long to load. Check your internet connection and try again."),
+      () => fail(t("Python is taking too long to load. Check your internet connection and try again.")),
       PYODIDE_LOAD_TIMEOUT_MS
     );
 
@@ -231,7 +232,7 @@ const loadPyodideRuntime = () => {
       return;
     }
 
-    const downloadError = "Could not download the Python runtime. Check your internet connection.";
+    const downloadError = t("Could not download the Python runtime. Check your internet connection.");
     let script = document.querySelector('script[data-skillnext-pyodide="true"]');
 
     if (script) {
@@ -265,6 +266,7 @@ const loadPyodideRuntime = () => {
 };
 
 function CodingPlayground({ block }) {
+  const { t } = useTranslation("ui");
   const language = String(block?.language || "python").toLowerCase();
   const originalCode = String(
     block?.starterCode ?? block?.starter_code ?? block?.code ?? block?.example ?? ""
@@ -325,14 +327,14 @@ function CodingPlayground({ block }) {
       if (event.data?.source !== "skillnext-code-preview") return;
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
 
-      const prefix = event.data.type === "error" ? "Error: " : "";
+      const prefix = event.data.type === "error" ? t("Error: ") : "";
       if (event.data.type === "console" || event.data.type === "error") {
         setOutput((previous) => `${previous}${previous ? "\n" : ""}${prefix}${event.data.value}`);
       }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [t]);
 
   const makePreviewDocument = () => {
     const bridge = `
@@ -356,7 +358,7 @@ function CodingPlayground({ block }) {
           });
           window.addEventListener("error", (event) => send("error", event.message));
           window.addEventListener("unhandledrejection", (event) => send("error", event.reason));
-          window.addEventListener("load", () => send("console", "Preview loaded successfully."));
+          window.addEventListener("load", () => send("console", ${JSON.stringify(t("Preview loaded successfully."))}));
         })();
       </script>`;
 
@@ -366,7 +368,7 @@ function CodingPlayground({ block }) {
     const suppliedJs = String(block?.javascript || block?.js || "");
 
     if (normalizedLanguage === "html") {
-      const html = code || suppliedHtml || "<h1>Hello Skill Next!</h1><p>Your HTML preview is ready.</p>";
+      const html = code || suppliedHtml || `<h1>${t("Hello Skill Next!")}</h1><p>${t("Your HTML preview is ready.")}</p>`;
       const cssTag = suppliedCss ? `<style>${suppliedCss}</style>` : "";
       const jsTag = suppliedJs ? `<script>${suppliedJs.replace(/<\/script/gi, "<\\/script")}</script>` : "";
       if (/<html[\s>]/i.test(html) || /<!doctype/i.test(html)) {
@@ -379,11 +381,11 @@ function CodingPlayground({ block }) {
     if (normalizedLanguage === "css") {
       const previewMarkup = suppliedHtml || `
         <main class="sn-preview">
-          <span class="sn-tag">SKILL NEXT · CSS PLAYGROUND</span>
-          <h1>Design your first page</h1>
-          <p>Edit the CSS and run it to see your styles here.</p>
-          <button class="sn-button">Explore course</button>
-          <div class="sn-card"><strong>Live preview</strong><br><span>Your CSS changes appear in this card.</span></div>
+          <span class="sn-tag">${t("SKILL NEXT · CSS PLAYGROUND")}</span>
+          <h1>${t("Design your first page")}</h1>
+          <p>${t("Edit the CSS and run it to see your styles here.")}</p>
+          <button class="sn-button">${t("Explore course")}</button>
+          <div class="sn-card"><strong>${t("Live preview")}</strong><br><span>${t("Your CSS changes appear in this card.")}</span></div>
         </main>`;
       return `<!doctype html><html><head>${meta}
         <style>
@@ -438,8 +440,8 @@ function CodingPlayground({ block }) {
 
     try {
       if (isPython) {
-        setOutput("Loading Python runtime...");
-        const pyodide = await loadPyodideRuntime();
+        setOutput(t("Loading Python runtime..."));
+        const pyodide = await loadPyodideRuntime(t);
         if (currentRunId !== runIdRef.current) return;
 
         const outputLines = [];
@@ -457,7 +459,7 @@ function CodingPlayground({ block }) {
           batched: (message) => outputLines.push(String(message)),
         });
 
-        setOutput("Running Python code...");
+        setOutput(t("Running Python code..."));
 
         // Fresh globals for every run so variables never leak between runs or code blocks.
         const globals = pyodide.globals.get("dict")();
@@ -468,21 +470,21 @@ function CodingPlayground({ block }) {
         }
 
         if (currentRunId === runIdRef.current) {
-          setOutput(outputLines.join("\n").trimEnd() || "Code executed successfully. No output was produced.");
+          setOutput(outputLines.join("\n").trimEnd() || t("Code executed successfully. No output was produced."));
         }
       } else {
-        setOutput("Preparing live preview...");
+        setOutput(t("Preparing live preview..."));
         const documentHtml = makePreviewDocument();
         setPreviewDoc(documentHtml);
         setOutput(
           normalizedLanguage === "html" || normalizedLanguage === "css" || normalizedLanguage === "react"
-            ? "Preview is ready. See the live result below."
-            : "JavaScript is running in the preview frame. Console output will appear here."
+            ? t("Preview is ready. See the live result below.")
+            : t("JavaScript is running in the preview frame. Console output will appear here.")
         );
       }
     } catch (error) {
       if (currentRunId === runIdRef.current) {
-        setOutput(`Execution error:\n${error?.message || String(error)}`);
+        setOutput(t("Execution error:\n{{message}}", { message: error?.message || String(error) }));
       }
     } finally {
       if (currentRunId === runIdRef.current) setIsRunning(false);
@@ -505,7 +507,7 @@ function CodingPlayground({ block }) {
       setHasCopied(true);
       window.setTimeout(() => setHasCopied(false), 1600);
     } catch {
-      setOutput("Clipboard access is unavailable. Select the code and copy it manually.");
+      setOutput(t("Clipboard access is unavailable. Select the code and copy it manually."));
     }
   };
 
@@ -518,22 +520,22 @@ function CodingPlayground({ block }) {
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><Code2 size={19} /></span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold text-[#06424B]">{block?.title || "Coding practice"}</p>
-            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[1.2px] text-[#789094]">{languageLabel} coding workspace</p>
+            <p className="truncate text-sm font-extrabold text-[#06424B]">{block?.title || t("Coding practice")}</p>
+            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[1.2px] text-[#789094]">{languageLabel} {t("coding workspace")}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={handleCopy} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7]"><Copy size={13} /> {hasCopied ? "Copied" : "Copy"}</button>
-          <button type="button" onClick={handleReset} disabled={isRunning} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7] disabled:opacity-40"><RotateCcw size={13} /> Reset</button>
-          <button type="button" onClick={() => setIsExpanded(false)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7]"><Minimize2 size={14} /> Close</button>
+          <button type="button" onClick={handleCopy} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7]"><Copy size={13} /> {hasCopied ? t("Copied") : t("Copy")}</button>
+          <button type="button" onClick={handleReset} disabled={isRunning} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7] disabled:opacity-40"><RotateCcw size={13} /> {t("Reset")}</button>
+          <button type="button" onClick={() => setIsExpanded(false)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 text-xs font-bold text-[#526D71] hover:bg-[#F4F7F7]"><Minimize2 size={14} /> {t("Close")}</button>
         </div>
       </div>
 
       <div className="grid min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.85fr)]">
         <div className="min-w-0 border-b border-[#E5ECEB] lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between border-b border-[#E5ECEB] bg-white px-4 py-2.5">
-            <span className="text-[10px] font-extrabold uppercase tracking-[1.2px] text-[#526D71]">Code editor</span>
-            <span className="text-[10px] text-[#829596]">{languageLabel} · Editable</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-[1.2px] text-[#526D71]">{t("Code editor")}</span>
+            <span className="text-[10px] text-[#829596]">{languageLabel} {t("· Editable")}</span>
           </div>
           <div className="min-h-[340px] overflow-hidden bg-white">
             <Editor
@@ -592,11 +594,11 @@ function CodingPlayground({ block }) {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E5ECEB] bg-[#F4F7F7] px-4 py-3">
             <p className="text-[10px] text-[#718486]">
-              {isRunnable ? "Edit the code and run it. Shortcut: Ctrl + Enter." : "This language needs a configured compiler service to execute."}
+              {isRunnable ? t("Edit the code and run it. Shortcut: Ctrl + Enter.") : t("This language needs a configured compiler service to execute.")}
             </p>
             <button type="button" onClick={handleRun} disabled={!isRunnable || isRunning} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#06424B] transition hover:bg-[#FFC13C] disabled:cursor-not-allowed disabled:opacity-50">
               {isRunning ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
-              {isRunning ? "Running..." : "Run Code"}
+              {isRunning ? t("Running...") : t("Run Code")}
             </button>
           </div>
         </div>
@@ -609,9 +611,8 @@ function CodingPlayground({ block }) {
                   htmlFor={`stdin-${block?.id || block?.title || "editor"}`}
                   className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#06424B]"
                 >
-                  <Terminal size={14} className="text-[#B88736]" /> Input (stdin)
-                </label>
-                <span className="text-[10px] text-[#829596]">One value per line</span>
+                  <Terminal size={14} className="text-[#B88736]" /> {t("Input (stdin)")}</label>
+                <span className="text-[10px] text-[#829596]">{t("One value per line")}</span>
               </div>
               <textarea
                 id={`stdin-${block?.id || block?.title || "editor"}`}
@@ -620,26 +621,26 @@ function CodingPlayground({ block }) {
                 disabled={isRunning}
                 rows={4}
                 spellCheck={false}
-                placeholder={"Example:\n10\n20"}
+                placeholder={t("Example:\n10\n20")}
                 className="w-full resize-y rounded-xl border border-[#DCE7E5] bg-[#F8FAFA] px-3 py-3 font-mono text-xs leading-6 text-[#183C42] outline-none placeholder:text-[#A3B3B4] focus:border-[#B88736] disabled:opacity-60"
               />
             </div>
           )}
           <div className="flex items-center gap-2 border-b border-[#E5ECEB] bg-[#F8FAFA] px-4 py-3">
             <Terminal size={15} className="text-[#B88736]" />
-            <span className="text-[11px] font-extrabold uppercase tracking-[1.2px] text-[#06424B]">{isPreviewLanguage ? "Live preview / console" : "Output"}</span>
-            {isRunning && <span className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#94650C]"><RefreshCw size={11} className="animate-spin" /> Executing</span>}
+            <span className="text-[11px] font-extrabold uppercase tracking-[1.2px] text-[#06424B]">{isPreviewLanguage ? t("Live preview / console") : t("Output")}</span>
+            {isRunning && <span className="ml-auto inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#94650C]"><RefreshCw size={11} className="animate-spin" /> {t("Executing")}</span>}
           </div>
           {previewDoc ? (
-            <iframe ref={iframeRef} title={`${languageLabel} live preview`} sandbox="allow-scripts" srcDoc={previewDoc} className="min-h-[260px] w-full flex-1 bg-white" />
+            <iframe ref={iframeRef} title={t("{{language}} live preview", { language: languageLabel })} sandbox="allow-scripts" srcDoc={previewDoc} className="min-h-[260px] w-full flex-1 bg-white" />
           ) : (
             <pre aria-live="polite" className="min-h-[220px] flex-1 whitespace-pre-wrap break-words bg-white px-4 py-4 font-mono text-[12px] leading-6 text-[#35575B]">
-              {output || "Your program output will appear here after you click Run Code."}
+              {output || t("Your program output will appear here after you click Run Code.")}
             </pre>
           )}
           {output && previewDoc && <pre aria-live="polite" className="max-h-28 overflow-auto whitespace-pre-wrap break-words border-t border-[#E5ECEB] bg-[#F8FAFA] px-4 py-3 font-mono text-[11px] leading-5 text-[#526D71]">{output}</pre>}
           <div className="border-t border-[#E5ECEB] px-4 py-2.5 text-[10px] text-[#829596]">
-            {isPreviewLanguage ? "Preview runs in an isolated browser frame." : "Execution result and errors appear here."}
+            {isPreviewLanguage ? t("Preview runs in an isolated browser frame.") : t("Execution result and errors appear here.")}
           </div>
         </div>
       </div>
@@ -653,12 +654,12 @@ function CodingPlayground({ block }) {
           <div className="flex min-w-0 items-start gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><Code2 size={20} /></span>
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-[1.3px] text-[#B88736]">Practice workspace</p>
-              <h4 className="mt-1 text-base font-extrabold text-[#06424B]">{block?.title || "Try it yourself"}</h4>
-              <p className="mt-1 text-xs leading-5 text-[#607A7D]">Edit, run your code and view the result in a focused workspace.</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-[1.3px] text-[#B88736]">{t("Practice workspace")}</p>
+              <h4 className="mt-1 text-base font-extrabold text-[#06424B]">{block?.title || t("Try it yourself")}</h4>
+              <p className="mt-1 text-xs leading-5 text-[#607A7D]">{t("Edit, run your code and view the result in a focused workspace.")}</p>
             </div>
           </div>
-          <button type="button" onClick={() => setIsExpanded(true)} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-xs font-extrabold text-white transition hover:bg-[#0B5962]"><Maximize2 size={15} /> Open Coding Workspace</button>
+          <button type="button" onClick={() => setIsExpanded(true)} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-xs font-extrabold text-white transition hover:bg-[#0B5962]"><Maximize2 size={15} /> {t("Open Coding Workspace")}</button>
         </div>
       </section>
 
@@ -666,11 +667,20 @@ function CodingPlayground({ block }) {
         <div className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-[#EEF3F4]/95 p-3 sm:p-6" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget && !isRunning) setIsExpanded(false);
         }}>
-          <section role="dialog" aria-modal="true" aria-label={`${block?.title || languageLabel} coding workspace`} className="my-auto flex max-h-[94vh] w-full max-w-[1320px] flex-col">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("{{title}} coding workspace", {
+              title: block?.title || languageLabel,
+            })}
+            className="my-auto flex max-h-[94vh] w-full max-w-[1320px] flex-col"
+          >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B88736]">Skill Next · Practice workspace</p>
-                <h3 className="mt-1 text-lg font-extrabold text-[#06424B]">{block?.title || `${languageLabel} Coding Workspace`}</h3>
+                <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B88736]">
+                  {t("Skill Next · Practice workspace")}
+                </p>
+                <h3 className="mt-1 text-lg font-extrabold text-[#06424B]">{block?.title || t("{{language}} Coding Workspace", { language: languageLabel })}</h3>
               </div>
               <span className="rounded-full border border-[#DCE7E5] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#526D71]">{languageLabel}</span>
             </div>
@@ -683,6 +693,7 @@ function CodingPlayground({ block }) {
 }
 
 function ApiContentBlocks({ content }) {
+  const { t } = useTranslation("ui");
   const blocks = Array.isArray(content?.blocks) && content.blocks.length
     ? content.blocks
     : parseTextBlocks(content?.body || content?.text || content?.content);
@@ -702,7 +713,7 @@ function ApiContentBlocks({ content }) {
   }
 
   if (!blocks.length) {
-    return <p className="text-sm leading-7 text-[#718486]">No learning content is available for this item yet.</p>;
+    return <p className="text-sm leading-7 text-[#718486]">{t("No learning content is available for this item yet.")}</p>;
   }
 
   return (
@@ -736,6 +747,7 @@ function ApiContentBlocks({ content }) {
 }
 
 function LessonContent() {
+  const { t } = useTranslation("ui");
   const { technologySlug: courseId, topicId: moduleId } = useParams();
   const location = useLocation();
 
@@ -779,7 +791,7 @@ function LessonContent() {
       message,
       onRetry: retryAction || null,
     });
-  }, []);
+  }, [t]);
 
   // Fetch full content once per course. getCourseContent is in-memory cached in
   // course.api.js, while Learning Path supplies the authoritative progress flags.
@@ -805,17 +817,17 @@ function LessonContent() {
       ]);
 
       if (!contentResponse || contentResponse.success === false) {
-        throw new Error(contentResponse?.message || "We couldn't load this lesson. Please try again.");
+        throw new Error(contentResponse?.message || t("We couldn't load this lesson. Please try again."));
       }
 
       const contentPayload = contentResponse.data ?? contentResponse;
       const contentCourse = contentPayload?.course;
       if (!contentCourse?.id) {
-        throw new Error("This course isn't available right now. Please try again later.");
+        throw new Error(t("This course isn't available right now. Please try again later."));
       }
 
       const contentModules = normalizeModules(contentPayload);
-      const learningPath = normalizeLearningPath(learningPathResponse);
+      const learningPath = normalizeLearningPath(learningPathResponse, t);
       const mergedModules = mergeContentWithLearningPath(contentModules, learningPath.modules);
 
       if (requestId !== loadRequestRef.current) return;
@@ -839,7 +851,7 @@ function LessonContent() {
         setIsLoading(false);
       }
     }
-  }, [courseId, reportApiError]);
+  }, [courseId, reportApiError, t]);
 
   useEffect(() => {
     loadCourse();
@@ -860,7 +872,7 @@ function LessonContent() {
         ? location.state?.restartMessage || "Module restarted. Read it again and mark it as read to unlock its assessment."
         : ""
     );
-  }, [courseId, moduleId, location.key, isRestartedModule, location.state?.restartMessage]);
+  }, [courseId, moduleId, location.key, isRestartedModule, location.state?.restartMessage, t]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -894,7 +906,7 @@ function LessonContent() {
       : Number(module?.contents?.length) || 0
   );
   const learningPath = `/student/my-learning?course=${encodeURIComponent(courseId || "")}`;
-  const courseName = course?.fullName || course?.shortName || "Course";
+  const courseName = course?.fullName || course?.shortName || t("Course");
   const courseClassification = [
     course?.fullName,
     course?.shortName,
@@ -914,7 +926,7 @@ function LessonContent() {
   // Refresh only the small progress endpoint after a write. Do not re-fetch lesson content.
   const refreshLearningPath = useCallback(async () => {
     const response = await getCourseLearningPath(courseId, { forceRefresh: true });
-    const learningPathData = normalizeLearningPath(response);
+    const learningPathData = normalizeLearningPath(response, t);
     const mergedModules = mergeContentWithLearningPath(
       contentModulesRef.current,
       learningPathData.modules
@@ -926,7 +938,7 @@ function LessonContent() {
     });
     setModules(mergedModules);
     return learningPathData;
-  }, [courseId]);
+  }, [courseId, t]);
 
   const loadModuleAssessments = useCallback(async (targetModuleId) => {
     if (!targetModuleId) return;
@@ -939,7 +951,7 @@ function LessonContent() {
 
     try {
       const response = await getModuleAssessments(targetModuleId);
-      const items = normalizeAssessments(response);
+      const items = normalizeAssessments(response, t);
       if (requestId === assessmentRequestRef.current) {
         setAssessments(items);
       }
@@ -961,7 +973,7 @@ function LessonContent() {
         setIsAssessmentsLoading(false);
       }
     }
-  }, [reportApiError]);
+  }, [reportApiError, t]);
 
   useEffect(() => {
     if (!module || !isRead || isPassed || !isUnlocked) {
@@ -1000,7 +1012,7 @@ function LessonContent() {
     try {
       const response = await completeModule(module.id);
       if (!response || response.success === false) {
-        throw new Error(response?.message || "We couldn't save your progress. Please try again.");
+        throw new Error(response?.message || t("We couldn't save your progress. Please try again."));
       }
 
       const refreshedPath = await refreshLearningPath();
@@ -1011,7 +1023,7 @@ function LessonContent() {
       // Do not claim that the lesson is read until the backend confirms it.
       if (!refreshedModule?.isRead) {
         throw new Error(
-          "The completion request was accepted, but the Learning Path API still reports this module as not read. Please verify that all visible learning items are marked finished in the backend."
+          t("The completion request was accepted, but the Learning Path API still reports this module as not read. Please verify that all visible learning items are marked finished in the backend.")
         );
       }
 
@@ -1033,8 +1045,8 @@ function LessonContent() {
   // One shared error modal, rendered by every screen state below.
   const apiErrorModal = apiError ? (
     <ApiErrorModal
-      title={apiError.title}
-      message={apiError.message}
+      title={t(apiError.title)}
+      message={t(apiError.message)}
       onRetry={apiError.onRetry ? () => {
         const retry = apiError.onRetry;
         setApiError(null);
@@ -1044,18 +1056,18 @@ function LessonContent() {
     />
   ) : null;
 
-  if (isLoading) return <Loader open={isLoading} text="Loading course lesson..." />;
+  if (isLoading) return <Loader open={isLoading} text={t("Loading course lesson...")} />;
 
   if (loadError || !course || !module) {
     return (
       <PageShell max="max-w-[980px]">
         <Card className="p-8">
           <AlertCircle size={25} className="text-[#94650C]" />
-          <h1 className="mt-3 text-xl font-extrabold text-[#06424B]">{module ? "Unable to load lesson" : "Lesson not found"}</h1>
-          <p className="mt-2 text-sm leading-6 text-[#5A7478]">{loadError || "This lesson isn't available in your course."}</p>
+          <h1 className="mt-3 text-xl font-extrabold text-[#06424B]">{module ? t("Unable to load lesson") : t("Lesson not found")}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#5A7478]">{t(loadError || "This lesson isn't available in your course.")}</p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <button type="button" onClick={() => loadCourse({ forceRefresh: true })} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-sm font-bold text-[#06424B]"><RefreshCw size={14} /> Retry</button>
-            <LinkButton to={learningPath} variant="outline" icon={ArrowLeft}>Back to My Learning</LinkButton>
+            <button type="button" onClick={() => loadCourse({ forceRefresh: true })} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-sm font-bold text-[#06424B]"><RefreshCw size={14} /> {t("Retry")}</button>
+            <LinkButton to={learningPath} variant="outline" icon={ArrowLeft}>{t("Back to My Learning")}</LinkButton>
           </div>
         </Card>
         {apiErrorModal}
@@ -1071,15 +1083,15 @@ function LessonContent() {
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><LockKeyhole size={21} /></span>
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFCF70]">Learning sequence</p>
-                <h1 className="mt-1 text-2xl font-extrabold">Previous assessment required</h1>
+                <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFCF70]">{t("Learning sequence")}</p>
+                <h1 className="mt-1 text-2xl font-extrabold">{t("Previous assessment required")}</h1>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-7 text-white/75">This module is locked. Pass the previous module's assessment to unlock it.</p>
+            <p className="mt-4 text-sm leading-7 text-white/75">{t("This module is locked. Pass the previous module's assessment to unlock it.")}</p>
           </div>
           <div className="p-6 sm:p-8">
-            <p className="text-sm font-bold text-[#06424B]">Previous module: {previousModule?.name || "Previous module"}</p>
-            <Link to={moduleHref(previousModule?.id)} state={moduleLinkState} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]"><PlayCircle size={15} /> Open Previous Module</Link>
+            <p className="text-sm font-bold text-[#06424B]">{t("Previous module:")}{" "}{previousModule?.name || t("Previous module")}</p>
+            <Link to={moduleHref(previousModule?.id)} state={moduleLinkState} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]"><PlayCircle size={15} /> {t("Open Previous Module")}</Link>
           </div>
         </Card>
         {apiErrorModal}
@@ -1123,8 +1135,8 @@ function LessonContent() {
         <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-bold transition ${circleClass}`}>
           {itemPassed ? <CheckCircle2 size={17} /> : itemUnlocked ? index + 1 : <LockKeyhole size={14} />}
         </span>
-        <span className="mt-2.5 text-[10px] font-bold uppercase tracking-[1.2px] text-[#B88736]">Module {String(index + 1).padStart(2, "0")}</span>
-        <span className={`mt-1 line-clamp-2 text-[12px] leading-4 ${labelClass}`}>{item.name || "Untitled module"}</span>
+        <span className="mt-2.5 text-[10px] font-bold uppercase tracking-[1.2px] text-[#B88736]">{t("Module {{number}}", { number: String(index + 1).padStart(2, "0") })}</span>
+        <span className={`mt-1 line-clamp-2 text-[12px] leading-4 ${labelClass}`}>{item.name || t("Untitled module")}</span>
       </>
     );
     const stepClass = "group relative z-10 flex w-full flex-col items-center px-2 text-center !no-underline";
@@ -1152,7 +1164,7 @@ function LessonContent() {
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${itemPassed ? "bg-[#06424B] text-white" : active ? "bg-[#FFAB0B] text-[#123B43]" : "bg-[#EEF3F4] text-[#526D71]"}`}>
           {itemPassed ? <CheckCircle2 size={15} /> : itemUnlocked ? index + 1 : <LockKeyhole size={13} />}
         </span>
-        <span className="min-w-0 flex-1 leading-5">{item.name || "Untitled module"}</span>
+        <span className="min-w-0 flex-1 leading-5">{item.name || t("Untitled module")}</span>
       </>
     );
     return itemUnlocked
@@ -1164,10 +1176,10 @@ function LessonContent() {
 
   return (
     <PageShell max="max-w-[1500px]">
-      <StudentPageHeader title={courseName} subtitle={`${course.shortName || "Course curriculum"} / ${module.name}`} />
+      <StudentPageHeader title={courseName} subtitle={t("{{course}} / {{module}}", { course: course.shortName || t("Course curriculum"), module: module.name })} />
 
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
-        <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">My Learning</Link>
+        <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{t("My Learning")}</Link>
         <ChevronRight size={14} />
         <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{courseName}</Link>
         <ChevronRight size={14} />
@@ -1179,20 +1191,20 @@ function LessonContent() {
           <Card className={`w-full overflow-hidden border border-[#DCE7E5] bg-white p-0 shadow-[0_8px_28px_rgba(6,66,75,0.07)] ${isITCourse ? "rounded-2xl" : ""}`}>
             <div className={`${isITCourse ? "flex flex-wrap items-center justify-between gap-3 bg-[#06424B] px-5 py-3.5 sm:px-6" : "bg-[#06424B] px-5 py-5"}`}>
               <div className={`${isITCourse ? "flex min-w-0 items-center gap-3" : ""}`}>
-                <div className="mb-1 flex items-center gap-2"><BookOpen size={15} className="text-[#FFAB0B]" /><span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">{isITCourse ? "Course Roadmap" : "Course Modules"}</span></div>
+                <div className="mb-1 flex items-center gap-2"><BookOpen size={15} className="text-[#FFAB0B]" /><span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">{isITCourse ? t("Course Roadmap") : t("Course Modules")}</span></div>
                 {!isITCourse && <h2 className="text-xl font-extrabold text-white">{courseName}</h2>}
               </div>
-              <p className={`${isITCourse ? "shrink-0 text-xs font-semibold text-white/75" : "mt-1 text-xs text-white/55"}`}>{modules.length} modules · {moduleProgress}% passed</p>
+              <p className={`${isITCourse ? "shrink-0 text-xs font-semibold text-white/75" : "mt-1 text-xs text-white/55"}`}>{t(modules.length === 1 ? "{{number}} module · {{progress}}% passed" : "{{number}} modules · {{progress}}% passed", { number: modules.length, progress: moduleProgress })}</p>
             </div>
 
             {isITCourse ? (
-              <nav aria-label="Course roadmap" className="overflow-x-auto">
+              <nav aria-label={t("Course roadmap")} className="overflow-x-auto">
                 <ol className="flex w-max min-w-full items-start px-4 py-6 sm:px-6">
                   {modules.map(renderRoadmapStep)}
                 </ol>
               </nav>
             ) : (
-              <nav aria-label="Course module navigation" className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
+              <nav aria-label={t("Course module navigation")} className="max-h-[65vh] space-y-1 overflow-y-auto p-3">
                 {modules.map(renderSidebarItem)}
               </nav>
             )}
@@ -1203,22 +1215,22 @@ function LessonContent() {
           {restartNotice && (
             <div role="status" className="flex items-start gap-3 rounded-2xl border border-[#F3E2B8] bg-[#FFFAEE] px-5 py-4 text-sm leading-6 text-[#805C17]">
               <RefreshCw size={17} className="mt-0.5 shrink-0" />
-              <span>{restartNotice}</span>
+              <span>{t(restartNotice)}</span>
             </div>
           )}
 
           <Card className={`p-6 sm:p-8 ${isITCourse ? "w-full" : ""}`}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">Module {String(moduleIndex + 1).padStart(2, "0")} of {modules.length}</span>
-              <span className="rounded-lg bg-[#EEF3F4] px-3 py-1.5 text-[10px] font-bold text-[#526D71]">{contentCount} {contentCount === 1 ? "learning item" : "learning items"}</span>
-              {isPassed && <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF4F2] px-3 py-1 text-[10px] font-bold text-[#06424B]"><CheckCircle2 size={13} /> Assessment passed</span>}
+              <span className="rounded-lg bg-[#FFF3D8] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#94650C]">{t("Module {{current}} of {{total}}", { current: String(moduleIndex + 1).padStart(2, "0"), total: modules.length })}</span>
+              <span className="rounded-lg bg-[#EEF3F4] px-3 py-1.5 text-[10px] font-bold text-[#526D71]">{t(contentCount === 1 ? "{{number}} learning item" : "{{number}} learning items", { number: contentCount })}</span>
+              {isPassed && <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF4F2] px-3 py-1 text-[10px] font-bold text-[#06424B]"><CheckCircle2 size={13} /> {t("Assessment passed")}</span>}
             </div>
             <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">{module.name}</h1>
             {module.summary && <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">{module.summary}</p>}
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link to={learningPath} state={courseLinkState} className={backToCourseClass}><ArrowLeft size={15} /> Back to Course</Link>
-              {previousModule && <Link to={moduleHref(previousModule.id)} state={moduleLinkState} className={backToCourseClass}>Previous Module</Link>}
-              {canGoNext && <Link to={moduleHref(nextModule.id)} state={moduleLinkState} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-xs font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]">Next Module <ArrowRight size={15} /></Link>}
+              <Link to={learningPath} state={courseLinkState} className={backToCourseClass}><ArrowLeft size={15} /> {t("Back to Course")}</Link>
+              {previousModule && <Link to={moduleHref(previousModule.id)} state={moduleLinkState} className={backToCourseClass}>{t("Previous Module")}</Link>}
+              {canGoNext && <Link to={moduleHref(nextModule.id)} state={moduleLinkState} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-xs font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]">{t("Next Module")}{" "}<ArrowRight size={15} /></Link>}
             </div>
           </Card>
 
@@ -1227,51 +1239,51 @@ function LessonContent() {
               <div className="mb-6 flex items-start gap-4 border-b border-[#E7EEEE] pb-5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1D1] text-sm font-extrabold text-[#94650C]">{String(index + 1).padStart(2, "0")}</span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">{String(content.contentType || content.content_type || "learning content").replace(/[_-]+/g, " ")}</p>
-                  <h2 className="mt-1 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{content.title || "Learning content"}</h2>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">{(content.contentType || content.content_type ? String(content.contentType || content.content_type).replace(/[_-]+/g, " ") : t("learning content"))}</p>
+                  <h2 className="mt-1 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{content.title || t("Learning content")}</h2>
                 </div>
               </div>
               <ApiContentBlocks content={content} />
               {(content.url || content.previewUrl || content.downloadUrl) && (
                 <div className="mt-7 flex flex-wrap gap-3 border-t border-[#E7EEEE] pt-5">
-                  {(content.previewUrl || content.url) && <a href={content.previewUrl || content.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#F4F7F7]"><BookOpen size={15} /> Open resource</a>}
-                  {content.downloadUrl && <a href={content.downloadUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#EEF3F4] px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#E2EBEC]"><ExternalLink size={15} /> Download {content.fileName || "resource"}</a>}
+                  {(content.previewUrl || content.url) && <a href={content.previewUrl || content.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#F4F7F7]"><BookOpen size={15} /> {t("Open resource")}</a>}
+                  {content.downloadUrl && <a href={content.downloadUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#EEF3F4] px-4 text-xs font-bold text-[#06424B] transition hover:bg-[#E2EBEC]"><ExternalLink size={15} /> {t("Download {{fileName}}", { fileName: content.fileName || t("resource") })}</a>}
                 </div>
               )}
             </Card>
           )) : (
-            <Card className="p-7"><p className="text-sm leading-7 text-[#718486]">No learning content is available for this module yet.</p></Card>
+            <Card className="p-7"><p className="text-sm leading-7 text-[#718486]">{t("No learning content is available for this module yet.")}</p></Card>
           )}
 
           <Card className="p-5 sm:p-6">
             {isPassed ? (
               <div className="rounded-xl border border-[#CFE2E0] bg-[#F4F7F7] p-4">
-                <p className="inline-flex items-center gap-2 text-sm font-extrabold text-[#06424B]"><CheckCircle2 size={17} /> Module assessment passed</p>
-                <p className="mt-1 text-xs leading-5 text-[#526D71]">Great work! You've passed this module's assessment.</p>
+                <p className="inline-flex items-center gap-2 text-sm font-extrabold text-[#06424B]"><CheckCircle2 size={17} /> {t("Module assessment passed")}</p>
+                <p className="mt-1 text-xs leading-5 text-[#526D71]">{t("Great work! You've passed this module's assessment.")}</p>
               </div>
             ) : !isRead ? (
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-base font-extrabold text-[#123B43]">Finished reading this module?</h3>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-[#789094]">Mark this lesson as read to open its assessment. Pass the assessment to unlock the next module.</p>
+                  <h3 className="text-base font-extrabold text-[#123B43]">{t("Finished reading this module?")}</h3>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-[#789094]">{t("Mark this lesson as read to open its assessment. Pass the assessment to unlock the next module.")}</p>
                 </div>
                 <button type="button" onClick={handleMarkAsRead} disabled={isMarkingRead || contentCount === 0} aria-busy={isMarkingRead} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-xs font-extrabold text-[#06424B] shadow-[0_7px_18px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC13C] disabled:cursor-not-allowed disabled:opacity-60">
-                  {isMarkingRead ? <><RefreshCw size={15} className="animate-spin" /> Saving read status...</> : <><CheckCircle2 size={15} /> Mark as Read</>}
+                  {isMarkingRead ? <><RefreshCw size={15} className="animate-spin" /> {t("Saving read status...")}</> : <><CheckCircle2 size={15} /> {t("Mark as Read")}</>}
                 </button>
               </div>
             ) : (
               <div>
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#CFE2E0] bg-[#F4F7F7] p-4"><CheckCircle2 size={17} className="text-[#06424B]" /><p className="text-sm font-extrabold text-[#06424B]">Lesson marked as read</p><span className="text-xs text-[#526D71]">Your assessment is ready below.</span></div>
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#CFE2E0] bg-[#F4F7F7] p-4"><CheckCircle2 size={17} className="text-[#06424B]" /><p className="text-sm font-extrabold text-[#06424B]">{t("Lesson marked as read")}</p><span className="text-xs text-[#526D71]">{t("Your assessment is ready below.")}</span></div>
                 <div id="module-assessment-panel" ref={assessmentSectionRef} className="mt-5 scroll-mt-8">
-                  <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-base font-extrabold text-[#123B43]">Module assessment</h3><p className="mt-1 text-xs text-[#789094]">Pass this assessment to unlock the next module.</p></div><button type="button" onClick={() => loadModuleAssessments(module.id)} disabled={isAssessmentsLoading} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE6E4] bg-white px-3 text-xs font-bold text-[#06424B] hover:bg-[#F4F7F7] disabled:opacity-60"><RefreshCw size={13} className={isAssessmentsLoading ? "animate-spin" : ""} /> Refresh</button></div>
+                  <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-base font-extrabold text-[#123B43]">{t("Module assessment")}</h3><p className="mt-1 text-xs text-[#789094]">{t("Pass this assessment to unlock the next module.")}</p></div><button type="button" onClick={() => loadModuleAssessments(module.id)} disabled={isAssessmentsLoading} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#DCE6E4] bg-white px-3 text-xs font-bold text-[#06424B] hover:bg-[#F4F7F7] disabled:opacity-60"><RefreshCw size={13} className={isAssessmentsLoading ? "animate-spin" : ""} /> {t("Refresh")}</button></div>
                   {isAssessmentsLoading ? (
                     <div role="status" aria-live="polite" className="mt-4 flex items-center gap-3 rounded-2xl border border-[#E3EBE9] bg-[#F8FAFA] px-4 py-5">
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#06424B] shadow-sm">
                         <RefreshCw size={18} className="animate-spin" />
                       </span>
                       <span>
-                        <span className="block text-sm font-extrabold text-[#06424B]">Preparing your assessment</span>
-                        <span className="mt-1 block text-xs leading-5 text-[#718486]">Getting your assessment ready...</span>
+                        <span className="block text-sm font-extrabold text-[#06424B]">{t("Preparing your assessment")}</span>
+                        <span className="mt-1 block text-xs leading-5 text-[#718486]">{t("Getting your assessment ready...")}</span>
                       </span>
                     </div>
                   ) : assessmentError ? (
@@ -1279,13 +1291,12 @@ function LessonContent() {
                       <div className="flex items-start gap-3">
                         <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#8A573D]" />
                         <div>
-                          <p className="text-sm font-extrabold text-[#6B2D1A]">Assessment couldn't be loaded</p>
-                          <p className="mt-1 text-xs leading-5 text-[#795D4E]">Please try again in a moment.</p>
+                          <p className="text-sm font-extrabold text-[#6B2D1A]">{t("Assessment couldn't be loaded")}</p>
+                          <p className="mt-1 text-xs leading-5 text-[#795D4E]">{t("Please try again in a moment.")}</p>
                         </div>
                       </div>
                       <button type="button" onClick={() => loadModuleAssessments(module.id)} disabled={isAssessmentsLoading} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#DCC9B9] bg-white px-4 text-xs font-extrabold text-[#6B2D1A] transition hover:bg-[#FFFDFC] disabled:cursor-wait disabled:opacity-60">
-                        <RefreshCw size={14} className={isAssessmentsLoading ? "animate-spin" : ""} /> Try again
-                      </button>
+                        <RefreshCw size={14} className={isAssessmentsLoading ? "animate-spin" : ""} /> {t("Try again")}</button>
                     </div>
                   ) : assessments.length ? (
                     <div className="mt-4 grid gap-3">
@@ -1293,15 +1304,15 @@ function LessonContent() {
                         <div key={assignment.id} className="flex flex-col gap-4 rounded-2xl border border-[#E3EBE9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0">
                             {/* Keep the assessment card concise. The API description may contain the full assignment brief and is intentionally not rendered here. */}
-                            <h4 className="font-extrabold text-[#06424B]">{assignment.title || "Module Assessment"}</h4>
+                            <h4 className="font-extrabold text-[#06424B]">{assignment.title || t("Module Assessment")}</h4>
                             <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold text-[#718486]">
-                              {assignment.questionCount !== undefined && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.questionCount} questions</span>}
-                              {Number(assignment.timeLimitMinutes) > 0 && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.timeLimitMinutes} min</span>}
-                              {Number(assignment.passPercentage) > 0 && <span className="rounded-full bg-[#FFF3D8] px-2.5 py-1">{assignment.passPercentage}% to pass</span>}
-                              {Number(assignment.maxAttempts) > 0 && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.maxAttempts} attempts</span>}
+                              {assignment.questionCount !== undefined && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{t(assignment.questionCount === 1 ? "{{number}} question" : "{{number}} questions", { number: assignment.questionCount })}</span>}
+                              {Number(assignment.timeLimitMinutes) > 0 && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.timeLimitMinutes} {t("min")}</span>}
+                              {Number(assignment.passPercentage) > 0 && <span className="rounded-full bg-[#FFF3D8] px-2.5 py-1">{t("{{percentage}}% to pass", { percentage: assignment.passPercentage })}</span>}
+                              {Number(assignment.maxAttempts) > 0 && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{t(assignment.maxAttempts === 1 ? "{{number}} attempt" : "{{number}} attempts", { number: assignment.maxAttempts })}</span>}
                             </div>
                           </div>
-                          <Link to={`/student/assessments/${assignment.id}?course=${encodeURIComponent(courseId)}&module=${encodeURIComponent(module.id)}${nextModule ? `&next=${encodeURIComponent(nextModule.id)}` : ""}`} state={routeState} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#06424B] !no-underline transition hover:bg-[#FFC13C]"><ClipboardCheck size={15} /> Start Assessment <ArrowRight size={15} /></Link>
+                          <Link to={`/student/assessments/${assignment.id}?course=${encodeURIComponent(courseId)}&module=${encodeURIComponent(module.id)}${nextModule ? `&next=${encodeURIComponent(nextModule.id)}` : ""}`} state={routeState} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#06424B] !no-underline transition hover:bg-[#FFC13C]"><ClipboardCheck size={15} /> {t("Start Assessment")}{" "}<ArrowRight size={15} /></Link>
                         </div>
                       ))}
                     </div>
@@ -1310,8 +1321,8 @@ function LessonContent() {
                       <div className="flex items-start gap-3">
                         <ClipboardCheck size={19} className="mt-0.5 shrink-0 text-[#8A9B9D]" />
                         <div>
-                          <p className="text-sm font-extrabold text-[#526D71]">No assessment available yet</p>
-                          <p className="mt-1 text-xs leading-5 text-[#829596]">Your lesson is marked as read. An assessment will appear here when one is available for this module.</p>
+                          <p className="text-sm font-extrabold text-[#526D71]">{t("No assessment available yet")}</p>
+                          <p className="mt-1 text-xs leading-5 text-[#829596]">{t("Your lesson is marked as read. An assessment will appear here when one is available for this module.")}</p>
                         </div>
                       </div>
                     </div>
@@ -1320,12 +1331,12 @@ function LessonContent() {
               </div>
             )}
 
-            {isMarkingRead && <p role="status" aria-live="polite" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#F3E2B8] bg-[#FFFAEE] px-4 py-3 text-xs font-semibold text-[#805C17]"><RefreshCw size={14} className="animate-spin" /> Saving your progress...</p>}
+            {isMarkingRead && <p role="status" aria-live="polite" className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#F3E2B8] bg-[#FFFAEE] px-4 py-3 text-xs font-semibold text-[#805C17]"><RefreshCw size={14} className="animate-spin" /> {t("Saving your progress...")}</p>}
 
             <div className="mt-5 flex flex-wrap gap-3 border-t border-[#E9EEEE] pt-5">
-              <Link to={learningPath} state={courseLinkState} className={backToCourseClass}>All Course Modules</Link>
-              {canGoNext && <Link to={moduleHref(nextModule.id)} state={moduleLinkState} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]">Continue to Next Module <ArrowRight size={16} /></Link>}
-              {isPassed && !nextModule && <span className="inline-flex items-center gap-2 rounded-xl bg-[#FFF3D8] px-4 py-3 text-xs font-extrabold text-[#94650C]"><CheckCircle2 size={15} /> All module assessments passed</span>}
+              <Link to={learningPath} state={courseLinkState} className={backToCourseClass}>{t("All Course Modules")}</Link>
+              {canGoNext && <Link to={moduleHref(nextModule.id)} state={moduleLinkState} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]">{t("Continue to Next Module")}{" "}<ArrowRight size={16} /></Link>}
+              {isPassed && !nextModule && <span className="inline-flex items-center gap-2 rounded-xl bg-[#FFF3D8] px-4 py-3 text-xs font-extrabold text-[#94650C]"><CheckCircle2 size={15} /> {t("All module assessments passed")}</span>}
             </div>
           </Card>
         </article>
@@ -1343,7 +1354,7 @@ function LessonContent() {
             <button
               type="button"
               onClick={() => setShowReadConfirmation(false)}
-              aria-label="Close confirmation"
+              aria-label={t("Close confirmation")}
               className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-[#829596] transition hover:bg-[#F1F5F4] hover:text-[#06424B]"
             >
               <X size={18} />
@@ -1352,43 +1363,42 @@ function LessonContent() {
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF4F2] text-[#06424B]">
               <CheckCircle2 size={29} />
             </div>
-            <p className="mt-5 text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B88736]">Learning progress saved</p>
-            <h2 id="lesson-read-dialog-title" className="mt-2 text-2xl font-extrabold tracking-tight text-[#06424B]">Lesson marked as read</h2>
+            <p className="mt-5 text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B88736]">{t("Learning progress saved")}</p>
+            <h2 id="lesson-read-dialog-title" className="mt-2 text-2xl font-extrabold tracking-tight text-[#06424B]">{t("Lesson marked as read")}</h2>
             <p id="lesson-read-dialog-description" className="mt-2 text-sm leading-7 text-[#627C7F]">
-              Your progress has been saved. We're getting your assessment ready.
-            </p>
+              {t("Your progress has been saved. We're getting your assessment ready.")}</p>
 
             <div className="mt-5 rounded-2xl border border-[#E5ECEB] bg-[#F8FAFA] p-4" aria-live="polite">
               {isAssessmentsLoading ? (
                 <div className="flex items-center gap-3">
                   <RefreshCw size={18} className="shrink-0 animate-spin text-[#B88736]" />
                   <div>
-                    <p className="text-xs font-extrabold text-[#06424B]">Loading module assessment</p>
-                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">Please wait a moment...</p>
+                    <p className="text-xs font-extrabold text-[#06424B]">{t("Loading module assessment")}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">{t("Please wait a moment...")}</p>
                   </div>
                 </div>
               ) : assessmentError ? (
                 <div className="flex items-start gap-3">
                   <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#8A573D]" />
                   <div>
-                    <p className="text-xs font-extrabold text-[#6B2D1A]">Assessment is temporarily unavailable</p>
-                    <p className="mt-1 text-[11px] leading-5 text-[#795D4E]">Please try again in a moment.</p>
+                    <p className="text-xs font-extrabold text-[#6B2D1A]">{t("Assessment is temporarily unavailable")}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#795D4E]">{t("Please try again in a moment.")}</p>
                   </div>
                 </div>
               ) : assessments.length > 0 ? (
                 <div className="flex items-center gap-3">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF4F2] text-[#06424B]"><ClipboardCheck size={18} /></span>
                   <div>
-                    <p className="text-xs font-extrabold text-[#06424B]">Assessment ready</p>
-                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">{assessments.length} {assessments.length === 1 ? "assessment is" : "assessments are"} ready for this module.</p>
+                    <p className="text-xs font-extrabold text-[#06424B]">{t("Assessment ready")}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">{t(assessments.length === 1 ? "{{number}} assessment is ready for this module." : "{{number}} assessments are ready for this module.", { number: assessments.length })}</p>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
                   <ClipboardCheck size={18} className="shrink-0 text-[#829596]" />
                   <div>
-                    <p className="text-xs font-extrabold text-[#526D71]">No assessment available yet</p>
-                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">Your progress is saved. An assessment will appear here once it's available.</p>
+                    <p className="text-xs font-extrabold text-[#526D71]">{t("No assessment available yet")}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-[#829596]">{t("Your progress is saved. An assessment will appear here once it's available.")}</p>
                   </div>
                 </div>
               )}
@@ -1400,8 +1410,7 @@ function LessonContent() {
                 onClick={() => setShowReadConfirmation(false)}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-[#DCE6E4] bg-white px-5 text-sm font-bold text-[#526D71] transition hover:bg-[#F4F7F7]"
               >
-                Close
-              </button>
+                {t("Close")}</button>
               <button
                 type="button"
                 onClick={handleReadConfirmationAction}
@@ -1409,7 +1418,7 @@ function LessonContent() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] shadow-[0_7px_18px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC13C] disabled:cursor-wait disabled:opacity-60"
               >
                 {isAssessmentsLoading ? <RefreshCw size={15} className="animate-spin" /> : assessmentError ? <RefreshCw size={15} /> : <ArrowRight size={16} />}
-                {isAssessmentsLoading ? "Loading assessment..." : assessmentError ? "Retry loading" : assessments.length ? "Continue to Assessment" : "View Lesson Status"}
+                {isAssessmentsLoading ? t("Loading assessment...") : assessmentError ? t("Retry loading") : assessments.length ? t("Continue to Assessment") : t("View Lesson Status")}
               </button>
             </div>
           </section>

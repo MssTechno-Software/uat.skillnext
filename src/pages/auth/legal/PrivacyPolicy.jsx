@@ -1,3 +1,4 @@
+import { translateValue } from "../../../i18n";
 
 import { Link } from "react-router-dom";
 import {
@@ -255,7 +256,7 @@ function PrivacyPolicy() {
           <Link to="/signup">
             <img
               src="/logo.png"
-              alt="Skill Next Consulting Inc."
+              alt={translateValue("Skill Next Consulting Inc.")}
               className="h-[48px] w-auto max-w-[170px] object-contain"
             />
           </Link>
@@ -266,15 +267,14 @@ function PrivacyPolicy() {
               className="hidden items-center gap-2 rounded-xl border border-[#DCE6E8] px-4 py-2.5 text-[11px] font-bold text-[#06424B] transition-all hover:border-[#06424B] hover:bg-[#F5F8F7] sm:flex"
             >
               <FileText size={14} />
-              Terms & Conditions
-            </Link>
+              {translateValue("Terms & Conditions")}</Link>
 
             <Link
               to="/login"
               style={{ color: "#FFFFFF" }}
               className="flex items-center gap-2 rounded-xl bg-[#06424B] px-4 py-2.5 text-[11px] font-bold !text-white shadow-[0_5px_14px_rgba(6,66,75,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#042E35]"
             >
-              <span className="!text-white">Sign In</span>
+              <span className="!text-white">{translateValue("Sign In")}</span>
               <ArrowUpRight
                 size={14}
                 className="shrink-0 !text-white"
@@ -290,29 +290,23 @@ function PrivacyPolicy() {
 
         <div className="flex items-center gap-2 text-[9px] font-bold tracking-[2px] text-[#A17B28]">
           <ShieldCheck size={14} />
-          PRIVACY & DATA PROTECTION
-        </div>
+          {translateValue("PRIVACY & DATA PROTECTION")}</div>
 
         <div className="mt-3 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <h1 className="text-[32px] font-extrabold tracking-[-1.5px] text-[#06424B] sm:text-[42px]">
-              Privacy Policy
-              <span className="text-[#FFAB0B]">.</span>
+              {translateValue("Privacy Policy")}<span className="text-[#FFAB0B]">{translateValue(".")}</span>
             </h1>
 
             <p className="mt-2 max-w-[670px] text-[12px] leading-6 text-[#7B8C8F] sm:text-[13px]">
-              Understand how Skill Next Consulting Inc. may collect,
-              use, protect, and manage your personal information.
-            </p>
+              {translateValue("Understand how Skill Next Consulting Inc. may collect, use, protect, and manage your personal information.")}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="rounded-full border border-[#DCE6E8] bg-white px-3 py-2 text-[9px] font-bold text-[#647B7F]">
-              VERSION 1.0
-            </span>
+              {translateValue("VERSION 1.0")}</span>
             <span className="rounded-full bg-[#FFF5DC] px-3 py-2 text-[9px] font-bold text-[#795B19]">
-              LAST UPDATED · NOV 12, 2026
-            </span>
+              {translateValue("LAST UPDATED · NOV 12, 2026")}</span>
           </div>
         </div>
 
@@ -327,21 +321,16 @@ function PrivacyPolicy() {
 
             <div className="flex-1">
               <h2 className="text-[15px] font-bold text-[#06424B]">
-                Your privacy matters to us
-              </h2>
+                {translateValue("Your privacy matters to us")}</h2>
 
               <p className="mt-1 max-w-[820px] text-[11px] leading-6 text-[#839194]">
-                We aim to handle your information responsibly while
-                providing a secure learning environment for students
-                and teachers.
-              </p>
+                {translateValue("We aim to handle your information responsibly while providing a secure learning environment for students and teachers.")}</p>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 rounded-xl bg-[#F2F7F4] px-3 py-2.5">
               <CheckCircle2 size={17} className="text-[#4D8B4F]" />
               <span className="text-[10px] font-bold text-[#4D7950]">
-                Privacy Guidelines
-              </span>
+                {translateValue("Privacy Guidelines")}</span>
             </div>
           </div>
         </div>
@@ -349,8 +338,7 @@ function PrivacyPolicy() {
         {/* Mobile Navigation */}
         <div className="mt-6 lg:hidden">
           <p className="mb-2 text-[9px] font-bold tracking-[1.5px] text-[#849496]">
-            JUMP TO SECTION
-          </p>
+            {translateValue("JUMP TO SECTION")}</p>
 
           <nav className="flex gap-2 overflow-x-auto pb-2">
             {sections.map((section) => (
@@ -359,7 +347,7 @@ function PrivacyPolicy() {
                 href={`#${section.id}`}
                 className="shrink-0 rounded-full border border-[#DCE6E8] bg-white px-3 py-2 text-[10px] font-semibold text-[#06424B] transition-colors hover:border-[#06424B]"
               >
-                {section.number}. {section.title}
+                {translateValue(section.number)}{translateValue(".")}{" "}{translateValue(section.title)}
               </a>
             ))}
           </nav>
@@ -380,11 +368,9 @@ function PrivacyPolicy() {
 
               <div>
                 <p className="text-[11px] font-bold text-[#06424B]">
-                  Privacy Sections
-                </p>
+                  {translateValue("Privacy Sections")}</p>
                 <p className="text-[9px] text-[#9AA7A8]">
-                  16 sections
-                </p>
+                  {translateValue("16 sections")}</p>
               </div>
             </div>
 
@@ -396,11 +382,11 @@ function PrivacyPolicy() {
                   className="group flex items-start gap-2 rounded-lg px-2.5 py-2 text-[10px] font-medium text-[#718386] transition-all hover:bg-[#F1F6F5] hover:text-[#06424B]"
                 >
                   <span className="mt-0.5 text-[9px] font-bold text-[#B5A06B]">
-                    {section.number}
+                    {translateValue(section.number)}
                   </span>
 
                   <span className="flex-1 leading-4">
-                    {section.title}
+                    {translateValue(section.title)}
                   </span>
 
                   <ChevronRight
@@ -425,18 +411,13 @@ function PrivacyPolicy() {
             <div className="border-b border-[#E8EEEE] pb-7">
               <div className="flex items-center gap-2 text-[9px] font-bold tracking-[1.5px] text-[#A17B28]">
                 <UserRound size={15} />
-                SKILL NEXT CONSULTING INC.
-              </div>
+                {translateValue("SKILL NEXT CONSULTING INC.")}</div>
 
               <h2 className="mt-3 text-[19px] font-extrabold tracking-[-0.5px] text-[#06424B]">
-                Personal Information and Data Protection Policy
-              </h2>
+                {translateValue("Personal Information and Data Protection Policy")}</h2>
 
               <p className="mt-3 text-[11px] leading-6 text-[#839194]">
-                This Policy describes the information that may be handled
-                when you register, participate in courses, interact with
-                teachers, or use the Platform and its related services.
-              </p>
+                {translateValue("This Policy describes the information that may be handled when you register, participate in courses, interact with teachers, or use the Platform and its related services.")}</p>
             </div>
 
             {/* Policy Sections */}
@@ -450,16 +431,16 @@ function PrivacyPolicy() {
                   <div className="flex items-start gap-3">
 
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#EEF5F4] text-[10px] font-extrabold text-[#06424B]">
-                      {section.number}
+                      {translateValue(section.number)}
                     </span>
 
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[14px] font-bold leading-6 text-[#06424B] sm:text-[15px]">
-                        {section.title}
+                        {translateValue(section.title)}
                       </h3>
 
                       <p className="mt-2 text-[11px] leading-[1.85] text-[#75878A] sm:text-[12px]">
-                        {section.intro}
+                        {translateValue(section.intro)}
                       </p>
 
                       {section.points.length > 0 && (
@@ -470,7 +451,7 @@ function PrivacyPolicy() {
                               className="flex items-start gap-2.5 text-[11px] leading-[1.8] text-[#647B7F] sm:text-[12px]"
                             >
                               <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#FFAB0B]" />
-                              <span>{point}</span>
+                              <span>{translateValue(point)}</span>
                             </li>
                           ))}
                         </ul>
@@ -491,16 +472,10 @@ function PrivacyPolicy() {
 
                 <div>
                   <h3 className="text-[11px] font-bold text-[#795B19]">
-                    Important privacy information
-                  </h3>
+                    {translateValue("Important privacy information")}</h3>
 
                   <p className="mt-1 text-[10px] leading-5 text-[#8A774E]">
-                    This Policy must reflect the actual data collected,
-                    service providers used, storage locations, retention
-                    practices, and consent mechanisms of the live Platform.
-                    Please review these details and confirm the official
-                    privacy contact before production launch.
-                  </p>
+                    {translateValue("This Policy must reflect the actual data collected, service providers used, storage locations, retention practices, and consent mechanisms of the live Platform. Please review these details and confirm the official privacy contact before production launch.")}</p>
                 </div>
               </div>
             </div>
@@ -512,15 +487,14 @@ function PrivacyPolicy() {
                 <FileText size={16} className="shrink-0 text-[#06424B]" />
 
                 <p className="text-[10px] leading-5 text-[#879497]">
-                  Please also review our Terms and Conditions.
-                </p>
+                  {translateValue("Please also review our Terms and Conditions.")}</p>
               </div>
               <Link
                 to="/terms-and-conditions"
                 style={{ color: "#FFFFFF" }}
                 className="inline-flex min-h-[43px] items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-[11px] font-bold !text-white shadow-[0_5px_14px_rgba(6,66,75,0.16)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#042E35]"
               >
-                <span className="!text-white">View Terms & Conditions</span>
+                <span className="!text-white">{translateValue("View Terms & Conditions")}</span>
 
                 <ArrowUpRight
                   size={15}
@@ -539,23 +513,20 @@ function PrivacyPolicy() {
 
           <p className="flex items-center gap-2 text-[10px] text-[#879497]">
             <ShieldCheck size={14} className="text-[#06424B]" />
-            © 2026 Skill Next Consulting Inc. All rights reserved.
-          </p>
+            {translateValue("© 2026 Skill Next Consulting Inc. All rights reserved.")}</p>
 
           <div className="flex items-center gap-5 text-[10px] font-semibold text-[#718386]">
             <Link
               to="/terms-and-conditions"
               className="transition-colors hover:text-[#06424B]"
             >
-              Terms & Conditions
-            </Link>
+              {translateValue("Terms & Conditions")}</Link>
 
             <Link
               to="/login"
               className="!text-[#718386] transition-colors duration-200 hover:!text-[#06424B]"
             >
-              Sign In
-            </Link>
+              {translateValue("Sign In")}</Link>
           </div>
         </div>
       </footer>

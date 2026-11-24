@@ -1,4 +1,4 @@
-
+import i18n, { translateValue } from "../../i18n";
 import { useEffect, useRef, useState } from "react";
 import {
   UserRound,
@@ -105,7 +105,7 @@ export default function TeacherProfile() {
     if (!file.type.startsWith("image/")) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Please select an image smaller than 2 MB.");
+      alert(i18n.t("Please select an image smaller than 2 MB."));
       return;
     }
 
@@ -119,7 +119,7 @@ export default function TeacherProfile() {
   };
 
   const logout = () => {
-    const confirmed = window.confirm("Are you sure you want to logout?");
+    const confirmed = window.confirm(i18n.t("Are you sure you want to logout?"));
     if (!confirmed) return;
 
     // Connect your existing logout logic here.
@@ -135,7 +135,7 @@ export default function TeacherProfile() {
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          aria-label="Open profile menu"
+          aria-label={translateValue("Open profile menu")}
           className={`group flex h-11 items-center gap-2 rounded-full border p-1 pr-3 transition-all duration-300 ${
             open
               ? "border-[#A7C6C2] bg-[#EAF2F1] shadow-md"
@@ -146,7 +146,7 @@ export default function TeacherProfile() {
             {profile.avatar ? (
               <img
                 src={profile.avatar}
-                alt="Profile"
+                alt={translateValue("Profile")}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -156,10 +156,10 @@ export default function TeacherProfile() {
 
           <span className="hidden text-left sm:block">
             <span className="block max-w-[110px] truncate text-[11px] font-extrabold text-[#17464D]">
-              {profile.name}
+              {translateValue(profile.name)}
             </span>
             <span className="block text-[9px] font-medium text-[#899B9D]">
-              {profile.designation}
+              {translateValue(profile.designation)}
             </span>
           </span>
 
@@ -198,13 +198,13 @@ export default function TeacherProfile() {
 
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-[13px] font-extrabold text-white">
-                    {profile.name}
+                    {translateValue(profile.name)}
                   </h3>
                   <p className="mt-1 truncate text-[10px] text-white/60">
-                    {profile.email}
+                    {translateValue(profile.email)}
                   </p>
                   <span className="mt-2 inline-flex rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[9px] font-bold text-[#FFD36B]">
-                    {profile.designation}
+                    {translateValue(profile.designation)}
                   </span>
                 </div>
               </div>
@@ -221,11 +221,9 @@ export default function TeacherProfile() {
                 </span>
                 <span className="flex-1">
                   <span className="block text-[11px] font-bold text-[#31565B]">
-                    Edit Profile
-                  </span>
+                    {translateValue("Edit Profile")}</span>
                   <span className="mt-0.5 block text-[9px] text-[#94A3A5]">
-                    Update your personal information
-                  </span>
+                    {translateValue("Update your personal information")}</span>
                 </span>
                 <Pencil size={13} className="text-[#A4B2B3]" />
               </button>
@@ -243,11 +241,9 @@ export default function TeacherProfile() {
                 </span>
                 <span>
                   <span className="block text-[11px] font-bold text-[#31565B]">
-                    Account Settings
-                  </span>
+                    {translateValue("Account Settings")}</span>
                   <span className="mt-0.5 block text-[9px] text-[#94A3A5]">
-                    Manage account preferences
-                  </span>
+                    {translateValue("Manage account preferences")}</span>
                 </span>
               </button>
             </div>
@@ -262,8 +258,7 @@ export default function TeacherProfile() {
                   <LogOut size={17} />
                 </span>
                 <span className="text-[11px] font-bold text-[#B65345]">
-                  Logout
-                </span>
+                  {translateValue("Logout")}</span>
               </button>
             </div>
           </div>
@@ -287,21 +282,18 @@ export default function TeacherProfile() {
               <div className="relative flex items-start justify-between">
                 <div>
                   <span className="text-[9px] font-extrabold tracking-[1.8px] text-[#FFAB0B]">
-                    ACCOUNT PROFILE
-                  </span>
+                    {translateValue("ACCOUNT PROFILE")}</span>
                   <h2 className="mt-2 text-[21px] font-extrabold text-white">
-                    Edit your profile
-                  </h2>
+                    {translateValue("Edit your profile")}</h2>
                   <p className="mt-1 text-[11px] text-white/60">
-                    Keep your teacher information up to date.
-                  </p>
+                    {translateValue("Keep your teacher information up to date.")}</p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setEditOpen(false)}
                   className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
-                  aria-label="Close"
+                  aria-label={translateValue("Close")}
                 >
                   <X size={17} />
                 </button>
@@ -315,7 +307,7 @@ export default function TeacherProfile() {
                   {form.avatar ? (
                     <img
                       src={form.avatar}
-                      alt="Profile preview"
+                      alt={translateValue("Profile preview")}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -332,8 +324,7 @@ export default function TeacherProfile() {
                 <div>
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#DDE8E8] px-3 py-2 text-[10px] font-bold text-[#31565B] transition hover:bg-[#F1F6F5]">
                     <Camera size={14} />
-                    Change photo
-                    <input
+                    {translateValue("Change photo")}<input
                       type="file"
                       accept="image/*"
                       className="hidden"
@@ -341,16 +332,14 @@ export default function TeacherProfile() {
                     />
                   </label>
                   <p className="mt-1.5 text-[9px] text-[#94A3A5]">
-                    JPG or PNG · Maximum 2 MB
-                  </p>
+                    {translateValue("JPG or PNG · Maximum 2 MB")}</p>
                 </div>
               </div>
 
               {/* Name */}
               <label className="block">
                 <span className="mb-2 block text-[11px] font-bold text-[#385D62]">
-                  Full name
-                </span>
+                  {translateValue("Full name")}</span>
                 <div className="relative">
                   <UserRound
                     size={15}
@@ -361,7 +350,7 @@ export default function TeacherProfile() {
                     maxLength={80}
                     value={form.name}
                     onChange={(e) => updateField("name", e.target.value)}
-                    placeholder="Enter your full name"
+                    placeholder={translateValue("Enter your full name")}
                     className="h-[44px] w-full rounded-xl border border-[#DDE7E7] bg-white pl-10 pr-3 text-[12px] text-[#244E54] outline-none transition focus:border-[#8FB5B5] focus:ring-2 focus:ring-[#E5F0EF]"
                   />
                 </div>
@@ -370,8 +359,7 @@ export default function TeacherProfile() {
               {/* Email */}
               <label className="block">
                 <span className="mb-2 block text-[11px] font-bold text-[#385D62]">
-                  Email address
-                </span>
+                  {translateValue("Email address")}</span>
                 <div className="relative">
                   <Mail
                     size={15}
@@ -382,7 +370,7 @@ export default function TeacherProfile() {
                     type="email"
                     value={form.email}
                     onChange={(e) => updateField("email", e.target.value)}
-                    placeholder="Enter email address"
+                    placeholder={translateValue("Enter email address")}
                     className="h-[44px] w-full rounded-xl border border-[#DDE7E7] bg-white pl-10 pr-3 text-[12px] text-[#244E54] outline-none transition focus:border-[#8FB5B5] focus:ring-2 focus:ring-[#E5F0EF]"
                   />
                 </div>
@@ -391,8 +379,7 @@ export default function TeacherProfile() {
               {/* Phone */}
               <label className="block">
                 <span className="mb-2 block text-[11px] font-bold text-[#385D62]">
-                  Phone number
-                </span>
+                  {translateValue("Phone number")}</span>
                 <div className="relative">
                   <Phone
                     size={15}
@@ -402,7 +389,7 @@ export default function TeacherProfile() {
                     type="tel"
                     value={form.phone}
                     onChange={(e) => updateField("phone", e.target.value)}
-                    placeholder="Enter phone number"
+                    placeholder={translateValue("Enter phone number")}
                     className="h-[44px] w-full rounded-xl border border-[#DDE7E7] bg-white pl-10 pr-3 text-[12px] text-[#244E54] outline-none transition focus:border-[#8FB5B5] focus:ring-2 focus:ring-[#E5F0EF]"
                   />
                 </div>
@@ -411,8 +398,7 @@ export default function TeacherProfile() {
               {/* Designation */}
               <label className="block">
                 <span className="mb-2 block text-[11px] font-bold text-[#385D62]">
-                  Designation
-                </span>
+                  {translateValue("Designation")}</span>
                 <div className="relative">
                   <BriefcaseBusiness
                     size={15}
@@ -423,7 +409,7 @@ export default function TeacherProfile() {
                     onChange={(e) =>
                       updateField("designation", e.target.value)
                     }
-                    placeholder="Teacher"
+                    placeholder={translateValue("Teacher")}
                     className="h-[44px] w-full rounded-xl border border-[#DDE7E7] bg-white pl-10 pr-3 text-[12px] text-[#244E54] outline-none transition focus:border-[#8FB5B5] focus:ring-2 focus:ring-[#E5F0EF]"
                   />
                 </div>
@@ -435,16 +421,14 @@ export default function TeacherProfile() {
                   onClick={() => setEditOpen(false)}
                   className="rounded-xl border border-[#DCE6E6] bg-white px-4 py-2.5 text-[11px] font-bold text-[#527277] transition hover:bg-[#F4F7F7]"
                 >
-                  Cancel
-                </button>
+                  {translateValue("Cancel")}</button>
 
                 <button
                   type="submit"
                   className="inline-flex items-center gap-2 rounded-xl bg-[#06424B] px-5 py-2.5 text-[11px] font-bold text-white shadow-lg shadow-[#06424B]/15 transition hover:bg-[#0B5661]"
                 >
                   <Check size={14} />
-                  Save changes
-                </button>
+                  {translateValue("Save changes")}</button>
               </div>
             </form>
           </section>

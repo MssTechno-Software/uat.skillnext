@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -292,57 +293,48 @@ function SelfIntroductionPractice() {
         {!started ? (
           <>
             <StudentPageHeader
-              title="Self-Introduction Evaluation"
-              subtitle="Practise a clear and confident professional introduction."
+              title={translateValue("Self-Introduction Evaluation")}
+              subtitle={translateValue("Practise a clear and confident professional introduction.")}
             />
 
-            <BackLink to="/student/ai-practice">AI Practice</BackLink>
+            <BackLink to="/student/ai-practice">{translateValue("AI Practice")}</BackLink>
 
             <Card className="p-6 sm:p-9">
               <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-[#B6DCC8] bg-[#EAF5EF] p-1 shadow-sm">
                 <img
                   src="/interviewer-avatar.png"
-                  alt="Skill Next AI interviewer"
+                  alt={translateValue("Skill Next AI interviewer")}
                   className="h-full w-full rounded-xl object-cover"
                 />
               </div>
 
               <p className="mt-5 text-xs font-extrabold tracking-[1.3px] text-[#B07A06]">
-                SELF-INTRODUCTION PRACTICE
-              </p>
+                {translateValue("SELF-INTRODUCTION PRACTICE")}</p>
 
               <h1 className="mt-2 text-3xl font-extrabold text-[#06424B]">
-                Tell us about yourself.
-              </h1>
+                {translateValue("Tell us about yourself.")}</h1>
 
               <p className="mt-3 max-w-[700px] text-[15px] leading-7 text-[#4F6B6F]">
-                You will have 119 seconds for each question. Practise common HR
-                interview questions covering your education, skills, projects,
-                strengths and career goals.
-              </p>
+                {translateValue("You will have 119 seconds for each question. Practise common HR interview questions covering your education, skills, projects, strengths and career goals.")}</p>
 
               <div className="mt-6 rounded-2xl border border-[#F1DFB6] bg-[#FFFAEE] p-5">
                 <p className="text-sm font-extrabold text-[#7A5410]">
-                  A simple structure to follow
-                </p>
+                  {translateValue("A simple structure to follow")}</p>
 
                 <ol className="mt-3 list-inside list-decimal space-y-2 text-sm leading-6 text-[#6F5313]">
-                  <li>Your name and educational background.</li>
-                  <li>Relevant technical skills and projects.</li>
-                  <li>Your strengths, achievements and what you want to learn next.</li>
+                  <li>{translateValue("Your name and educational background.")}</li>
+                  <li>{translateValue("Relevant technical skills and projects.")}</li>
+                  <li>{translateValue("Your strengths, achievements and what you want to learn next.")}</li>
                 </ol>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="rounded-full bg-[#EAF3F2] px-3 py-1.5 text-xs font-semibold text-[#3F5C60]">
-                  10 HR questions
-                </span>
+                  {translateValue("10 HR questions")}</span>
                 <span className="rounded-full bg-[#EAF3F2] px-3 py-1.5 text-xs font-semibold text-[#3F5C60]">
-                  119 seconds per question
-                </span>
+                  {translateValue("119 seconds per question")}</span>
                 <span className="rounded-full bg-[#EAF3F2] px-3 py-1.5 text-xs font-semibold text-[#3F5C60]">
-                  Voice / transcript
-                </span>
+                  {translateValue("Voice / transcript")}</span>
               </div>
 
               <button
@@ -350,8 +342,7 @@ function SelfIntroductionPractice() {
                 onClick={begin}
                 className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-6 py-3 text-sm font-extrabold text-[#06424B] shadow-sm transition hover:bg-[#FFC13C]"
               >
-                <Play size={16} /> Start Interview
-              </button>
+                <Play size={16} /> {translateValue("Start Interview")}</button>
             </Card>
           </>
         ) : (
@@ -381,15 +372,13 @@ function SelfIntroductionPractice() {
             <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#DCE6E5] bg-white px-4 py-3 shadow-sm">
               <div>
                 <p className="text-[9px] font-extrabold tracking-[0.14em] text-[#527477]">
-                  INTERVIEW MODES
-                  <span className="px-1 text-[#A1B1B0]">›</span>
-                  SELF INTRODUCTION
-                  <span className="px-1 text-[#A1B1B0]">›</span>
-                  QUESTION {questionIndex + 1}
+                  {translateValue("INTERVIEW MODES")}<span className="px-1 text-[#A1B1B0]">{translateValue("›")}</span>
+                  {translateValue("SELF INTRODUCTION")}<span className="px-1 text-[#A1B1B0]">{translateValue("›")}</span>
+                  {translateValue("QUESTION")}{" "}{translateValue(questionIndex + 1)}
                 </p>
 
                 <p className="mt-1 text-xs font-bold text-[#06424B]">
-                  Question {questionIndex + 1} of {totalQuestions}
+                  {translateValue("Question")}{" "}{translateValue(questionIndex + 1)} {translateValue("of")}{" "}{translateValue(totalQuestions)}
                 </p>
               </div>
 
@@ -398,8 +387,7 @@ function SelfIntroductionPractice() {
                 onClick={exitInterview}
                 className="inline-flex items-center gap-2 text-xs font-semibold text-[#718486] transition hover:text-[#06424B]"
               >
-                <ArrowLeft size={14} /> Exit interview
-              </button>
+                <ArrowLeft size={14} /> {translateValue("Exit interview")}</button>
             </div>
 
             <div className="mt-4 overflow-x-auto rounded-xl border border-[#DCE6E5] bg-white px-4 py-4 shadow-sm">
@@ -421,7 +409,7 @@ function SelfIntroductionPractice() {
                               : "border-[#DCE6E5] bg-white text-[#829596]"
                           }`}
                         >
-                          {isCompleted ? "✓" : index + 1}
+                          {translateValue(isCompleted ? "✓" : index + 1)}
                         </span>
 
                         <span
@@ -433,7 +421,7 @@ function SelfIntroductionPractice() {
                                 : "text-[#A0AEAE]"
                           }`}
                         >
-                          {item.label}
+                          {translateValue(item.label)}
                         </span>
                       </div>
 
@@ -455,19 +443,17 @@ function SelfIntroductionPractice() {
                 <div className="flex h-[112px] w-[112px] items-center justify-center overflow-hidden rounded-[25px] border-2 border-[#B6DCC8] bg-[#EAF5EF] p-1.5 shadow-sm">
                   <img
                     src="/interviewer-avatar.png"
-                    alt="Skill Next AI interviewer"
+                    alt={translateValue("Skill Next AI interviewer")}
                     className="h-full w-full rounded-[19px] object-cover"
                   />
                 </div>
 
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                   <span className="rounded-full bg-[#EAF3F2] px-3 py-1.5 text-[9px] font-extrabold tracking-[0.12em] text-[#06424B]">
-                    AI INTERVIEWER
-                  </span>
+                    {translateValue("AI INTERVIEWER")}</span>
 
                   <span className="rounded-full bg-[#FFF1D0] px-3 py-1.5 text-[9px] font-extrabold text-[#936400]">
-                    SELF INTRODUCTION
-                  </span>
+                    {translateValue("SELF INTRODUCTION")}</span>
                 </div>
 
                 <div
@@ -478,15 +464,14 @@ function SelfIntroductionPractice() {
                   }`}
                 >
                   <Timer size={15} />
-                  QUESTION TIME REMAINING · {minutes}:{seconds}
+                  {translateValue("QUESTION TIME REMAINING ·")}{" "}{translateValue(minutes)}{translateValue(":")}{translateValue(seconds)}
                 </div>
 
                 <p className="mt-6 text-[10px] font-extrabold tracking-[0.18em] text-[#B07A06]">
-                  SKILL NEXT INTERVIEW PRACTICE
-                </p>
+                  {translateValue("SKILL NEXT INTERVIEW PRACTICE")}</p>
 
                 <h2 className="mt-3 max-w-[740px] text-xl font-extrabold leading-9 text-[#06424B] sm:text-[25px]">
-                  {currentQuestion.text}
+                  {translateValue(currentQuestion.text)}
                 </h2>
 
                 <div
@@ -498,7 +483,7 @@ function SelfIntroductionPractice() {
                       <div
                         className="flex h-9 items-center justify-center gap-[4px]"
                         role="status"
-                        aria-label="Listening to your answer"
+                        aria-label={translateValue("Listening to your answer")}
                       >
                         {Array.from({ length: 30 }, (_, index) => (
                           <span
@@ -515,19 +500,16 @@ function SelfIntroductionPractice() {
                       </div>
 
                       <span className="mt-2 text-[10px] font-bold tracking-[0.12em] text-[#527477]">
-                        LISTENING TO YOUR ANSWER
-                      </span>
+                        {translateValue("LISTENING TO YOUR ANSWER")}</span>
                     </>
                   ) : (
                     <span className="text-[10px] text-[#A0AEAE]">
-                      Voice activity will appear here when you speak.
-                    </span>
+                      {translateValue("Voice activity will appear here when you speak.")}</span>
                   )}
                 </div>
 
                 <p className="mt-3 text-xs text-[#829596]">
-                  Focus area: Common HR interview and communication skills
-                </p>
+                  {translateValue("Focus area: Common HR interview and communication skills")}</p>
               </section>
 
               <section className="flex min-h-[500px] flex-col rounded-[24px] border border-[#DCE6E5] bg-white p-5 shadow-[0_3px_12px_rgba(6,66,75,0.045)] sm:p-6">
@@ -539,26 +521,24 @@ function SelfIntroductionPractice() {
                         : "bg-[#7DA58E]"
                     }`}
                   />
-                  LIVE TRANSCRIPTION
-                </div>
+                  {translateValue("LIVE TRANSCRIPTION")}</div>
 
                 <p className="mt-4 rounded-xl border-l-4 border-[#06424B] bg-[#F0F5F4] px-4 py-4 text-xs italic leading-6 text-[#45666A]">
-                  AI: {currentQuestion.text}
+                  {translateValue("AI:")}{" "}{translateValue(currentQuestion.text)}
                 </p>
 
                 <label
                   htmlFor="self-introduction-transcript"
                   className="mt-5 text-xs font-bold text-[#06424B]"
                 >
-                  Your answer transcript
-                </label>
+                  {translateValue("Your answer transcript")}</label>
 
                 <textarea
                   id="self-introduction-transcript"
                   value={answer}
                   onChange={(event) => setAnswer(event.target.value)}
                   rows={8}
-                  placeholder="Start speaking to see your transcript here, or type your answer..."
+                  placeholder={translateValue("Start speaking to see your transcript here, or type your answer...")}
                   className="mt-2 min-h-[190px] w-full flex-1 resize-y rounded-xl border border-[#DCE6E5] bg-[#FAFCFB] p-4 text-sm leading-6 text-[#29494D] outline-none transition placeholder:text-[#9AA9AA] focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10"
                 />
 
@@ -567,12 +547,11 @@ function SelfIntroductionPractice() {
                     aria-live="polite"
                     className="text-[10px] leading-5 text-[#829596]"
                   >
-                    {voiceMessage}
+                    {translateValue(voiceMessage)}
                   </p>
 
                   <span className="shrink-0 text-[10px] font-semibold text-[#829596]">
-                    {wordCount} words
-                  </span>
+                    {translateValue(wordCount)} {translateValue("words")}</span>
                 </div>
 
                 <button
@@ -586,7 +565,7 @@ function SelfIntroductionPractice() {
                   }`}
                 >
                   {listening ? <MicOff size={16} /> : <Mic size={16} />}
-                  {listening ? "Stop Listening" : "Speak Now"}
+                  {translateValue(listening ? "Stop Listening" : "Speak Now")}
                 </button>
               </section>
             </div>
@@ -597,8 +576,7 @@ function SelfIntroductionPractice() {
                 onClick={skip}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#C9DAD8] bg-white px-5 py-3 text-xs font-bold text-[#45666A] transition hover:border-[#06424B] hover:bg-[#F5F9F8]"
               >
-                <SkipForward size={15} /> Skip Question
-              </button>
+                <SkipForward size={15} /> {translateValue("Skip Question")}</button>
 
               <button
                 type="button"
@@ -607,7 +585,7 @@ function SelfIntroductionPractice() {
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-6 py-3 text-xs font-extrabold text-[#06424B] shadow-sm transition hover:bg-[#FFC13C] disabled:cursor-not-allowed disabled:bg-[#E3E8E7] disabled:text-[#91A09F]"
               >
                 <Send size={15} />
-                {isLastQuestion ? "Finish Interview" : "Submit Answer"}
+                {translateValue(isLastQuestion ? "Finish Interview" : "Submit Answer")}
               </button>
             </div>
           </>

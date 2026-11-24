@@ -1,10 +1,25 @@
+
 import API from "./axiosInstance";
+import i18n from "../i18n";
+
+// Cache localized responses separately so language switching cannot reuse stale data.
+const makeCacheKey = (courseId) => `${i18n.resolvedLanguage || i18n.language || "en"}::${String(courseId)}`;
+const invalidateCacheKeyForAllLanguages = (cache, requests, courseId) => {
+  const suffix = `::${String(courseId)}`;
+  for (const key of cache.keys()) if (key.endsWith(suffix)) cache.delete(key);
+  for (const key of requests.keys()) if (key.endsWith(suffix)) requests.delete(key);
+};
+
 // In-memory cache
 const learningPathCache = new Map();
 const learningPathRequests = new Map();
 
 const contentCache = new Map();
 const contentRequests = new Map();
+
+// NEW: Course overview cache
+const overviewCache = new Map();
+const overviewRequests = new Map();
 
 // Reuse cached data and pending requests
 const getCachedData = async (
@@ -47,16 +62,31 @@ export const invalidateCourseLearningPath = (courseId) => {
     return;
   }
 
-  learningPathCache.delete(String(courseId));
-  learningPathRequests.delete(String(courseId));
+  invalidateCacheKeyForAllLanguages(learningPathCache, learningPathRequests, courseId);
+};
+
+// NEW: Clear course overview cache
+export const invalidateCourseOverview = (courseId) => {
+  if (courseId == null) {
+    overviewCache.clear();
+    overviewRequests.clear();
+    return;
+  }
+
+  invalidateCacheKeyForAllLanguages(overviewCache, overviewRequests, courseId);
 };
 
 // Clear all course API caches on logout
 export const clearCourseApiCache = () => {
   learningPathCache.clear();
   learningPathRequests.clear();
+
   contentCache.clear();
   contentRequests.clear();
+
+  // NEW: Clear overview cache
+  overviewCache.clear();
+  overviewRequests.clear();
 };
 
 // Validate required IDs
@@ -87,7 +117,7 @@ export const getCourseLearningPath = async (
 ) => {
   validateId(courseId, "Course reference");
 
-  const key = String(courseId);
+  const key = makeCacheKey(courseId);
 
   return getCachedData(
     key,
@@ -115,6 +145,32 @@ export const getCourses = async (params = {}) => {
   return response.data;
 };
 
+// NEW: Get course overview
+// Course + Modules + Content list
+export const getCourseOverview = async (
+  courseId,
+  { forceRefresh = false } = {}
+) => {
+  validateId(courseId, "Course reference");
+
+  const key = makeCacheKey(courseId);
+
+  return getCachedData(
+    key,
+    overviewCache,
+    overviewRequests,
+    async () => {
+      const response = await API.get(
+        `/api/courses/${encodeURIComponent(courseId)}/overview`,
+        { requiresAuth: true }
+      );
+
+      return response.data;
+    },
+    forceRefresh
+  );
+};
+
 // Get actual lesson content
 export const getCourseContent = async (
   courseId,
@@ -122,7 +178,7 @@ export const getCourseContent = async (
 ) => {
   validateId(courseId, "Course reference");
 
-  const key = String(courseId);
+  const key = makeCacheKey(courseId);
 
   return getCachedData(
     key,
@@ -164,12 +220,12 @@ export const enrollInMyCourses = async (courseIds) => {
 
   normalizedCourseIds.forEach((id) => {
     invalidateCourseLearningPath(id);
-    contentCache.delete(String(id));
-    contentRequests.delete(String(id));
+    invalidateCacheKeyForAllLanguages(contentCache, contentRequests, id);
   });
 
   return response.data;
 };
+
 // Leave enrolled course
 export const leaveCourse = async (
   courseId,
@@ -187,11 +243,10 @@ export const leaveCourse = async (
     }
   );
 
-  // Clear related cached learning data
+  // Clear related learning data
   invalidateCourseLearningPath(courseId);
 
-  contentCache.delete(String(courseId));
-  contentRequests.delete(String(courseId));
+  invalidateCacheKeyForAllLanguages(contentCache, contentRequests, courseId);
 
   return response.data;
 };

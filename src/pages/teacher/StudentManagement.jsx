@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { useMemo, useState } from "react";
 import {
@@ -267,13 +268,13 @@ function StatCard({ title, value, subtitle, icon: Icon, color }) {
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[11px] font-medium text-[#89999B]">
-            {title}
+            {translateValue(title)}
           </p>
           <h3 className="mt-2 text-[27px] font-extrabold tracking-tight text-[#17464D]">
-            {value}
+            {translateValue(value)}
           </h3>
           <p className="mt-1 text-[10px] text-[#91A1A3]">
-            {subtitle}
+            {translateValue(subtitle)}
           </p>
         </div>
 
@@ -304,7 +305,7 @@ function StatusBadge({ status }) {
           active ? "bg-[#43A47C]" : "bg-[#A9B3B5]"
         }`}
       />
-      {status}
+      {translateValue(status)}
     </span>
   );
 }
@@ -325,7 +326,7 @@ function Avatar({ name, size = "md" }) {
         colors[index]
       } ${size === "lg" ? "h-14 w-14 text-base" : "h-10 w-10 text-[11px]"}`}
     >
-      {getInitials(name)}
+      {translateValue(getInitials(name))}
     </div>
   );
 }
@@ -346,11 +347,11 @@ function Modal({ open, onClose, title, description, children, width = "max-w-lg"
         <div className="flex items-start justify-between border-b border-[#EDF1F1] px-5 py-5 sm:px-6">
           <div>
             <h2 className="text-[16px] font-extrabold text-[#17464D]">
-              {title}
+              {translateValue(title)}
             </h2>
             {description && (
               <p className="mt-1.5 text-[11px] leading-5 text-[#8B9B9D]">
-                {description}
+                {translateValue(description)}
               </p>
             )}
           </div>
@@ -365,7 +366,7 @@ function Modal({ open, onClose, title, description, children, width = "max-w-lg"
         </div>
 
         <div className="max-h-[75vh] overflow-y-auto p-5 sm:p-6">
-          {children}
+          {translateValue(children)}
         </div>
       </div>
     </div>
@@ -389,7 +390,7 @@ function ActionButton({ children, variant = "primary", ...props }) {
       {...props}
       className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${props.className || ""}`}
     >
-      {children}
+      {translateValue(children)}
     </button>
   );
 }
@@ -634,18 +635,16 @@ export default function StudentManagement() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold text-[#91A1A3]">
-              <span>Teacher Portal</span>
+              <span>{translateValue("Teacher Portal")}</span>
               <ChevronRight size={12} />
-              <span className="text-[#06424B]">Student Management</span>
+              <span className="text-[#06424B]">{translateValue("Student Management")}</span>
             </div>
 
             <h1 className="text-[23px] font-extrabold tracking-tight text-[#17464D]">
-              Student Management
-            </h1>
+              {translateValue("Student Management")}</h1>
 
             <p className="mt-1 text-[11px] text-[#87999B]">
-              Manage your students, assign courses and track enrolments.
-            </p>
+              {translateValue("Manage your students, assign courses and track enrolments.")}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -654,8 +653,7 @@ export default function StudentManagement() {
               onClick={resetFilters}
             >
               <RefreshCw size={14} />
-              Reset filters
-            </ActionButton>
+              {translateValue("Reset filters")}</ActionButton>
 
             <ActionButton
               variant="gold"
@@ -663,10 +661,9 @@ export default function StudentManagement() {
               disabled={!selected.length}
             >
               <UserPlus size={15} />
-              Assign course
-              {selected.length > 0 && (
+              {translateValue("Assign course")}{selected.length > 0 && (
                 <span className="ml-1 rounded-full bg-[#173E43]/10 px-2 py-0.5">
-                  {selected.length}
+                  {translateValue(selected.length)}
                 </span>
               )}
             </ActionButton>
@@ -679,7 +676,7 @@ export default function StudentManagement() {
           <div className="fixed right-5 top-5 z-[120] flex items-center gap-3 rounded-xl border border-[#D5E9DF] bg-white px-4 py-3 shadow-xl">
             <CheckCircle2 size={17} className="text-[#398366]" />
             <span className="text-[11px] font-semibold text-[#31565B]">
-              {toast}
+              {translateValue(toast)}
             </span>
             <button onClick={() => setToast("")}>
               <X size={14} />
@@ -691,33 +688,33 @@ export default function StudentManagement() {
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            title="Total Students"
+            title={translateValue("Total Students")}
             value={students.length}
-            subtitle="Registered students"
+            subtitle={translateValue("Registered students")}
             icon={Users}
             color="#06424B"
           />
 
           <StatCard
-            title="Active Students"
+            title={translateValue("Active Students")}
             value={activeStudents.length}
-            subtitle="Currently active"
+            subtitle={translateValue("Currently active")}
             icon={UserCheck}
             color="#38966E"
           />
 
           <StatCard
-            title="Course Enrolments"
+            title={translateValue("Course Enrolments")}
             value={activeEnrollments.length}
-            subtitle="Active course assignments"
+            subtitle={translateValue("Active course assignments")}
             icon={BookOpen}
             color="#B27B20"
           />
 
           <StatCard
-            title="Available Courses"
+            title={translateValue("Available Courses")}
             value={courses.filter((item) => item.status === "Published").length}
-            subtitle="Published courses"
+            subtitle={translateValue("Published courses")}
             icon={GraduationCap}
             color="#627BA8"
           />
@@ -737,26 +734,20 @@ export default function StudentManagement() {
 
               <div>
                 <h2 className="text-[15px] font-extrabold text-white">
-                  Assign a complete course
-                </h2>
+                  {translateValue("Assign a complete course")}</h2>
                 <p className="mt-1 max-w-[560px] text-[10px] leading-5 text-white/65">
-                  Select students from your directory and give them access
-                  to all modules, lessons and assignments in a course.
-                </p>
+                  {translateValue("Select students from your directory and give them access to all modules, lessons and assignments in a course.")}</p>
 
                 <div className="mt-3 flex flex-wrap gap-3 text-[10px] font-medium text-white/75">
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 size={13} className="text-[#FFAB0B]" />
-                    Bulk assignment
-                  </span>
+                    {translateValue("Bulk assignment")}</span>
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 size={13} className="text-[#FFAB0B]" />
-                    Duplicate detection
-                  </span>
+                    {translateValue("Duplicate detection")}</span>
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 size={13} className="text-[#FFAB0B]" />
-                    Instant demo updates
-                  </span>
+                    {translateValue("Instant demo updates")}</span>
                 </div>
               </div>
             </div>
@@ -767,8 +758,7 @@ export default function StudentManagement() {
               className="relative inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-[11px] font-extrabold text-[#173E43] transition hover:bg-[#FFC044] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus size={15} />
-              Assign selected students
-              <ArrowUpRight size={14} />
+              {translateValue("Assign selected students")}<ArrowUpRight size={14} />
             </button>
           </div>
         </div>
@@ -789,9 +779,8 @@ export default function StudentManagement() {
               }`}
             >
               <Users size={15} />
-              Student Directory
-              <span className="rounded-full bg-[#EEF3F4] px-2 py-0.5 text-[9px]">
-                {students.length}
+              {translateValue("Student Directory")}<span className="rounded-full bg-[#EEF3F4] px-2 py-0.5 text-[9px]">
+                {translateValue(students.length)}
               </span>
               {activeTab === "students" && (
                 <span className="absolute bottom-0 left-0 h-[2.5px] w-full rounded-full bg-[#06424B]" />
@@ -807,9 +796,8 @@ export default function StudentManagement() {
               }`}
             >
               <BookOpen size={15} />
-              Course Enrolments
-              <span className="rounded-full bg-[#EEF3F4] px-2 py-0.5 text-[9px]">
-                {enrollments.length}
+              {translateValue("Course Enrolments")}<span className="rounded-full bg-[#EEF3F4] px-2 py-0.5 text-[9px]">
+                {translateValue(enrollments.length)}
               </span>
               {activeTab === "enrollments" && (
                 <span className="absolute bottom-0 left-0 h-[2.5px] w-full rounded-full bg-[#06424B]" />
@@ -828,11 +816,9 @@ export default function StudentManagement() {
             <div className="flex flex-col gap-4 border-b border-[#EDF1F1] p-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-[14px] font-extrabold text-[#17464D]">
-                  Student directory
-                </h2>
+                  {translateValue("Student directory")}</h2>
                 <p className="mt-1 text-[10px] text-[#91A1A3]">
-                  Browse students and select them for course assignment.
-                </p>
+                  {translateValue("Browse students and select them for course assignment.")}</p>
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -844,7 +830,7 @@ export default function StudentManagement() {
                       setSearch(event.target.value);
                       setPage(1);
                     }}
-                    placeholder="Search students..."
+                    placeholder={translateValue("Search students...")}
                     className="w-full bg-transparent text-[11px] text-[#31565B] outline-none placeholder:text-[#AAB6B7]"
                   />
                   {search && (
@@ -867,9 +853,9 @@ export default function StudentManagement() {
                     }}
                     className="h-10 w-full appearance-none rounded-xl border border-[#E1E9E9] bg-white pl-9 pr-8 text-[10px] font-semibold text-[#527176] outline-none focus:border-[#06424B] sm:w-[135px]"
                   >
-                    <option value="All">All statuses</option>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="All">{translateValue("All statuses")}</option>
+                    <option value="Active">{translateValue("Active")}</option>
+                    <option value="Inactive">{translateValue("Inactive")}</option>
                   </select>
                   <ChevronDown
                     size={13}
@@ -886,10 +872,10 @@ export default function StudentManagement() {
                     }}
                     className="h-10 w-full appearance-none rounded-xl border border-[#E1E9E9] bg-white px-3 pr-8 text-[10px] font-semibold text-[#527176] outline-none focus:border-[#06424B] sm:w-[170px]"
                   >
-                    <option value="All">All courses</option>
+                    <option value="All">{translateValue("All courses")}</option>
                     {courses.map((course) => (
                       <option key={course.id} value={course.id}>
-                        {course.name}
+                        {translateValue(course.name)}
                       </option>
                     ))}
                   </select>
@@ -917,22 +903,19 @@ export default function StudentManagement() {
                   className="h-4 w-4 rounded accent-[#06424B]"
                 />
                 <span className="text-[10px] font-bold text-[#527176]">
-                  Select all on this page
-                </span>
+                  {translateValue("Select all on this page")}</span>
               </label>
 
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-semibold text-[#819395]">
-                  {filteredStudents.length} students found
-                </span>
+                  {translateValue(filteredStudents.length)} {translateValue("students found")}</span>
 
                 {selected.length > 0 && (
                   <button
                     onClick={() => setSelected([])}
                     className="text-[10px] font-bold text-[#B27B20] hover:underline"
                   >
-                    Clear selection ({selected.length})
-                  </button>
+                    {translateValue("Clear selection (")}{translateValue(selected.length)}{translateValue(")")}</button>
                 )}
               </div>
             </div>
@@ -947,23 +930,17 @@ export default function StudentManagement() {
                       <tr className="border-b border-[#EDF1F1] bg-white">
                         <th className="w-12 px-5 py-3" />
                         <th className="px-3 py-3 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                          Student
-                        </th>
+                          {translateValue("Student")}</th>
                         <th className="px-3 py-3 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                          Student ID
-                        </th>
+                          {translateValue("Student ID")}</th>
                         <th className="px-3 py-3 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                          Courses
-                        </th>
+                          {translateValue("Courses")}</th>
                         <th className="px-3 py-3 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                          Joined
-                        </th>
+                          {translateValue("Joined")}</th>
                         <th className="px-3 py-3 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                          Status
-                        </th>
+                          {translateValue("Status")}</th>
                         <th className="px-5 py-3 text-right text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                          Action
-                        </th>
+                          {translateValue("Action")}</th>
                       </tr>
                     </thead>
 
@@ -991,11 +968,11 @@ export default function StudentManagement() {
                               <Avatar name={student.name} />
                               <div className="min-w-0">
                                 <p className="truncate text-[11px] font-extrabold text-[#31565B]">
-                                  {student.name}
+                                  {translateValue(student.name)}
                                 </p>
                                 <p className="mt-1 flex items-center gap-1 text-[10px] text-[#91A1A3]">
                                   <Mail size={10} />
-                                  {student.email}
+                                  {translateValue(student.email)}
                                 </p>
                               </div>
                             </div>
@@ -1003,19 +980,18 @@ export default function StudentManagement() {
 
                           <td className="px-3 py-3.5">
                             <span className="rounded-md bg-[#F3F6F6] px-2 py-1 text-[10px] font-bold text-[#607A7E]">
-                              {student.id}
+                              {translateValue(student.id)}
                             </span>
                           </td>
 
                           <td className="px-3 py-3.5">
                             <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[#527176]">
                               <BookOpen size={12} />
-                              {getStudentCourseCount(student.id)} courses
-                            </span>
+                              {translateValue(getStudentCourseCount(student.id))} {translateValue("courses")}</span>
                           </td>
 
                           <td className="px-3 py-3.5 text-[10px] text-[#819395]">
-                            {formatDate(student.joined)}
+                            {translateValue(formatDate(student.joined))}
                           </td>
 
                           <td className="px-3 py-3.5">
@@ -1025,7 +1001,7 @@ export default function StudentManagement() {
                           <td className="px-5 py-3.5 text-right">
                             <button
                               onClick={() => setProfileStudent(student)}
-                              title="View student"
+                              title={translateValue("View student")}
                               className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#819395] transition hover:bg-[#EAF2F1] hover:text-[#06424B]"
                             >
                               <Eye size={15} />
@@ -1041,17 +1017,15 @@ export default function StudentManagement() {
 
                 <div className="flex flex-col gap-3 border-t border-[#EDF1F1] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-[10px] text-[#91A1A3]">
-                    Showing{" "}
+                    {translateValue("Showing")}{translateValue(" ")}
                     <strong className="text-[#527176]">
-                      {(page - 1) * pageSize + 1}–
-                      {Math.min(page * pageSize, filteredStudents.length)}
-                    </strong>{" "}
-                    of{" "}
+                      {translateValue((page - 1) * pageSize + 1)}{translateValue("–")}{translateValue(Math.min(page * pageSize, filteredStudents.length))}
+                    </strong>{translateValue(" ")}
+                    {translateValue("of")}{translateValue(" ")}
                     <strong className="text-[#527176]">
-                      {filteredStudents.length}
-                    </strong>{" "}
-                    students
-                  </p>
+                      {translateValue(filteredStudents.length)}
+                    </strong>{translateValue(" ")}
+                    {translateValue("students")}</p>
 
                   <div className="flex items-center gap-1.5">
                     <button
@@ -1072,7 +1046,7 @@ export default function StudentManagement() {
                             : "border border-[#E1E9E9] text-[#607A7E] hover:bg-[#F2F6F5]"
                         }`}
                       >
-                        {index + 1}
+                        {translateValue(index + 1)}
                       </button>
                     ))}
 
@@ -1092,17 +1066,14 @@ export default function StudentManagement() {
                   <SearchX size={23} />
                 </div>
                 <h3 className="mt-4 text-[13px] font-extrabold text-[#31565B]">
-                  No students found
-                </h3>
+                  {translateValue("No students found")}</h3>
                 <p className="mt-1 text-[10px] text-[#91A1A3]">
-                  Try adjusting your search or filters.
-                </p>
+                  {translateValue("Try adjusting your search or filters.")}</p>
                 <button
                   onClick={resetFilters}
                   className="mt-3 text-[10px] font-bold text-[#B27B20] hover:underline"
                 >
-                  Clear all filters
-                </button>
+                  {translateValue("Clear all filters")}</button>
               </div>
             )}
           </section>
@@ -1116,11 +1087,9 @@ export default function StudentManagement() {
             <div className="flex flex-col gap-4 border-b border-[#EDF1F1] p-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-[14px] font-extrabold text-[#17464D]">
-                  Course enrolments
-                </h2>
+                  {translateValue("Course enrolments")}</h2>
                 <p className="mt-1 text-[10px] text-[#91A1A3]">
-                  View and manage student access to complete courses.
-                </p>
+                  {translateValue("View and manage student access to complete courses.")}</p>
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -1129,7 +1098,7 @@ export default function StudentManagement() {
                   <input
                     value={enrollmentSearch}
                     onChange={(event) => setEnrollmentSearch(event.target.value)}
-                    placeholder="Search student or course..."
+                    placeholder={translateValue("Search student or course...")}
                     className="w-full bg-transparent text-[11px] outline-none"
                   />
                 </div>
@@ -1139,10 +1108,10 @@ export default function StudentManagement() {
                   onChange={(event) => setSelectedCourse(event.target.value)}
                   className="h-10 rounded-xl border border-[#E1E9E9] bg-white px-3 text-[10px] font-semibold text-[#527176] outline-none"
                 >
-                  <option value="">All courses</option>
+                  <option value="">{translateValue("All courses")}</option>
                   {courses.map((course) => (
                     <option key={course.id} value={course.id}>
-                      {course.name}
+                      {translateValue(course.name)}
                     </option>
                   ))}
                 </select>
@@ -1152,28 +1121,25 @@ export default function StudentManagement() {
             <div className="grid gap-3 border-b border-[#EDF1F1] bg-[#FAFCFC] p-4 sm:grid-cols-3">
               <div className="rounded-xl border border-[#E7EEEE] bg-white p-3">
                 <p className="text-[10px] text-[#91A1A3]">
-                  Total enrolments
-                </p>
+                  {translateValue("Total enrolments")}</p>
                 <p className="mt-1 text-[21px] font-extrabold text-[#17464D]">
-                  {enrollments.length}
+                  {translateValue(enrollments.length)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#E7EEEE] bg-white p-3">
                 <p className="text-[10px] text-[#91A1A3]">
-                  Active enrolments
-                </p>
+                  {translateValue("Active enrolments")}</p>
                 <p className="mt-1 text-[21px] font-extrabold text-[#398366]">
-                  {activeEnrollments.length}
+                  {translateValue(activeEnrollments.length)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#E7EEEE] bg-white p-3">
                 <p className="text-[10px] text-[#91A1A3]">
-                  Available courses
-                </p>
+                  {translateValue("Available courses")}</p>
                 <p className="mt-1 text-[21px] font-extrabold text-[#17464D]">
-                  {courses.length}
+                  {translateValue(courses.length)}
                 </p>
               </div>
             </div>
@@ -1184,20 +1150,15 @@ export default function StudentManagement() {
                   <thead>
                     <tr className="border-b border-[#EDF1F1]">
                       <th className="px-5 py-4 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                        Student
-                      </th>
+                        {translateValue("Student")}</th>
                       <th className="px-3 py-4 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                        Course
-                      </th>
+                        {translateValue("Course")}</th>
                       <th className="px-3 py-4 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                        Enrolled date
-                      </th>
+                        {translateValue("Enrolled date")}</th>
                       <th className="px-3 py-4 text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                        Status
-                      </th>
+                        {translateValue("Status")}</th>
                       <th className="px-5 py-4 text-right text-[9px] font-extrabold uppercase tracking-wider text-[#96A5A6]">
-                        Action
-                      </th>
+                        {translateValue("Action")}</th>
                     </tr>
                   </thead>
 
@@ -1221,10 +1182,10 @@ export default function StudentManagement() {
                               <Avatar name={student?.name || "Unknown"} />
                               <div>
                                 <p className="text-[11px] font-extrabold text-[#31565B]">
-                                  {student?.name || "Unknown student"}
+                                  {translateValue(student?.name || "Unknown student")}
                                 </p>
                                 <p className="mt-1 text-[10px] text-[#91A1A3]">
-                                  {student?.email || "—"}
+                                  {translateValue(student?.email || "—")}
                                 </p>
                               </div>
                             </div>
@@ -1233,17 +1194,16 @@ export default function StudentManagement() {
                           <td className="px-3 py-4">
                             <div className="max-w-[220px]">
                               <p className="truncate text-[11px] font-bold text-[#527176]">
-                                {course?.name || "Course removed"}
+                                {translateValue(course?.name || "Course removed")}
                               </p>
                               <p className="mt-1 text-[9px] text-[#91A1A3]">
-                                {course?.modules || 0} modules ·{" "}
-                                {course?.lessons || 0} lessons
-                              </p>
+                                {translateValue(course?.modules || 0)} {translateValue("modules ·")}{translateValue(" ")}
+                                {translateValue(course?.lessons || 0)} {translateValue("lessons")}</p>
                             </div>
                           </td>
 
                           <td className="px-3 py-4 text-[10px] text-[#819395]">
-                            {formatDate(record.enrolledAt)}
+                            {translateValue(formatDate(record.enrolledAt))}
                           </td>
 
                           <td className="px-3 py-4">
@@ -1253,7 +1213,7 @@ export default function StudentManagement() {
                           <td className="px-5 py-4 text-right">
                             <button
                               onClick={() => setPendingRemoval(record)}
-                              title="Remove enrolment"
+                              title={translateValue("Remove enrolment")}
                               className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#9BA9AA] transition hover:bg-[#FFF0ED] hover:text-[#B65345]"
                             >
                               <Trash2 size={14} />
@@ -1269,11 +1229,9 @@ export default function StudentManagement() {
               <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
                 <BookOpen size={28} className="text-[#A6B5B6]" />
                 <h3 className="mt-3 text-[13px] font-extrabold text-[#31565B]">
-                  No enrolments found
-                </h3>
+                  {translateValue("No enrolments found")}</h3>
                 <p className="mt-1 text-[10px] text-[#91A1A3]">
-                  There are no matching course enrolments.
-                </p>
+                  {translateValue("There are no matching course enrolments.")}</p>
               </div>
             )}
           </section>
@@ -1287,15 +1245,15 @@ export default function StudentManagement() {
       <Modal
         open={modal === "assign"}
         onClose={() => setModal("")}
-        title="Assign course to students"
-        description="Select a complete course and confirm the students who should receive access."
+        title={translateValue("Assign course to students")}
+        description={translateValue("Select a complete course and confirm the students who should receive access.")}
         width="max-w-2xl"
       >
         <div className="space-y-5">
 
           <div>
             <label className="mb-2 block text-[10px] font-extrabold text-[#527176]">
-              SELECT COURSE <span className="text-[#C77A39]">*</span>
+              {translateValue("SELECT COURSE")}{" "}<span className="text-[#C77A39]">{translateValue("*")}</span>
             </label>
 
             <select
@@ -1303,12 +1261,12 @@ export default function StudentManagement() {
               onChange={(event) => setSelectedCourse(event.target.value)}
               className="h-11 w-full rounded-xl border border-[#DDE7E7] bg-[#FAFCFC] px-3 text-[11px] font-semibold text-[#31565B] outline-none transition focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10"
             >
-              <option value="">Choose a course...</option>
+              <option value="">{translateValue("Choose a course...")}</option>
               {courses
                 .filter((course) => course.status === "Published")
                 .map((course) => (
                   <option key={course.id} value={course.id}>
-                    {course.name}
+                    {translateValue(course.name)}
                   </option>
                 ))}
             </select>
@@ -1330,16 +1288,15 @@ export default function StudentManagement() {
 
                       <div className="min-w-0 flex-1">
                         <h3 className="text-[12px] font-extrabold text-[#17464D]">
-                          {course?.name}
+                          {translateValue(course?.name)}
                         </h3>
                         <p className="mt-1 text-[10px] text-[#819395]">
-                          {course?.category}
+                          {translateValue(course?.category)}
                         </p>
                       </div>
 
                       <span className="rounded-full bg-[#E7F3EB] px-2.5 py-1 text-[9px] font-bold text-[#398366]">
-                        Published
-                      </span>
+                        {translateValue("Published")}</span>
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2">
@@ -1354,10 +1311,10 @@ export default function StudentManagement() {
                         >
                           <Icon size={14} className="text-[#B27B20]" />
                           <p className="mt-2 text-[17px] font-extrabold text-[#17464D]">
-                            {value}
+                            {translateValue(value)}
                           </p>
                           <p className="text-[9px] text-[#91A1A3]">
-                            {label}
+                            {translateValue(label)}
                           </p>
                         </div>
                       ))}
@@ -1372,16 +1329,13 @@ export default function StudentManagement() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <label className="text-[10px] font-extrabold text-[#527176]">
-                  SELECTED STUDENTS
-                </label>
+                  {translateValue("SELECTED STUDENTS")}</label>
                 <p className="mt-1 text-[10px] text-[#91A1A3]">
-                  Review the students before assigning access.
-                </p>
+                  {translateValue("Review the students before assigning access.")}</p>
               </div>
 
               <span className="rounded-full bg-[#EAF2F1] px-3 py-1 text-[10px] font-bold text-[#06424B]">
-                {selectedStudents.length} selected
-              </span>
+                {translateValue(selectedStudents.length)} {translateValue("selected")}</span>
             </div>
 
             <div className="max-h-[250px] space-y-2 overflow-y-auto rounded-xl border border-[#E4EBEB] p-3">
@@ -1394,10 +1348,10 @@ export default function StudentManagement() {
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[11px] font-extrabold text-[#31565B]">
-                      {student.name}
+                      {translateValue(student.name)}
                     </p>
                     <p className="mt-1 text-[10px] text-[#91A1A3]">
-                      {student.id} · {student.email}
+                      {translateValue(student.id)} {translateValue("·")}{" "}{translateValue(student.email)}
                     </p>
                   </div>
 
@@ -1412,9 +1366,7 @@ export default function StudentManagement() {
 
               {!selectedStudents.length && (
                 <p className="py-8 text-center text-[11px] text-[#91A1A3]">
-                  No students selected. Close this popup and select students
-                  from the directory.
-                </p>
+                  {translateValue("No students selected. Close this popup and select students from the directory.")}</p>
               )}
             </div>
           </div>
@@ -1426,10 +1378,7 @@ export default function StudentManagement() {
                 className="mt-0.5 shrink-0 text-[#B27B20]"
               />
               <p className="text-[10px] leading-5 text-[#8B754F]">
-                Students who are already enrolled in this course will not
-                receive duplicate enrolments. Only new assignments will
-                be created.
-              </p>
+                {translateValue("Students who are already enrolled in this course will not receive duplicate enrolments. Only new assignments will be created.")}</p>
             </div>
           </div>
 
@@ -1438,8 +1387,7 @@ export default function StudentManagement() {
               variant="secondary"
               onClick={() => setModal("")}
             >
-              Cancel
-            </ActionButton>
+              {translateValue("Cancel")}</ActionButton>
 
             <ActionButton
               variant="gold"
@@ -1447,8 +1395,7 @@ export default function StudentManagement() {
               disabled={!selectedCourse || !selectedStudents.length}
             >
               <UserPlus size={14} />
-              Confirm assignment
-            </ActionButton>
+              {translateValue("Confirm assignment")}</ActionButton>
           </div>
         </div>
       </Modal>
@@ -1460,8 +1407,8 @@ export default function StudentManagement() {
       <Modal
         open={modal === "success"}
         onClose={() => setModal("")}
-        title="Course assignment completed"
-        description="The local demo enrolment records have been updated."
+        title={translateValue("Course assignment completed")}
+        description={translateValue("The local demo enrolment records have been updated.")}
         width="max-w-lg"
       >
         {successData && (
@@ -1472,30 +1419,27 @@ export default function StudentManagement() {
               </div>
 
               <h3 className="mt-3 text-[15px] font-extrabold text-[#17464D]">
-                Assignment successful!
-              </h3>
+                {translateValue("Assignment successful!")}</h3>
 
               <p className="mt-1 max-w-[300px] text-[10px] leading-5 text-[#819395]">
-                {successData.courseName}
+                {translateValue(successData.courseName)}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-[#E3ECE7] bg-white p-4">
                 <p className="text-[10px] text-[#819395]">
-                  Newly enrolled
-                </p>
+                  {translateValue("Newly enrolled")}</p>
                 <p className="mt-2 text-[25px] font-extrabold text-[#398366]">
-                  {successData.enrolled}
+                  {translateValue(successData.enrolled)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#E3ECE7] bg-white p-4">
                 <p className="text-[10px] text-[#819395]">
-                  Already enrolled
-                </p>
+                  {translateValue("Already enrolled")}</p>
                 <p className="mt-2 text-[25px] font-extrabold text-[#B27B20]">
-                  {successData.already}
+                  {translateValue(successData.already)}
                 </p>
               </div>
             </div>
@@ -1519,10 +1463,10 @@ export default function StudentManagement() {
 
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-bold text-[#31565B]">
-                      {student.name}
+                      {translateValue(student.name)}
                     </p>
                     <p className="text-[9px] text-[#91A1A3]">
-                      {student.id}
+                      {translateValue(student.id)}
                     </p>
                   </div>
 
@@ -1531,7 +1475,7 @@ export default function StudentManagement() {
                       isAlready ? "text-[#B27B20]" : "text-[#398366]"
                     }`}
                   >
-                    {isAlready ? "Already enrolled" : "Enrolled"}
+                    {translateValue(isAlready ? "Already enrolled" : "Enrolled")}
                   </span>
                 </div>
               );
@@ -1545,8 +1489,7 @@ export default function StudentManagement() {
                 setActiveTab("enrollments");
               }}
             >
-              View course enrolments
-              <ArrowUpRight size={14} />
+              {translateValue("View course enrolments")}<ArrowUpRight size={14} />
             </ActionButton>
           </div>
         )}
@@ -1559,8 +1502,8 @@ export default function StudentManagement() {
       <Modal
         open={Boolean(profileStudent)}
         onClose={() => setProfileStudent(null)}
-        title="Student profile"
-        description="Student information and complete course enrolment history."
+        title={translateValue("Student profile")}
+        description={translateValue("Student information and complete course enrolment history.")}
         width="max-w-lg"
       >
         {profileStudent && (
@@ -1570,10 +1513,10 @@ export default function StudentManagement() {
 
               <div className="min-w-0 flex-1">
                 <h3 className="text-[15px] font-extrabold text-[#17464D]">
-                  {profileStudent.name}
+                  {translateValue(profileStudent.name)}
                 </h3>
                 <p className="mt-1 text-[10px] text-[#819395]">
-                  {profileStudent.id}
+                  {translateValue(profileStudent.id)}
                 </p>
                 <div className="mt-2">
                   <StatusBadge status={profileStudent.status} />
@@ -1584,45 +1527,40 @@ export default function StudentManagement() {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-[#E5ECEC] p-3">
                 <p className="text-[9px] font-bold uppercase text-[#91A1A3]">
-                  Email address
-                </p>
+                  {translateValue("Email address")}</p>
                 <p className="mt-2 break-all text-[10px] font-semibold text-[#31565B]">
-                  {profileStudent.email}
+                  {translateValue(profileStudent.email)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#E5ECEC] p-3">
                 <p className="text-[9px] font-bold uppercase text-[#91A1A3]">
-                  Phone number
-                </p>
+                  {translateValue("Phone number")}</p>
                 <p className="mt-2 text-[10px] font-semibold text-[#31565B]">
-                  {profileStudent.phone}
+                  {translateValue(profileStudent.phone)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#E5ECEC] p-3">
                 <p className="text-[9px] font-bold uppercase text-[#91A1A3]">
-                  Joined date
-                </p>
+                  {translateValue("Joined date")}</p>
                 <p className="mt-2 text-[10px] font-semibold text-[#31565B]">
-                  {formatDate(profileStudent.joined)}
+                  {translateValue(formatDate(profileStudent.joined))}
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#E5ECEC] p-3">
                 <p className="text-[9px] font-bold uppercase text-[#91A1A3]">
-                  Enrolled courses
-                </p>
+                  {translateValue("Enrolled courses")}</p>
                 <p className="mt-2 text-[17px] font-extrabold text-[#06424B]">
-                  {getStudentCourseCount(profileStudent.id)}
+                  {translateValue(getStudentCourseCount(profileStudent.id))}
                 </p>
               </div>
             </div>
 
             <div>
               <h4 className="mb-3 text-[11px] font-extrabold text-[#31565B]">
-                Enrolled courses
-              </h4>
+                {translateValue("Enrolled courses")}</h4>
 
               <div className="space-y-2">
                 {enrollments
@@ -1645,10 +1583,10 @@ export default function StudentManagement() {
 
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[10px] font-bold text-[#31565B]">
-                            {course?.name || "Unknown course"}
+                            {translateValue(course?.name || "Unknown course")}
                           </p>
                           <p className="mt-1 text-[9px] text-[#91A1A3]">
-                            Enrolled {formatDate(record.enrolledAt)}
+                            {translateValue("Enrolled")}{" "}{translateValue(formatDate(record.enrolledAt))}
                           </p>
                         </div>
 
@@ -1661,8 +1599,7 @@ export default function StudentManagement() {
                   (item) => item.studentId === profileStudent.id
                 ) && (
                   <p className="rounded-xl bg-[#F7F9F9] p-4 text-center text-[10px] text-[#91A1A3]">
-                    No course enrolments yet.
-                  </p>
+                    {translateValue("No course enrolments yet.")}</p>
                 )}
               </div>
             </div>
@@ -1672,8 +1609,7 @@ export default function StudentManagement() {
                 variant="secondary"
                 onClick={() => setProfileStudent(null)}
               >
-                Close
-              </ActionButton>
+                {translateValue("Close")}</ActionButton>
             </div>
           </div>
         )}
@@ -1686,8 +1622,8 @@ export default function StudentManagement() {
       <Modal
         open={Boolean(pendingRemoval)}
         onClose={() => setPendingRemoval(null)}
-        title="Remove course access?"
-        description="Please review this action before continuing."
+        title={translateValue("Remove course access?")}
+        description={translateValue("Please review this action before continuing.")}
         width="max-w-md"
       >
         {pendingRemoval && (
@@ -1699,34 +1635,29 @@ export default function StudentManagement() {
 
               <div>
                 <h3 className="text-[11px] font-extrabold text-[#77463F]">
-                  This action will remove the enrolment.
-                </h3>
+                  {translateValue("This action will remove the enrolment.")}</h3>
                 <p className="mt-1 text-[10px] leading-5 text-[#9B7772]">
-                  The student will no longer have this course assignment
-                  in the local demo data.
-                </p>
+                  {translateValue("The student will no longer have this course assignment in the local demo data.")}</p>
               </div>
             </div>
 
             <div className="rounded-xl border border-[#E5ECEC] p-4">
               <p className="text-[9px] font-bold uppercase tracking-wider text-[#91A1A3]">
-                Student
-              </p>
+                {translateValue("Student")}</p>
 
               <p className="mt-1 text-[12px] font-extrabold text-[#31565B]">
-                {students.find(
+                {translateValue(students.find(
                   (item) => item.id === pendingRemoval.studentId
-                )?.name}
+                )?.name)}
               </p>
 
               <p className="mt-4 text-[9px] font-bold uppercase tracking-wider text-[#91A1A3]">
-                Course
-              </p>
+                {translateValue("Course")}</p>
 
               <p className="mt-1 text-[11px] font-bold text-[#31565B]">
-                {courses.find(
+                {translateValue(courses.find(
                   (item) => item.id === pendingRemoval.courseId
-                )?.name}
+                )?.name)}
               </p>
             </div>
 
@@ -1735,16 +1666,14 @@ export default function StudentManagement() {
                 variant="secondary"
                 onClick={() => setPendingRemoval(null)}
               >
-                Cancel
-              </ActionButton>
+                {translateValue("Cancel")}</ActionButton>
 
               <ActionButton
                 variant="danger"
                 onClick={confirmRemove}
               >
                 <Trash2 size={14} />
-                Remove enrolment
-              </ActionButton>
+                {translateValue("Remove enrolment")}</ActionButton>
             </div>
           </div>
         )}

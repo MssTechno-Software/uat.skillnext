@@ -1,4 +1,6 @@
+import { translateValue } from "../i18n";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, RefreshCw, X } from "lucide-react";
 
 function ApiErrorModal({
@@ -7,6 +9,7 @@ function ApiErrorModal({
   onRetry,
   onClose,
 }) {
+  const { t } = useTranslation("ui");
   const primaryButtonRef = useRef(null);
   const closeButtonRef = useRef(null);
 
@@ -41,7 +44,7 @@ function ApiErrorModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={translateValue("Close")}
           className="absolute right-3 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-[#8FA3A5] transition hover:bg-[#F1F5F4] hover:text-[#06424B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B]"
         >
           <X size={18} />
@@ -56,14 +59,14 @@ function ApiErrorModal({
             id="api-error-title"
             className="mt-5 text-xl font-extrabold leading-snug text-[#06424B] sm:text-[22px]"
           >
-            {title}
+            {t(title)}
           </h2>
 
           <p
             id="api-error-message"
             className="mx-auto mt-2 max-w-[330px] break-words text-sm leading-6 text-[#5A7478]"
           >
-            {message}
+            {t(message)}
           </p>
 
           <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
@@ -75,7 +78,7 @@ function ApiErrorModal({
                 className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-6 text-sm font-extrabold text-[#06424B] shadow-[0_8px_18px_rgba(255,171,11,0.28)] transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2 sm:flex-none"
               >
                 <RefreshCw size={15} />
-                Try Again
+                {t("Try Again")}
               </button>
             )}
             <button
@@ -84,7 +87,7 @@ function ApiErrorModal({
               onClick={onClose}
               className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-[#DCE6E4] bg-white px-6 text-sm font-bold text-[#06424B] transition hover:bg-[#F4F7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2 sm:flex-none"
             >
-              Close
+              {t("Close")}
             </button>
           </div>
         </div>

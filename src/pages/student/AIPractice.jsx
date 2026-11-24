@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import {
   ArrowUpRight,
@@ -27,15 +28,15 @@ function AIPractice() {
     
       <PageShell max="max-w-[1250px]">
         <StudentPageHeader
-          title="Interview Prep"
-          subtitle="Prepare for professional conversations with guided interview practice and clear feedback."
+          title={translateValue("Interview Prep")}
+          subtitle={translateValue("Prepare for professional conversations with guided interview practice and clear feedback.")}
         />
 
         <Hero
           icon={Sparkles}
           eyebrow="SKILL NEXT · INTERVIEW PREPARATION"
-          title="Build confidence before your next interview"
-          text="Practise a professional self-introduction or take a course-specific theory interview using only the courses you have added to My Learning."
+          title={translateValue("Build confidence before your next interview")}
+          text={translateValue("Practise a professional self-introduction or take a course-specific theory interview using only the courses you have added to My Learning.")}
         />
 
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
@@ -46,23 +47,18 @@ function AIPractice() {
               <IconBadge icon={Mic2} size="lg" />
 
               <p className="mt-5 text-xs font-bold tracking-[1.3px] text-[#B07A06]">
-                INTERVIEW MODE 01
-              </p>
+                {translateValue("INTERVIEW MODE 01")}</p>
 
               <h3 className="mt-1 text-2xl font-extrabold text-[#06424B]">
-                Common Self-Introduction
-              </h3>
+                {translateValue("Common Self-Introduction")}</h3>
 
               <p className="mt-3 min-h-[72px] text-[15px] leading-7 text-[#4F6B6F]">
-                Practise a confident introduction covering your background,
-                skills, projects, strengths and career goals. Speak or type
-                your response and review the transcript.
-              </p>
+                {translateValue("Practise a confident introduction covering your background, skills, projects, strengths and career goals. Speak or type your response and review the transcript.")}</p>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className={chip}>Common interview question</span>
-                <span className={chip}>Voice / transcript</span>
-                <span className={chip}>119 seconds</span>
+                <span className={chip}>{translateValue("Common interview question")}</span>
+                <span className={chip}>{translateValue("Voice / transcript")}</span>
+                <span className={chip}>{translateValue("119 seconds")}</span>
               </div>
 
               <LinkButton
@@ -70,8 +66,7 @@ function AIPractice() {
                 iconRight={ArrowUpRight}
                 className="mt-6"
               >
-                Start self-introduction
-              </LinkButton>
+                {translateValue("Start self-introduction")}</LinkButton>
             </div>
           </Card>
 
@@ -82,24 +77,19 @@ function AIPractice() {
               <IconBadge icon={MessageSquareText} tone="gold" size="lg" />
 
               <p className="mt-5 text-xs font-bold tracking-[1.3px] text-[#B07A06]">
-                INTERVIEW MODE 02
-              </p>
+                {translateValue("INTERVIEW MODE 02")}</p>
 
               <h3 className="mt-1 text-2xl font-extrabold text-[#06424B]">
-                AI Theory Practice
-              </h3>
+                {translateValue("AI Theory Practice")}</h3>
 
               <p className="mt-3 min-h-[72px] text-[15px] leading-7 text-[#4F6B6F]">
-                Select an enrolled course, choose one of its subtopics and
-                practise ten spoken theory questions. Review your transcript
-                and guided feedback after each answer.
-              </p>
+                {translateValue("Select an enrolled course, choose one of its subtopics and practise ten spoken theory questions. Review your transcript and guided feedback after each answer.")}</p>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className={chip}>Enrolled courses only</span>
-                <span className={chip}>Easy / Medium / Hard</span>
-                <span className={chip}>Mixed by default</span>
-                <span className={chip}>Theory only</span>
+                <span className={chip}>{translateValue("Enrolled courses only")}</span>
+                <span className={chip}>{translateValue("Easy / Medium / Hard")}</span>
+                <span className={chip}>{translateValue("Mixed by default")}</span>
+                <span className={chip}>{translateValue("Theory only")}</span>
               </div>
 
               <LinkButton
@@ -108,8 +98,7 @@ function AIPractice() {
                 iconRight={ArrowUpRight}
                 className="mt-6"
               >
-                Choose course and topic
-              </LinkButton>
+                {translateValue("Choose course and topic")}</LinkButton>
             </div>
           </Card>
         </div>

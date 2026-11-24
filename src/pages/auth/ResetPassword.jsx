@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -95,7 +96,7 @@ function PasswordField({
         htmlFor={id}
         className="mb-2 block text-[11px] font-bold text-[#344B4F]"
       >
-        {label}
+        {translateValue(label)}
       </label>
 
       <div className="relative">
@@ -112,7 +113,7 @@ function PasswordField({
           onChange={onChange}
           onBlur={onBlur}
           onKeyUp={onKeyUp}
-          placeholder={placeholder}
+          placeholder={translateValue(placeholder)}
           autoComplete="new-password"
           disabled={disabled}
           aria-invalid={hasError}
@@ -129,7 +130,7 @@ function PasswordField({
           type="button"
           onClick={onToggle}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-[#829496] transition-colors hover:text-[#06424B]"
-          aria-label={show ? "Hide password" : "Show password"}
+          aria-label={translateValue(show ? "Hide password" : "Show password")}
         >
           {show ? <EyeOff size={17} /> : <Eye size={17} />}
         </button>
@@ -142,7 +143,7 @@ function PasswordField({
           className="sp-error mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[#C2553F]"
         >
           <AlertCircle size={12} className="shrink-0" />
-          {error}
+          {translateValue(error)}
         </p>
       )}
     </div>
@@ -301,12 +302,10 @@ const handleSubmit = async (e) => {
               size={15}
               className="transition-transform group-hover:-translate-x-1"
             />
-            Back to sign in
-          </button>
+            {translateValue("Back to sign in")}</button>
 
           <span className="text-[9px] font-bold tracking-[1.5px] text-[#06424B]/60 sm:text-[10px]">
-            ACCOUNT RECOVERY
-          </span>
+            {translateValue("ACCOUNT RECOVERY")}</span>
         </header>
 
         {/* Card */}
@@ -320,7 +319,7 @@ const handleSubmit = async (e) => {
             {/* Logo */}
             <img
               src="/logo.png"
-              alt="Skill Next Consulting Inc."
+              alt={translateValue("Skill Next Consulting Inc.")}
               className="mx-auto h-[52px] w-auto max-w-[180px] object-contain"
             />
 
@@ -373,22 +372,19 @@ const handleSubmit = async (e) => {
               <div className="inline-flex items-center gap-2 rounded-full bg-[#FFF5DC] px-3 py-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
                 <span className="text-[9px] font-bold tracking-[1.5px] text-[#795B19]">
-                  PASSWORD RECOVERY
-                </span>
+                  {translateValue("PASSWORD RECOVERY")}</span>
               </div>
 
               <h1 className="mt-3 text-[27px] font-bold leading-tight tracking-[-1.1px] text-[#06424B] sm:text-[31px]">
-                Reset your password
-                <span className="text-[#FFAB0B]">.</span>
+                {translateValue("Reset your password")}<span className="text-[#FFAB0B]">{translateValue(".")}</span>
               </h1>
 
               <p className="mx-auto mt-2 max-w-[380px] text-[11px] leading-5 text-[#839194] sm:text-[12px]">
-                Choose a new password for your Skill Next account. Make it strong and secure.
-              </p>
+                {translateValue("Choose a new password for your Skill Next account. Make it strong and secure.")}</p>
 
               {email && (
                 <p className="mx-auto mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#F4F8F7] px-3 py-1 text-[11px] font-semibold text-[#06424B]">
-                  <span className="truncate">{email}</span>
+                  <span className="truncate">{translateValue(email)}</span>
                 </p>
               )}
             </div>
@@ -405,20 +401,16 @@ const handleSubmit = async (e) => {
                 />
                 <div>
                   <p className="text-[11px] font-bold text-[#94671B]">
-                    This reset link is invalid
-                  </p>
+                    {translateValue("This reset link is invalid")}</p>
                   <p className="mt-1 text-[10px] leading-5 text-[#94671B]/90">
-                    Open the link from your password reset email, or request a
-                    new one.
-                  </p>
+                    {translateValue("Open the link from your password reset email, or request a new one.")}</p>
 
                   <button
                     type="button"
                     onClick={() => navigate("/forgot-password")}
                     className="mt-2 text-[10px] font-bold text-[#06424B] underline transition-colors hover:text-[#A87500]"
                   >
-                    Request a new link
-                  </button>
+                    {translateValue("Request a new link")}</button>
                 </div>
               </div>
             )}
@@ -429,12 +421,12 @@ const handleSubmit = async (e) => {
               <div>
                 <PasswordField
                   id="new-password"
-                  label="New Password"
+                  label={translateValue("New Password")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                   onKeyUp={handleCaps}
-                  placeholder="Enter your new password"
+                  placeholder={translateValue("Enter your new password")}
                   show={showPassword}
                   onToggle={() => setShowPassword((v) => !v)}
                   error={showPasswordError}
@@ -444,8 +436,7 @@ const handleSubmit = async (e) => {
 
                 {capsOn && (
                   <p className="mt-1.5 text-[10px] font-medium text-[#94671B]">
-                    Caps Lock is on.
-                  </p>
+                    {translateValue("Caps Lock is on.")}</p>
                 )}
 
                 {/* Strength meter, appears once typing starts */}
@@ -476,7 +467,7 @@ const handleSubmit = async (e) => {
                           className="min-w-[52px] text-right text-[10px] font-bold transition-colors"
                           style={{ color: level.color }}
                         >
-                          {level.label}
+                          {translateValue(level.label)}
                         </span>
                       </div>
 
@@ -502,7 +493,7 @@ const handleSubmit = async (e) => {
                                 ) : (
                                   <Circle size={5} fill="currentColor" />
                                 )}
-                                {item.label}
+                                {translateValue(item.label)}
                               </span>
                             ))}
                           </div>
@@ -516,12 +507,12 @@ const handleSubmit = async (e) => {
               <div>
                 <PasswordField
                   id="confirm-password"
-                  label="Confirm New Password"
+                  label={translateValue("Confirm New Password")}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
                   onKeyUp={handleCaps}
-                  placeholder="Re-enter your new password"
+                  placeholder={translateValue("Re-enter your new password")}
                   show={showConfirmPassword}
                   onToggle={() => setShowConfirmPassword((v) => !v)}
                   error={showConfirmError}
@@ -532,8 +523,7 @@ const handleSubmit = async (e) => {
                 {passwordsMatch && !showConfirmError && (
                   <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[#3F7A49]">
                     <Check size={12} strokeWidth={3} />
-                    Passwords match
-                  </p>
+                    {translateValue("Passwords match")}</p>
                 )}
               </div>
 
@@ -544,7 +534,7 @@ const handleSubmit = async (e) => {
                   className="flex items-start gap-2 rounded-xl border border-[#E3A99D] bg-[#FFF8F6] px-3 py-2.5 text-[10px] leading-5 text-[#C2553F]"
                 >
                   <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                  {formError}
+                  {translateValue(formError)}
                 </div>
               )}
 
@@ -556,13 +546,11 @@ const handleSubmit = async (e) => {
               >
                 {submitting ? (
                   <>
-                    Resetting password
-                    <Loader2 size={17} className="animate-spin" />
+                    {translateValue("Resetting password")}<Loader2 size={17} className="animate-spin" />
                   </>
                 ) : (
                   <>
-                    Reset Password
-                    <ArrowUpRight size={17} />
+                    {translateValue("Reset Password")}<ArrowUpRight size={17} />
                   </>
                 )}
               </button>
@@ -572,8 +560,7 @@ const handleSubmit = async (e) => {
             <div className="mt-4 flex items-center justify-center gap-2">
               <ShieldCheck size={14} className="shrink-0 text-[#06424B]" />
               <p className="text-center text-[9px] text-[#879497]">
-                Your account security is our priority.
-              </p>
+                {translateValue("Your account security is our priority.")}</p>
             </div>
           </div>
 
@@ -581,8 +568,7 @@ const handleSubmit = async (e) => {
           <footer className="border-t border-[#E7ECEC] bg-[#FAFCFC] px-4 py-3 text-center">
             <p className="flex items-center justify-center gap-2 text-[9px] text-[#879497]">
               <ShieldCheck size={13} className="text-[#06424B]" />
-              © 2026 Skill Next Consulting Inc. · Learning without limits.
-            </p>
+              {translateValue("© 2026 Skill Next Consulting Inc. · Learning without limits.")}</p>
           </footer>
         </section>
       </div>
@@ -624,24 +610,20 @@ const handleSubmit = async (e) => {
               id="success-title"
               className="mt-5 text-[22px] font-bold tracking-[-0.6px] text-[#06424B]"
             >
-              Password reset successfully
-            </h2>
+              {translateValue("Password reset successfully")}</h2>
 
             <p className="mx-auto mt-2 max-w-[290px] text-[11px] leading-5 text-[#839194]">
-              Your password has been updated. Sign in with your new password to continue.
-            </p>
+              {translateValue("Your password has been updated. Sign in with your new password to continue.")}</p>
 
             <button
               type="button"
               onClick={goToLogin}
               className="mt-6 flex min-h-[47px] w-full items-center justify-center gap-2 rounded-xl bg-[#06424B] text-[12px] font-bold text-white shadow-[0_9px_22px_rgba(6,66,75,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#042E35]"
             >
-              Continue to Sign In
-              <ArrowUpRight size={16} />
+              {translateValue("Continue to Sign In")}<ArrowUpRight size={16} />
             </button>
             <p className="mt-3 text-[10px] text-[#879497]" aria-live="polite">
-              Redirecting in {countdown}s
-            </p>
+              {translateValue("Redirecting in")}{" "}{translateValue(countdown)}{translateValue("s")}</p>
             <div className="absolute inset-x-0 bottom-0 h-1 bg-[#E3ECEC]">
               <div className="sp-drain h-full bg-[#FFAB0B]" />
             </div>

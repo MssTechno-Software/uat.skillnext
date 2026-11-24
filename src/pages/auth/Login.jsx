@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import {
     Mail,
@@ -61,7 +62,7 @@ const extractBackendError = (error) => {
 
     const data = res.data;
 
-    const message =
+    const rawMessage =
         (typeof data === "string" ? data : null) ||
         data?.message ||
         data?.error ||
@@ -71,17 +72,19 @@ const extractBackendError = (error) => {
             "Unable to sign in. Please check your credentials and try again."
         );
 
+    const message = rawMessage;
+
     // Extracts optional field-level validation errors from the backend response.
     const fieldErrors = {};
     if (data?.errors && typeof data.errors === "object" && !Array.isArray(data.errors)) {
         ["email", "password"].forEach((key) => {
             const val = data.errors[key];
-            if (val) fieldErrors[key] = Array.isArray(val) ? val[0] : String(val);
+            if (val) fieldErrors[key] = (Array.isArray(val) ? val[0] : String(val));
         });
     }
 
     return {
-        title: data?.title || "Sign in failed",
+        title: (data?.title || "Sign in failed"),
         message,
         fieldErrors,
     };
@@ -90,6 +93,7 @@ const extractBackendError = (error) => {
 /* ---------- Authentication Error Dialog ---------- */
 
 function AlertDialog({ open, title, message, onClose }) {
+    const { t } = useTranslation("ui");
     const dialogRef = useRef(null);
 
     useEffect(() => {
@@ -132,7 +136,7 @@ function AlertDialog({ open, title, message, onClose }) {
                 <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={t("Close")}
                     className="absolute right-4 top-4 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#06424B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B]"
                 >
                     <X size={20} />
@@ -147,14 +151,14 @@ function AlertDialog({ open, title, message, onClose }) {
                     className="text-xl font-bold"
                     style={{ color: TEAL }}
                 >
-                    {title}
+                    {t(title)}
                 </h3>
 
                 <p
                     id="login-alert-message"
                     className="mt-2 max-w-[300px] text-[15px] leading-6 text-gray-500"
                 >
-                    {message}
+                    {t(message)}
                 </p>
 
                 {/* Closes the dialog without submitting another authentication request. */}
@@ -164,8 +168,7 @@ function AlertDialog({ open, title, message, onClose }) {
                     className="mt-7 inline-flex h-11 min-w-[160px] items-center justify-center rounded-xl px-6 text-sm font-semibold text-[#06424B] shadow-sm transition-all hover:brightness-95 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
                     style={{ background: YELLOW }}
                 >
-                    Try again
-                </button>
+                    {t("Try again")}</button>
             </div>
 
             <style>{`
@@ -181,6 +184,7 @@ function AlertDialog({ open, title, message, onClose }) {
 /* ---------- Login Component ---------- */
 
 function Login() {
+    const { t } = useTranslation("ui");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -274,7 +278,7 @@ function Login() {
             ) {
                 await failWith(
                     "Sign in failed",
-                    response?.message || "Invalid login response. Please try again."
+                    (response?.message || "Invalid login response. Please try again.")
                 );
                 return;
             }
@@ -339,7 +343,7 @@ function Login() {
                     />
 
                     {/* Contains the login form and related actions. */}
-                    <div className="relative z-10 w-full max-w-[440px] rounded-3xl bg-white border border-[#E1EAEC] shadow-[0_24px_70px_rgba(6,66,75,0.12)] px-7 py-7 sm:px-9 sm:py-8">
+                    <div className="relative z-10 w-full max-w-[440px] rounded-3xl border border-[#E1EAEC] bg-white px-7 py-7 shadow-[0_24px_70px_rgba(6,66,75,0.12)] sm:px-9 sm:py-8">
                         {/* Displays the logo on smaller screens. */}
                         <div className="lg:hidden mb-4 flex justify-center">
                             <Logo style={{ width: 210 }} />
@@ -354,11 +358,9 @@ function Login() {
                                 className="text-3xl font-bold tracking-tight"
                                 style={{ color: TEAL }}
                             >
-                                Welcome back
-                            </h2>
+                                {t("Welcome back")}</h2>
                             <p className="text-gray-500 text-sm mt-1.5">
-                                Sign in to continue your learning journey.
-                            </p>
+                                {t("Sign in to continue your learning journey.")}</p>
                         </div>
 
                         <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -368,8 +370,7 @@ function Login() {
                                     htmlFor="email"
                                     className="block text-sm font-semibold text-gray-700 mb-1.5"
                                 >
-                                    Email address
-                                </label>
+                                    {t("Email address")}</label>
                                 <div className="relative">
                                     <Mail
                                         size={18}
@@ -384,7 +385,7 @@ function Login() {
                                         disabled={isSubmitting}
                                         onChange={(e) => handleChange("email", e.target.value)}
                                         onBlur={(e) => handleBlur("email", e.target.value)}
-                                        placeholder="Enter your email address"
+                                        placeholder={t("Enter your email address")}
                                         aria-invalid={!!errors.email}
                                         aria-describedby={errors.email ? "email-error" : undefined}
                                         className={inputClass(!!errors.email)}
@@ -396,7 +397,7 @@ function Login() {
                                         className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600"
                                     >
                                         <CircleAlert size={14} className="shrink-0" />
-                                        {errors.email}
+                                        {t(errors.email)}
                                     </p>
                                 )}
                             </div>
@@ -408,14 +409,12 @@ function Login() {
                                         htmlFor="password"
                                         className="text-sm font-semibold text-gray-700"
                                     >
-                                        Password
-                                    </label>
+                                        {t("Password")}</label>
                                     <Link
                                         to="/forgot-password"
                                         className="text-xs font-semibold text-[#06424B] transition-colors hover:text-[#B87800]"
                                     >
-                                        Forgot password?
-                                    </Link>
+                                        {t("Forgot password?")}</Link>
                                 </div>
                                 <div className="relative">
                                     <LockKeyhole
@@ -431,7 +430,7 @@ function Login() {
                                         disabled={isSubmitting}
                                         onChange={(e) => handleChange("password", e.target.value)}
                                         onBlur={(e) => handleBlur("password", e.target.value)}
-                                        placeholder="Enter your password"
+                                        placeholder={t("Enter your password")}
                                         aria-invalid={!!errors.password}
                                         aria-describedby={
                                             errors.password ? "password-error" : undefined
@@ -441,7 +440,7 @@ function Login() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                        aria-label={t(showPassword ? "Hide password" : "Show password")}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#06424B]"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -453,7 +452,7 @@ function Login() {
                                         className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600"
                                     >
                                         <CircleAlert size={14} className="shrink-0" />
-                                        {errors.password}
+                                        {t(errors.password)}
                                     </p>
                                 )}
                             </div>
@@ -467,12 +466,11 @@ function Login() {
                                         onChange={(e) => setRememberMe(e.target.checked)}
                                         className="w-4 h-4 accent-[#06424B] cursor-pointer"
                                     />
-                                    <span className="text-sm text-gray-600">Remember me</span>
+                                    <span className="text-sm text-gray-600">{t("Remember me")}</span>
                                 </label>
                                 <span className="flex items-center gap-1.5 text-xs text-gray-400">
                                     <ShieldCheck size={14} />
-                                    Protected access
-                                </span>
+                                    {t("Protected access")}</span>
                             </div>
 
                             <button
@@ -481,7 +479,7 @@ function Login() {
                                 className="group w-full h-12 rounded-xl text-[#06424B] font-bold text-sm flex items-center justify-center gap-3 shadow-lg shadow-[#FFAB0B]/30 hover:brightness-95 active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                 style={{ background: YELLOW }}
                             >
-                                {isSubmitting ? "Signing in..." : "Sign in"}
+                                {t(isSubmitting ? "Signing in..." : "Sign in")}
 
                                 {!isSubmitting && (
                                     <ArrowRight
@@ -493,44 +491,39 @@ function Login() {
                         </form>
 
                         <p className="mt-5 text-center text-sm text-gray-500">
-                            New to Skill Next?
-                            <button
+                            {t("New to Skill Next?")}<button
                                 type="button"
                                 onClick={() => navigate("/signup")}
                                 className="ml-1.5 font-bold text-[#06424B] hover:text-[#B87800] transition-colors"
                             >
-                                Create an account
-                            </button>
+                                {t("Create an account")}</button>
                         </p>
 
                         <p className="mt-5 pt-4 border-t border-gray-100 text-center text-[11px] text-gray-400 leading-5">
-                            By signing in, you agree to our{" "}
+                            {t("By signing in, you agree to our")}{" "}
                             <Link
                                 to="/terms-and-conditions"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="!font-bold !text-[#06424B] underline underline-offset-2 transition-colors hover:!text-[#B87800]"
                             >
-                                Terms of Service
-                            </Link>{" "}
-                            and{" "}
+                                {t("Terms of Service")}</Link>{" "}
+                            {t("and")}{" "}
                             <Link
                                 to="/privacy-policy"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="!font-bold !text-[#06424B] underline underline-offset-2 transition-colors hover:!text-[#B87800]"
                             >
-                                Privacy Policy
-                            </Link>
-                            .
-                        </p>
+                                {t("Privacy Policy")}</Link>
+                            {t(".")}</p>
                     </div>
                 </div>
             </section>
 
             <Loader
                 open={isSubmitting}
-                text="Signing you in..."
+                text={t("Signing you in...")}
             />
 
             <AlertDialog

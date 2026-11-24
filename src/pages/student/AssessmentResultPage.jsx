@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -129,7 +130,7 @@ function ScoreRing({ percentage, passed }) {
     <div
       className="relative mx-auto h-[142px] w-[142px] sm:h-[164px] sm:w-[164px]"
       role="progressbar"
-      aria-label="Assessment score"
+      aria-label={translateValue("Assessment score")}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={percentage}
@@ -159,10 +160,9 @@ function ScoreRing({ percentage, passed }) {
 
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <span className="text-[36px] font-black leading-none tracking-tight text-white tabular-nums sm:text-[42px]">
-          {percentage}%
-        </span>
+          {translateValue(percentage)}{translateValue("%")}</span>
         <span className="mt-2 text-[10px] font-extrabold uppercase tracking-[1.6px] text-white/65">
-          {passed ? "Passed" : "Your score"}
+          {translateValue(passed ? "Passed" : "Your score")}
         </span>
       </div>
     </div>
@@ -183,19 +183,16 @@ function ResultUnavailable() {
               <CircleHelp size={27} />
             </span>
             <h1 className="relative mt-4 text-2xl font-extrabold">
-              Your result is not available
-            </h1>
+              {translateValue("Your result is not available")}</h1>
             <p className="relative mx-auto mt-2 max-w-md text-sm leading-6 text-white/70">
-              This result may have expired or the page was opened directly. Return to
-              My Learning to continue your course.
-            </p>
+              {translateValue("This result may have expired or the page was opened directly. Return to My Learning to continue your course.")}</p>
           </div>
           <div className="flex justify-center p-6 sm:p-8">
             <Link
               to="/student/my-learning"
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold !text-white [text-shadow:0_1px_2px_rgba(6,66,75,0.4)] !no-underline transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
             >
-              <BookOpen size={16} /> Go to My Learning <ArrowRight size={16} />
+              <BookOpen size={16} /> {translateValue("Go to My Learning")}{" "}<ArrowRight size={16} />
             </Link>
           </div>
         </Card>
@@ -226,15 +223,15 @@ function SummaryCard({ icon: Icon, label, value, helper, tone = "teal" }) {
         className={`absolute inset-x-0 top-0 h-[3px] ${accent} opacity-80`}
       />
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-bold text-[#718486]">{label}</p>
+        <p className="text-xs font-bold text-[#718486]">{translateValue(label)}</p>
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconTone}`}>
           <Icon size={18} />
         </span>
       </div>
       <p className="mt-3 text-[28px] font-black leading-none tracking-tight text-[#06424B] tabular-nums">
-        {value}
+        {translateValue(value)}
       </p>
-      <p className="mt-2 text-[11px] leading-5 text-[#91A1A2]">{helper}</p>
+      <p className="mt-2 text-[11px] leading-5 text-[#91A1A2]">{translateValue(helper)}</p>
     </Card>
   );
 }
@@ -246,7 +243,7 @@ function StatusPill({ status }) {
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${cfg.pill}`}
     >
-      <Icon size={11} /> {cfg.label}
+      <Icon size={11} /> {translateValue(cfg.label)}
     </span>
   );
 }
@@ -279,7 +276,7 @@ function QuestionFeedbackCard({ result, question, index, open, onToggle }) {
         {/* Number badge with status marker */}
         <span className="relative shrink-0">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#06424B] text-base font-black tabular-nums text-[#FFAB0B]">
-            {index + 1}
+            {translateValue(index + 1)}
           </span>
           <span
             className={`absolute -bottom-1 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full ring-2 ring-white ${cfg.badgeIcon}`}
@@ -293,7 +290,7 @@ function QuestionFeedbackCard({ result, question, index, open, onToggle }) {
             <StatusPill status={status} />
             {question?.questionType && (
               <span className="rounded-full bg-[#F4F7F7] px-2 py-0.5 text-[10px] font-bold capitalize text-[#829596]">
-                {formatQuestionType(question.questionType)}
+                {translateValue(formatQuestionType(question.questionType))}
               </span>
             )}
           </span>
@@ -302,19 +299,18 @@ function QuestionFeedbackCard({ result, question, index, open, onToggle }) {
               open ? "" : "line-clamp-2"
             }`}
           >
-            {title}
+            {translateValue(title)}
           </span>
         </span>
 
         <span className="flex shrink-0 items-center gap-2.5">
           <span className="text-right">
             <span className="block text-[15px] font-black leading-none tabular-nums text-[#06424B]">
-              {questionScore}
-              <span className="text-[11px] font-bold text-[#91A1A2]"> / {questionMaxScore}</span>
+              {translateValue(questionScore)}
+              <span className="text-[11px] font-bold text-[#91A1A2]"> {translateValue("/")}{" "}{translateValue(questionMaxScore)}</span>
             </span>
             <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.8px] text-[#A3B1B2]">
-              marks
-            </span>
+              {translateValue("marks")}</span>
           </span>
           <span
             className={`flex h-8 w-8 items-center justify-center rounded-full transition duration-200 ${
@@ -333,22 +329,21 @@ function QuestionFeedbackCard({ result, question, index, open, onToggle }) {
         >
           {result.reason && (
             <div>
-              <p className="text-[11px] font-extrabold text-[#06424B]">Why this answer</p>
-              <p className="mt-1 max-w-3xl text-[13px] leading-6 text-[#526D71]">{result.reason}</p>
+              <p className="text-[11px] font-extrabold text-[#06424B]">{translateValue("Why this answer")}</p>
+              <p className="mt-1 max-w-3xl text-[13px] leading-6 text-[#526D71]">{translateValue(result.reason)}</p>
             </div>
           )}
 
           {result.feedback && (
             <div className="mt-3 rounded-xl border border-[#F5E3B5] bg-[#FFFAEC] px-4 py-3">
               <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-[#94650C]">
-                <Lightbulb size={13} /> Feedback
-              </p>
-              <p className="mt-1 max-w-3xl text-[13px] leading-6 text-[#6F5A2B]">{result.feedback}</p>
+                <Lightbulb size={13} /> {translateValue("Feedback")}</p>
+              <p className="mt-1 max-w-3xl text-[13px] leading-6 text-[#6F5A2B]">{translateValue(result.feedback)}</p>
             </div>
           )}
 
           {!hasDetails && (
-            <p className="text-[13px] leading-6 text-[#718486]">{cfg.hint}</p>
+            <p className="text-[13px] leading-6 text-[#718486]">{translateValue(cfg.hint)}</p>
           )}
         </div>
       )}
@@ -509,8 +504,8 @@ function AssessmentResultPage() {
 
       <div className="mx-auto w-full">
         <StudentPageHeader
-          title="Assessment Result"
-          subtitle="Your attempt has been evaluated. Review your score and feedback below."
+          title={translateValue("Assessment Result")}
+          subtitle={translateValue("Your attempt has been evaluated. Review your score and feedback below.")}
         />
 
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -520,11 +515,9 @@ function AssessmentResultPage() {
             className="group inline-flex items-center gap-2 rounded-lg py-1 text-xs font-bold text-[#607B7E] !no-underline transition hover:text-[#06424B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-2"
           >
             <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5" />
-            Back to My Learning
-          </Link>
+            {translateValue("Back to My Learning")}</Link>
           <span className="inline-flex items-center gap-2 rounded-full border border-[#E1EAE8] bg-white px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[1.1px] text-[#789094]">
-            <GraduationCap size={14} className="text-[#B88736]" /> Learning report
-          </span>
+            <GraduationCap size={14} className="text-[#B88736]" /> {translateValue("Learning report")}</span>
         </div>
 
         {/* Result overview */}
@@ -555,7 +548,7 @@ function AssessmentResultPage() {
                 }`}
               >
                 {passed ? <CheckCircle2 size={13} /> : <Target size={13} />}
-                {passed ? "Requirement achieved" : "Attempt completed"}
+                {translateValue(passed ? "Requirement achieved" : "Attempt completed")}
               </span>
 
               <div className="mt-4 flex items-start gap-3.5 sm:gap-4">
@@ -570,19 +563,19 @@ function AssessmentResultPage() {
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-extrabold uppercase tracking-[1.45px] text-[#FFCF70]">
-                    {assignmentTitle}
+                    {translateValue(assignmentTitle)}
                   </p>
                   <h1 className="mt-1 text-[27px] font-black leading-tight tracking-tight text-white sm:text-[36px]">
-                    {passed ? "Assessment passed" : "Assessment completed"}
+                    {translateValue(passed ? "Assessment passed" : "Assessment completed")}
                   </h1>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-                    {passed
+                    {translateValue(passed
                       ? nextModuleId
                         ? "Well done. The next module is ready for you to continue learning."
                         : "Well done. You have met the required score for this assessment."
                       : canRetry
                         ? "You have not reached the required score yet. Review the feedback and try again when you are ready."
-                        : "The available attempts for this assessment have been used."}
+                        : "The available attempts for this assessment have been used.")}
                   </p>
                 </div>
               </div>
@@ -590,16 +583,15 @@ function AssessmentResultPage() {
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2 text-[11px] font-bold text-white/85">
                   <Target size={14} className="text-[#FFAB0B]" />
-                  Attempt {attemptNo}{maxAttempts ? ` of ${maxAttempts}` : ""}
+                  {translateValue("Attempt")}{" "}{translateValue(attemptNo)}{translateValue(maxAttempts ? ` of ${maxAttempts}` : "")}
                 </span>
                 {attempt.timedOut && (
                   <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2 text-[11px] font-bold text-white/85">
-                    <Clock3 size={14} className="text-[#FFAB0B]" /> Time limit reached
-                  </span>
+                    <Clock3 size={14} className="text-[#FFAB0B]" /> {translateValue("Time limit reached")}</span>
                 )}
                 {submittedAt && (
                   <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2 text-[11px] font-bold text-white/85">
-                    <Clock3 size={14} className="text-[#FFAB0B]" /> {submittedAt}
+                    <Clock3 size={14} className="text-[#FFAB0B]" /> {translateValue(submittedAt)}
                   </span>
                 )}
               </div>
@@ -608,15 +600,14 @@ function AssessmentResultPage() {
             <div className="mx-auto w-full max-w-[200px] rounded-[25px] border border-white/15 bg-white/[0.07] px-3 py-4 backdrop-blur-sm">
               <ScoreRing percentage={percentage} passed={passed} />
               <p className="mt-2 text-center text-[10px] font-semibold text-white/55">
-                Overall percentage
-              </p>
+                {translateValue("Overall percentage")}</p>
             </div>
           </div>
 
           <div className="relative mt-7 border-t border-white/15 pt-5">
             <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold">
-              <span className="text-white/65">Passing requirement</span>
-              <span className="tabular-nums text-[#FFD782]">{passPercentage}% required</span>
+              <span className="text-white/65">{translateValue("Passing requirement")}</span>
+              <span className="tabular-nums text-[#FFD782]">{translateValue(passPercentage)}{translateValue("% required")}</span>
             </div>
             <div className="relative mt-3 h-2.5 overflow-visible rounded-full bg-white/15">
               <div
@@ -630,11 +621,11 @@ function AssessmentResultPage() {
               />
             </div>
             <div className="mt-2.5 flex justify-between gap-3 text-[10px] font-medium text-white/50">
-              <span>0%</span>
+              <span>{translateValue("0%")}</span>
               <span>
-                Your score: <span className="font-bold text-white/80">{percentage}%</span>
+                {translateValue("Your score:")}{" "}<span className="font-bold text-white/80">{translateValue(percentage)}{translateValue("%")}</span>
               </span>
-              <span>100%</span>
+              <span>{translateValue("100%")}</span>
             </div>
           </div>
         </section>
@@ -655,18 +646,18 @@ function AssessmentResultPage() {
               </span>
               <div className="min-w-0">
                 <h2 className="text-sm font-extrabold text-[#06424B]">
-                  {passed
+                  {translateValue(passed
                     ? "Your progress has been updated"
                     : canRetry
                       ? "Keep practising and try once more"
-                      : "You have reached the attempt limit"}
+                      : "You have reached the attempt limit")}
                 </h2>
                 <p className="mt-1 max-w-2xl text-xs leading-6 text-[#718486]">
-                  {passed
+                  {translateValue(passed
                     ? "Your assessment result is saved. Continue to the next available learning step."
                     : canRetry
                       ? "Use the question feedback below to understand what to improve before your next attempt."
-                      : "Return to the module from My Learning to review the available next steps."}
+                      : "Return to the module from My Learning to review the available next steps.")}
                 </p>
               </div>
             </div>
@@ -678,7 +669,7 @@ function AssessmentResultPage() {
                   state={{ courseId, passedModuleIds }}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold !text-white [text-shadow:0_1px_2px_rgba(6,66,75,0.4)] !no-underline shadow-[0_8px_18px_rgba(255,171,11,0.28)] transition hover:-translate-y-0.5 hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
                 >
-                  Continue to next module <ArrowRight size={15} />
+                  {translateValue("Continue to next module")}{" "}<ArrowRight size={15} />
                 </Link>
               ) : (
                 <Link
@@ -686,7 +677,7 @@ function AssessmentResultPage() {
                   state={{ courseId, passedModuleIds }}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#06424B] px-5 text-xs font-extrabold !text-white !no-underline transition hover:bg-[#0A5962] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-2"
                 >
-                  Go to My Learning <ArrowRight size={15} />
+                  {translateValue("Go to My Learning")}{" "}<ArrowRight size={15} />
                 </Link>
               )}
               {canRetry && (
@@ -695,8 +686,7 @@ function AssessmentResultPage() {
                   state={{ courseId, moduleId, nextModuleId, passedModuleIds }}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] !no-underline transition hover:border-[#B8CECA] hover:bg-[#F4F7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-2"
                 >
-                  <RotateCcw size={14} /> Retry assessment
-                </Link>
+                  <RotateCcw size={14} /> {translateValue("Retry assessment")}</Link>
               )}
             </div>
           </div>
@@ -709,37 +699,37 @@ function AssessmentResultPage() {
         >
           <SummaryCard
             icon={Award}
-            label="Marks obtained"
+            label={translateValue("Marks obtained")}
             value={`${score} / ${totalScore}`}
-            helper="Your assessment score"
+            helper={translateValue("Your assessment score")}
           />
           <SummaryCard
             icon={ShieldCheck}
-            label="Passing score"
+            label={translateValue("Passing score")}
             value={`${passPercentage}%`}
-            helper="Minimum percentage required"
+            helper={translateValue("Minimum percentage required")}
             tone="gold"
           />
           <SummaryCard
             icon={CheckCircle2}
-            label="Correct answers"
+            label={translateValue("Correct answers")}
             value={resultRows.length ? correctCount : "—"}
-            helper={resultRows.length ? `${incorrectCount} need another look` : "Question-level results not provided"}
+            helper={translateValue(resultRows.length ? `${incorrectCount} need another look` : "Question-level results not provided")}
             tone="success"
           />
           <SummaryCard
             icon={BookOpen}
-            label="Total questions"
+            label={translateValue("Total questions")}
             value={questionCount || "—"}
-            helper={reviewCount ? `${reviewCount} awaiting manual review` : "Included in this assessment"}
+            helper={translateValue(reviewCount ? `${reviewCount} awaiting manual review` : "Included in this assessment")}
           />
         </section>
 
         {/* Per-question feedback */}
         <section className="ar-rise mt-9" style={rise(250)}>
           <SectionHeading
-            title="Question-wise feedback"
-            subtitle="See how you did on each question. Yellow ones are worth another look."
+            title={translateValue("Question-wise feedback")}
+            subtitle={translateValue("See how you did on each question. Yellow ones are worth another look.")}
           />
 
           {resultRows.length > 0 ? (
@@ -763,14 +753,14 @@ function AssessmentResultPage() {
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-extrabold text-[#06424B]">
-                        {attentionCount > 0
+                        {translateValue(attentionCount > 0
                           ? `${attentionCount} ${attentionCount === 1 ? "question needs" : "questions need"} another look`
-                          : "All answers are correct"}
+                          : "All answers are correct")}
                       </p>
                       <p className="mt-0.5 text-xs leading-5 text-[#718486]">
-                        {attentionCount > 0
+                        {translateValue(attentionCount > 0
                           ? "Start with these. They are already open below."
-                          : "Great work. Open any question to see its explanation."}
+                          : "Great work. Open any question to see its explanation.")}
                       </p>
                     </div>
                   </div>
@@ -780,8 +770,7 @@ function AssessmentResultPage() {
                       onClick={() => setFilter("incorrect")}
                       className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#06424B] px-4 text-xs font-extrabold text-white transition hover:bg-[#0A5962] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-2"
                     >
-                      Show only these
-                    </button>
+                      {translateValue("Show only these")}</button>
                   )}
                 </div>
 
@@ -790,7 +779,7 @@ function AssessmentResultPage() {
                   <div
                     className="flex h-2.5 w-full overflow-hidden rounded-full bg-[#EEF3F4]"
                     role="img"
-                    aria-label={`${statusCounts.correct} correct, ${statusCounts.incorrect} need improvement, ${statusCounts.review} awaiting review`}
+                    aria-label={translateValue("{{correct}} correct, {{incorrect}} need improvement, {{review}} awaiting review", { correct: statusCounts.correct, incorrect: statusCounts.incorrect, review: statusCounts.review })}
                   >
                     <span
                       className="h-full bg-[#28765E] transition-all duration-700"
@@ -809,23 +798,20 @@ function AssessmentResultPage() {
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-semibold text-[#718486]">
                     <span className="inline-flex items-center gap-1.5">
                       <span className={`h-2 w-2 rounded-full ${STATUS.correct.dot}`} />
-                      {statusCounts.correct} correct
-                    </span>
+                      {translateValue(statusCounts.correct)} {translateValue("correct")}</span>
                     <span className="inline-flex items-center gap-1.5">
                       <span className={`h-2 w-2 rounded-full ${STATUS.incorrect.dot}`} />
-                      {statusCounts.incorrect} need improvement
-                    </span>
+                      {translateValue(statusCounts.incorrect)} {translateValue("need improvement")}</span>
                     {statusCounts.review > 0 && (
                       <span className="inline-flex items-center gap-1.5">
                         <span className={`h-2 w-2 rounded-full ${STATUS.review.dot}`} />
-                        {statusCounts.review} awaiting review
-                      </span>
+                        {translateValue(statusCounts.review)} {translateValue("awaiting review")}</span>
                     )}
                   </div>
 
                   {resultRows.length > 1 && (
                     <div className="mt-4">
-                      <p className="text-[11px] font-extrabold text-[#06424B]">Jump to question</p>
+                      <p className="text-[11px] font-extrabold text-[#06424B]">{translateValue("Jump to question")}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {resultRows.map((row, i) => {
                           const st = getRowStatus(row);
@@ -834,10 +820,10 @@ function AssessmentResultPage() {
                               key={`jump-${i}`}
                               type="button"
                               onClick={() => jumpToQuestion(i)}
-                              aria-label={`Question ${i + 1}: ${STATUS[st].label}`}
+                              aria-label={translateValue("Question {{number}}: {{status}}", { number: i + 1, status: translateValue(STATUS[st].label) })}
                               className={`flex h-9 w-9 items-center justify-center rounded-xl border text-xs font-extrabold tabular-nums transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-1 ${STATUS[st].pill}`}
                             >
-                              {i + 1}
+                              {translateValue(i + 1)}
                             </button>
                           );
                         })}
@@ -848,7 +834,7 @@ function AssessmentResultPage() {
 
                 {/* Filters + expand all */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#EDF1F0] bg-[#FAFCFB] px-4 py-3 sm:px-5">
-                  <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter questions">
+                  <div className="flex flex-wrap gap-1.5" role="group" aria-label={translateValue("Filter questions")}>
                     {visibleFilters.length > 2 &&
                       visibleFilters.map((f) => {
                         const active = activeFilter === f.key;
@@ -864,13 +850,13 @@ function AssessmentResultPage() {
                                 : "border-[#DCE6E4] bg-white text-[#526D71] hover:bg-[#F4F7F7]"
                             }`}
                           >
-                            {f.label}
+                            {translateValue(f.label)}
                             <span
                               className={`rounded-full px-1.5 text-[10px] tabular-nums ${
                                 active ? "bg-[#FFAB0B] text-[#06424B]" : "bg-[#F4F7F7] text-[#829596]"
                               }`}
                             >
-                              {statusCounts[f.key]}
+                              {translateValue(statusCounts[f.key])}
                             </span>
                           </button>
                         );
@@ -882,7 +868,7 @@ function AssessmentResultPage() {
                     className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold text-[#06424B] transition hover:bg-[#EEF3F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-1"
                   >
                     <ChevronsUpDown size={14} />
-                    {allVisibleOpen ? "Collapse all" : "Expand all"}
+                    {translateValue(allVisibleOpen ? "Collapse all" : "Expand all")}
                   </button>
                 </div>
               </div>
@@ -906,11 +892,9 @@ function AssessmentResultPage() {
                 <BookOpen size={21} />
               </span>
               <h3 className="mt-3 text-sm font-extrabold text-[#06424B]">
-                Detailed feedback is not available
-              </h3>
+                {translateValue("Detailed feedback is not available")}</h3>
               <p className="mx-auto mt-1 max-w-md text-xs leading-6 text-[#829596]">
-                Your overall result is shown above. Individual question feedback was not included in the response for this attempt.
-              </p>
+                {translateValue("Your overall result is shown above. Individual question feedback was not included in the response for this attempt.")}</p>
             </Card>
           )}
         </section>
@@ -923,13 +907,12 @@ function AssessmentResultPage() {
             className="group inline-flex h-10 items-center gap-2 rounded-lg text-xs font-bold text-[#607B7E] !no-underline transition hover:text-[#06424B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-2"
           >
             <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5" />
-            Back to My Learning
-          </Link>
+            {translateValue("Back to My Learning")}</Link>
           <Link
             to="/student/my-analytics"
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-xs font-bold text-[#06424B] !no-underline transition hover:border-[#B8CECA] hover:bg-[#F4F7F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B] focus-visible:ring-offset-2"
           >
-            View My Analytics <ArrowRight size={15} />
+            {translateValue("View My Analytics")}{" "}<ArrowRight size={15} />
           </Link>
         </div>
       </div>

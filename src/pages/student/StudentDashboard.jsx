@@ -1,3 +1,5 @@
+import { translateValue } from "../../i18n";
+import { useTranslation } from "react-i18next";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -311,14 +313,16 @@ const normalizeActivity = (item, index) => ({
   status: item?.status || "Upcoming",
 });
 
-const formatDate = (value) => {
+const formatDate = (value, language = "en") => {
   if (!value) return "Date to be announced";
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleString("en-IN", {
+  const dateLocale = language === "fr" ? "fr-FR" : "en-IN";
+
+  return date.toLocaleString(dateLocale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -327,14 +331,16 @@ const formatDate = (value) => {
   });
 };
 
-const formatEnrollmentDate = (value) => {
+const formatEnrollmentDate = (value, language = "en") => {
   if (!value) return "";
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) return "";
 
-  return `Enrolled ${date.toLocaleDateString("en-IN", {
+  const dateLocale = language === "fr" ? "fr-FR" : "en-IN";
+
+  return `Enrolled ${date.toLocaleDateString(dateLocale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -381,13 +387,12 @@ function MiniRing({ percent }) {
       </svg>
 
       <span className="absolute inset-0 flex items-center justify-center text-[14px] font-extrabold text-white">
-        {Math.round(clampPercentage(percent))}%
-      </span>
+        {translateValue(Math.round(clampPercentage(percent)))}{translateValue("%")}</span>
     </div>
   );
 }
 
-function LearningSpaceCard({ course, index }) {
+function LearningSpaceCard({ course, index, language }) {
   const isGold = index % 2 === 1;
   const isComplete = course.isCompleted;
 
@@ -419,14 +424,13 @@ function LearningSpaceCard({ course, index }) {
 
         <div className="relative flex items-center justify-between">
           <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-[#06424B] text-lg font-extrabold text-[#FFAB0B] shadow-sm">
-            {course.fullName.charAt(0).toUpperCase()}
+            {translateValue(course.fullName.charAt(0).toUpperCase())}
           </div>
 
           <div className="flex items-center gap-2">
             {isComplete && (
               <span className="rounded-full bg-white/75 px-2.5 py-1 text-[10px] font-bold text-[#376B4D]">
-                Completed
-              </span>
+                {translateValue("Completed")}</span>
             )}
 
             <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-white/60 text-[#06424B] transition-all group-hover:bg-[#06424B] group-hover:text-white">
@@ -437,36 +441,34 @@ function LearningSpaceCard({ course, index }) {
 
         <div className="relative mt-3">
           <h3 className="text-[17px] font-bold tracking-tight text-[#06424B]">
-            {course.fullName}
+            {translateValue(course.fullName)}
           </h3>
 
           <p className={`mt-0.5 text-[11px] font-semibold ${theme.subtitle}`}>
-            {course.totalModules} {itemLabel}
+            {translateValue(course.totalModules)} {translateValue(itemLabel)}
           </p>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col px-5 pb-4 pt-3.5">
         <p className="line-clamp-2 min-h-[36px] text-[12px] leading-[18px] text-[#63777A]">
-          {[
+          {translateValue([
             course.shortName && course.shortName !== course.fullName
               ? course.shortName
               : "",
-            formatEnrollmentDate(course.enrolledAt),
+            course.enrolledAt ? translateValue(formatEnrollmentDate(course.enrolledAt, language)) : "",
           ]
             .filter(Boolean)
-            .join(" · ")}
+            .join(" · "))}
         </p>
 
         <div className="mt-auto pt-4">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[11px] font-semibold text-[#63777A]">
-              Your progress
-            </span>
+              {translateValue("Your progress")}</span>
 
             <span className="text-xs font-extrabold tabular-nums text-[#06424B]">
-              {Math.round(course.completionPercentage)}%
-            </span>
+              {translateValue(Math.round(course.completionPercentage))}{translateValue("%")}</span>
           </div>
 
           <div className="h-[6px] overflow-hidden rounded-full bg-[#E9EFEE]">
@@ -478,15 +480,14 @@ function LearningSpaceCard({ course, index }) {
 
           <div className="mt-2.5 flex items-center justify-between gap-2">
             <span className="text-[10px] font-medium text-[#829194]">
-              {course.modulesCompleted} of {course.totalModules} modules completed
-            </span>
+              {translateValue(course.modulesCompleted)} {translateValue("of")}{" "}{translateValue(course.totalModules)} {translateValue("modules completed")}</span>
 
             <span className="shrink-0 text-[11px] font-bold text-[#06424B] transition-colors group-hover:text-[#B27B20]">
-              {isComplete
+              {translateValue(isComplete
                 ? "Review"
                 : course.modulesCompleted > 0
                   ? "Continue"
-                  : "Open course"}
+                  : "Open course")}
             </span>
           </div>
         </div>
@@ -551,15 +552,15 @@ function DashboardLoadingState() {
 function DashboardError({ message, onRetry, onClose }) {
   return (
     <ApiErrorModal
-      title="Unable to load dashboard data"
-      message={message}
+      title={translateValue("Unable to load dashboard data")}
+      message={translateValue(message)}
       onRetry={onRetry}
       onClose={onClose}
     />
   );
 }
 
-function RecentQuizResults({ quizzes, isLoading }) {
+function RecentQuizResults({ quizzes, isLoading, language }) {
   const results = quizzes
     .map(normalizeQuiz)
     .filter(
@@ -572,14 +573,14 @@ function RecentQuizResults({ quizzes, isLoading }) {
   return (
     <Card className="flex min-h-[320px] flex-col p-5 sm:p-6">
       <SectionHeading
-        title="Recent quiz results"
-        subtitle="Your latest knowledge checks."
+        title={translateValue("Recent quiz results")}
+        subtitle={translateValue("Your latest knowledge checks.")}
       />
 
       {isLoading ? (
         <div
           className="mt-5 animate-pulse space-y-4"
-          aria-label="Loading quiz results"
+          aria-label={translateValue("Loading quiz results")}
         >
           {[1, 2, 3].map((item) => (
             <div
@@ -609,21 +610,21 @@ function RecentQuizResults({ quizzes, isLoading }) {
 
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-[#2F4A4E]">
-                    {quiz.title}
+                    {translateValue(quiz.title)}
                   </p>
 
                   <p className="mt-0.5 text-xs text-[#6C8589]">
-                    {quiz.date
-                      ? formatDate(quiz.date)
-                      : "Recently attempted"}
+                    {translateValue(quiz.date
+                      ? formatDate(quiz.date, language)
+                      : "Recently attempted")}
                   </p>
                 </div>
               </div>
 
               <span className="shrink-0 rounded-full bg-[#FFF1D2] px-3 py-1.5 text-xs font-extrabold tabular-nums text-[#8A5700]">
-                {quiz.score !== null && quiz.total !== null
+                {translateValue(quiz.score !== null && quiz.total !== null
                   ? `${quiz.score}/${quiz.total} · ${Math.round(quiz.percentage)}%`
-                  : `${Math.round(quiz.percentage)}%`}
+                  : `${Math.round(quiz.percentage)}%`)}
               </span>
             </li>
           ))}
@@ -632,8 +633,8 @@ function RecentQuizResults({ quizzes, isLoading }) {
         <div className="flex flex-1 items-center justify-center py-8">
           <EmptyState
             icon={ClipboardCheck}
-            title="No quiz results yet"
-            text="Your completed quiz attempts will appear here."
+            title={translateValue("No quiz results yet")}
+            text={translateValue("Your completed quiz attempts will appear here.")}
           />
         </div>
       )}
@@ -641,20 +642,20 @@ function RecentQuizResults({ quizzes, isLoading }) {
   );
 }
 
-function UpcomingActivity({ activities, isLoading }) {
+function UpcomingActivity({ activities, isLoading, language }) {
   const items = activities.map(normalizeActivity);
 
   return (
     <Card className="flex min-h-[320px] flex-col p-5 sm:p-6">
       <SectionHeading
-        title="Upcoming activity"
-        subtitle="Classes and planned assessments."
+        title={translateValue("Upcoming activity")}
+        subtitle={translateValue("Classes and planned assessments.")}
       />
 
       {isLoading ? (
         <div
           className="mt-5 animate-pulse space-y-4"
-          aria-label="Loading upcoming activity"
+          aria-label={translateValue("Loading upcoming activity")}
         >
           {[1, 2, 3].map((item) => (
             <div
@@ -692,28 +693,28 @@ function UpcomingActivity({ activities, isLoading }) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-bold text-[#2F4A4E]">
-                    {activity.title}
+                    {translateValue(activity.title)}
                   </p>
 
                   <span className="rounded-full bg-[#EEF3F4] px-2 py-0.5 text-[10px] font-semibold text-[#526D71]">
-                    {activity.status}
+                    {translateValue(activity.status)}
                   </span>
                 </div>
 
                 {activity.description && (
                   <p className="mt-1 text-xs leading-5 text-[#6C8589]">
-                    {activity.description}
+                    {translateValue(activity.description)}
                   </p>
                 )}
 
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#829194]">
                   <span className="inline-flex items-center gap-1">
                     <Clock3 size={12} />
-                    {formatDate(activity.date)}
+                    {translateValue(formatDate(activity.date, language))}
                   </span>
 
                   {activity.courseName && (
-                    <span>{activity.courseName}</span>
+                    <span>{translateValue(activity.courseName)}</span>
                   )}
                 </div>
               </div>
@@ -725,8 +726,8 @@ function UpcomingActivity({ activities, isLoading }) {
           <EmptyState
             icon={CalendarDays}
             tone="gold"
-            title="Nothing scheduled yet"
-            text="Live classes and due dates will appear here once they are added to your account."
+            title={translateValue("Nothing scheduled yet")}
+            text={translateValue("Live classes and due dates will appear here once they are added to your account.")}
           />
         </div>
       )}
@@ -735,6 +736,9 @@ function UpcomingActivity({ activities, isLoading }) {
 }
 
 function StudentDashboard() {
+  const { t, i18n } = useTranslation("ui");
+  const language = i18n.resolvedLanguage || i18n.language || "en";
+
   const [dashboard, setDashboard] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -826,7 +830,7 @@ function StudentDashboard() {
     return (
       <>
         <DashboardLoadingState />
-        <Loader open={isLoading} text="Loading your dashboard..." />
+        <Loader open={isLoading} text={translateValue("Loading your dashboard...")} />
       </>
     );
   }
@@ -835,13 +839,13 @@ function StudentDashboard() {
     <>
       <PageShell>
         <StudentPageHeader
-          title="Dashboard"
-          subtitle="Build skills, practise and grow. Your learning activity and next steps, all in one place."
+          title={t("Dashboard", { defaultValue: "Dashboard" })}
+          subtitle={translateValue("Build skills, practise and grow. Your learning activity and next steps, all in one place.")}
         />
 
         {error && (
           <DashboardError
-            message={error}
+            message={translateValue(error)}
             onRetry={loadDashboard}
             onClose={() => setError("")}
           />
@@ -858,13 +862,11 @@ function StudentDashboard() {
                 <span className="h-5 w-1.5 rounded-full bg-[#FFAB0B]" />
 
                 <h2 className="text-lg font-extrabold tracking-tight">
-                  Your learning path
-                </h2>
+                  {translateValue("Your learning path")}</h2>
               </div>
 
               <p className="mt-1 pl-[18px] text-xs text-white/65">
-                Follow these steps for every enrolled course.
-              </p>
+                {translateValue("Follow these steps for every enrolled course.")}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -876,7 +878,7 @@ function StudentDashboard() {
                     size="sm"
                     icon={PlayCircle}
                   >
-                    Continue: {continueCourse.fullName}
+                    {translateValue("Continue:")}{" "}{translateValue(continueCourse.fullName)}
                   </LinkButton>
                 ) : (
                   <LinkButton
@@ -885,8 +887,7 @@ function StudentDashboard() {
                     size="sm"
                     icon={Compass}
                   >
-                    Start learning
-                  </LinkButton>
+                    {translateValue("Start learning")}</LinkButton>
                 )}
 
                 <LinkButton
@@ -894,8 +895,7 @@ function StudentDashboard() {
                   variant="gold"
                   iconRight={TrendingUp}
                 >
-                  View My Analytics
-                </LinkButton>
+                  {translateValue("View My Analytics")}</LinkButton>
               </div>
 
               <div className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.08] py-2 pl-2.5 pr-4">
@@ -903,21 +903,19 @@ function StudentDashboard() {
 
                 <div>
                   <p className="text-[11px] font-semibold text-white/65">
-                    Overall progress
-                  </p>
+                    {translateValue("Overall progress")}</p>
 
                   <p className="mt-0.5 text-lg font-extrabold leading-none text-white">
-                    {dashboard ? modulesCompleted : "—"}
+                    {translateValue(dashboard ? modulesCompleted : "—")}
 
                     <span className="text-xs font-semibold text-white/55">
-                      {" "}
-                      / {dashboard ? totalModules : "—"}
+                      {translateValue(" ")}
+                      {translateValue("/")}{" "}{translateValue(dashboard ? totalModules : "—")}
                     </span>
                   </p>
 
                   <p className="mt-0.5 text-[10px] text-white/65">
-                    modules completed
-                  </p>
+                    {translateValue("modules completed")}</p>
                 </div>
               </div>
             </div>
@@ -939,11 +937,11 @@ function StudentDashboard() {
                         : "border border-white/25 bg-[#0B5964] text-[#FFAB0B]"
                     }`}
                   >
-                    {index + 1}
+                    {translateValue(index + 1)}
                   </span>
 
                   <span className="pt-2 text-[13px] font-semibold leading-5 text-white/90 lg:pt-0">
-                    {step}
+                    {translateValue(step)}
                   </span>
                 </li>
               ))}
@@ -953,8 +951,8 @@ function StudentDashboard() {
 
         <section className="mt-7">
           <SectionHeading
-            title="Learning overview"
-            subtitle="Your personal learning summary."
+            title={translateValue("Learning overview")}
+            subtitle={translateValue("Your personal learning summary.")}
           />
 
           <Card className="overflow-hidden p-0">
@@ -976,18 +974,18 @@ function StudentDashboard() {
 
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-[30px] font-extrabold leading-none tracking-tight text-[#06424B]">
-                      {value}
+                      {translateValue(value)}
                     </p>
 
                     <IconBadge icon={icon} tone={tone} />
                   </div>
 
                   <p className="mt-3 text-sm font-bold text-[#2F4A4E]">
-                    {label}
+                    {translateValue(label)}
                   </p>
 
                   <p className="mt-0.5 text-xs text-[#6C8589]">
-                    {note}
+                    {translateValue(note)}
                   </p>
                 </div>
               ))}
@@ -997,16 +995,15 @@ function StudentDashboard() {
 
         <section className="mt-8">
           <SectionHeading
-            title="Your learning spaces"
-            subtitle="Your enrolled courses, ready to continue inside My Learning."
+            title={translateValue("Your learning spaces")}
+            subtitle={translateValue("Your enrolled courses, ready to continue inside My Learning.")}
             right={
               <LinkButton
                 to="/student/topics"
                 variant="outline"
                 size="sm"
               >
-                Explore all
-              </LinkButton>
+                {translateValue("Explore all")}</LinkButton>
             }
           />
 
@@ -1017,6 +1014,7 @@ function StudentDashboard() {
                   key={course.courseId}
                   course={course}
                   index={index}
+                  language={language}
                 />
               ))}
             </div>
@@ -1024,24 +1022,23 @@ function StudentDashboard() {
             <Card className="p-6 sm:p-7">
               <EmptyState
                 icon={GraduationCap}
-                title="Learning spaces unavailable"
-                text="We couldn't retrieve your enrolled courses. Use Try again above to reload your dashboard."
+                title={translateValue("Learning spaces unavailable")}
+                text={translateValue("We couldn't retrieve your enrolled courses. Use Try again above to reload your dashboard.")}
               />
             </Card>
           ) : (
             <Card className="p-6 sm:p-7">
               <EmptyState
                 icon={GraduationCap}
-                title="No courses added yet"
-                text="Your enrolled courses will appear here after you add a course from Explore Courses."
+                title={translateValue("No courses added yet")}
+                text={translateValue("Your enrolled courses will appear here after you add a course from Explore Courses.")}
                 action={
                   <LinkButton
                     to="/student/topics"
                     variant="gold"
                     icon={Compass}
                   >
-                    Explore Courses
-                  </LinkButton>
+                    {translateValue("Explore Courses")}</LinkButton>
                 }
               />
             </Card>
@@ -1052,20 +1049,21 @@ function StudentDashboard() {
           <RecentQuizResults
             quizzes={dashboard?.recentQuizzes || []}
             isLoading={isLoading}
+            language={language}
           />
 
           <UpcomingActivity
             activities={dashboard?.upcomingActivities || []}
             isLoading={isLoading}
+            language={language}
           />
         </div>
 
         <footer className="mt-9 border-t border-[#D9E8E6] py-5 text-center text-xs text-[#6C8589]">
-          © 2026 Skill Next Consulting Inc. · Learning without limits.
-        </footer>
+          {translateValue("© 2026 Skill Next Consulting Inc. · Learning without limits.")}</footer>
       </PageShell>
 
-      <Loader open={isLoading} text="Refreshing your dashboard..." />
+      <Loader open={isLoading} text={translateValue("Refreshing your dashboard...")} />
     </>
   );
 }

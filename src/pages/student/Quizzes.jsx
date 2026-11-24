@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -56,7 +57,7 @@ function StatusPill({ status }) {
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-extrabold ${styles[status] || styles.Locked}`}>
-      {status}
+      {translateValue(status)}
     </span>
   );
 }
@@ -65,8 +66,7 @@ function AssessmentAction({ status, lessonPath, quizPath }) {
   if (status === "Completed") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#28765E]">
-        <CheckCircle2 size={14} /> Completed
-      </span>
+        <CheckCircle2 size={14} /> {translateValue("Completed")}</span>
     );
   }
   if (status === "Available") {
@@ -75,8 +75,7 @@ function AssessmentAction({ status, lessonPath, quizPath }) {
         to={quizPath}
         className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-[#FFAB0B] px-3.5 py-2 text-[11px] font-extrabold text-[#06424B] transition hover:bg-[#FFC13C]"
       >
-        <PlayCircle size={14} /> Start quiz
-      </Link>
+        <PlayCircle size={14} /> {translateValue("Start quiz")}</Link>
     );
   }
   if (status === "Read lesson") {
@@ -85,14 +84,12 @@ function AssessmentAction({ status, lessonPath, quizPath }) {
         to={lessonPath}
         className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[#D7E3E1] bg-white px-3.5 py-2 text-[11px] font-bold text-[#06424B] transition hover:border-[#06424B] hover:bg-[#F5F9F8]"
       >
-        <BookOpen size={14} /> Open lesson
-      </Link>
+        <BookOpen size={14} /> {translateValue("Open lesson")}</Link>
     );
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#91A1A2]">
-      <LockKeyhole size={13} /> Previous topic required
-    </span>
+      <LockKeyhole size={13} /> {translateValue("Previous topic required")}</span>
   );
 }
 
@@ -118,17 +115,16 @@ function TopicQuizRow({ courseId, unit, index, previousUnit, progress, quiz, isL
         </span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-sm font-bold text-[#06424B]">{unit.title}</h4>
+            <h4 className="text-sm font-bold text-[#06424B]">{translateValue(unit.title)}</h4>
             <StatusPill status={status} />
           </div>
           <p className="mt-1 text-xs leading-5 text-[#718486]">
-            {quiz?.questions?.length || 10}-question topic quiz
-            {score !== null ? ` · Best score ${score}%` : " · Lesson content required first"}
+            {translateValue(quiz?.questions?.length || 10)}{translateValue("-question topic quiz")}{translateValue(score !== null ? ` · Best score ${score}%` : " · Lesson content required first")}
           </p>
           {status === "Locked" && (
-            <p className="mt-1 text-[10px] text-[#91A1A2]">Complete the previous topic quiz to unlock this topic.</p>
+            <p className="mt-1 text-[10px] text-[#91A1A2]">{translateValue("Complete the previous topic quiz to unlock this topic.")}</p>
           )}
-          {isLast && <p className="mt-1 text-[10px] text-[#91A1A2]">Last topic in this course sequence.</p>}
+          {isLast && <p className="mt-1 text-[10px] text-[#91A1A2]">{translateValue("Last topic in this course sequence.")}</p>}
         </div>
       </div>
       <div className="md:pl-4">
@@ -166,10 +162,10 @@ function TechnologyQuizList({ technology, progress }) {
     <div className="rounded-xl border border-[#E8EFED] bg-[#FBFCFC] px-4">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EAF0EE] py-3">
         <div>
-          <h4 className="text-sm font-extrabold text-[#06424B]">{technology.name}</h4>
-          <p className="mt-0.5 text-[10px] text-[#829596]">{technology.topics.length} topic quizzes</p>
+          <h4 className="text-sm font-extrabold text-[#06424B]">{translateValue(technology.name)}</h4>
+          <p className="mt-0.5 text-[10px] text-[#829596]">{translateValue(technology.topics.length)} {translateValue("topic quizzes")}</p>
         </div>
-        <span className="text-[10px] font-bold text-[#829596]">IT learning path</span>
+        <span className="text-[10px] font-bold text-[#829596]">{translateValue("IT learning path")}</span>
       </div>
       {technology.topics.map((topic, index) => (
         <TopicQuizRow
@@ -201,32 +197,31 @@ function CourseQuizCard({ course, progress }) {
             {isIT ? <GraduationCap size={21} /> : <BookOpen size={21} />}
           </span>
           <div className="min-w-0">
-            <p className="text-[9px] font-extrabold tracking-[1.25px] text-[#B07A06]">{course.category.toUpperCase()}</p>
-            <h3 className="mt-1 text-lg font-extrabold text-[#06424B]">{course.name}</h3>
-            <p className="mt-1 text-xs text-[#718486]">{completedTopicQuizzes} of {totalTopicQuizzes} topic quizzes completed</p>
+            <p className="text-[9px] font-extrabold tracking-[1.25px] text-[#B07A06]">{translateValue(course.category).toUpperCase()}</p>
+            <h3 className="mt-1 text-lg font-extrabold text-[#06424B]">{translateValue(course.name)}</h3>
+            <p className="mt-1 text-xs text-[#718486]">{translateValue(completedTopicQuizzes)} {translateValue("of")}{" "}{translateValue(totalTopicQuizzes)} {translateValue("topic quizzes completed")}</p>
           </div>
         </div>
         <LinkButton to={isIT ? myLearningCoursePath(null, course.id) : myLearningCoursePath(course.id)} variant="outline" iconRight={ArrowRight}>
-          Open course
-        </LinkButton>
+          {translateValue("Open course")}</LinkButton>
       </div>
 
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-[#718486]">
-          <span>Topic quiz progress</span>
-          <span className="text-[#06424B]">{totalTopicQuizzes ? Math.round((completedTopicQuizzes / totalTopicQuizzes) * 100) : 0}%</span>
+          <span>{translateValue("Topic quiz progress")}</span>
+          <span className="text-[#06424B]">{translateValue(totalTopicQuizzes ? Math.round((completedTopicQuizzes / totalTopicQuizzes) * 100) : 0)}{translateValue("%")}</span>
         </div>
         <ProgressBar value={totalTopicQuizzes ? (completedTopicQuizzes / totalTopicQuizzes) * 100 : 0} />
       </div>
 
       {isIT ? (
         <div className="mt-5 space-y-4">
-          <SectionHeading title="Technology topic quizzes" subtitle="Each quiz is linked to its own lesson. Read the lesson first; later topics unlock in order." />
+          <SectionHeading title={translateValue("Technology topic quizzes")} subtitle={translateValue("Each quiz is linked to its own lesson. Read the lesson first; later topics unlock in order.")} />
           <TechnologyQuizList technology={course} progress={progress} />
         </div>
       ) : (
         <div className="mt-5">
-          <SectionHeading title="Course topic quizzes" subtitle="Open a lesson to read its web content. Its 10-question quiz becomes available after you mark the lesson as read." />
+          <SectionHeading title={translateValue("Course topic quizzes")} subtitle={translateValue("Open a lesson to read its web content. Its 10-question quiz becomes available after you mark the lesson as read.")} />
           <VocationalQuizList course={course} progress={progress} />
         </div>
       )}
@@ -251,35 +246,32 @@ function CourseFinalAssignmentCard({ course, progress }) {
             {completed ? <CheckCircle2 size={21} /> : unlocked ? <Target size={21} /> : <LockKeyhole size={21} />}
           </span>
           <div>
-            <p className="text-[9px] font-extrabold tracking-[1.2px] text-[#B07A06]">FINAL COURSE ASSESSMENT</p>
-            <h3 className="mt-1 text-base font-extrabold text-[#06424B]">{course.name} – Final Assignment</h3>
-            <p className="mt-1 text-xs text-[#718486]">15 questions · 80% pass requirement</p>
+            <p className="text-[9px] font-extrabold tracking-[1.2px] text-[#B07A06]">{translateValue("FINAL COURSE ASSESSMENT")}</p>
+            <h3 className="mt-1 text-base font-extrabold text-[#06424B]">{translateValue(course.name)} {translateValue("– Final Assignment")}</h3>
+            <p className="mt-1 text-xs text-[#718486]">{translateValue("15 questions · 80% pass requirement")}</p>
           </div>
         </div>
         <StatusPill status={completed ? "Completed" : unlocked ? "Unlocked" : "Locked"} />
       </div>
 
       <p className="mt-4 text-xs leading-6 text-[#627C7F]">
-        This assignment checks learning across the full course. It becomes available only after every topic quiz is completed. You need at least 12 correct answers out of 15 to complete the course and earn its certificate.
-      </p>
+        {translateValue("This assignment checks learning across the full course. It becomes available only after every topic quiz is completed. You need at least 12 correct answers out of 15 to complete the course and earn its certificate.")}</p>
       {score !== null && !completed && (
-        <p className="mt-2 text-xs font-bold text-[#94650C]">Best previous attempt: {score}% · {score >= 80 ? "Requirement met" : "80% still required"}</p>
+        <p className="mt-2 text-xs font-bold text-[#94650C]">{translateValue("Best previous attempt:")}{" "}{translateValue(score)}{translateValue("% ·")}{" "}{translateValue(score >= 80 ? "Requirement met" : "80% still required")}</p>
       )}
       {completed ? (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#EAF5EF] px-3 py-3 text-xs font-bold text-[#28765E]">
-          <CheckCircle2 size={15} /> Assignment completed. Your certificate is available in Certificates.
-        </div>
+          <CheckCircle2 size={15} /> {translateValue("Assignment completed. Your certificate is available in Certificates.")}</div>
       ) : unlocked && assignment ? (
         <Link
           to={`/student/quiz/${assignment.slug}`}
           className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-4 py-2.5 text-xs font-extrabold text-[#06424B] transition hover:bg-[#FFC13C]"
         >
-          <FileCheck2 size={15} /> {score !== null ? "Retry final assignment" : "Start final assignment"}
+          <FileCheck2 size={15} /> {translateValue(score !== null ? "Retry final assignment" : "Start final assignment")}
         </Link>
       ) : (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#F2F5F5] px-3 py-3 text-xs font-semibold text-[#829596]">
-          <LockKeyhole size={14} /> {stats.done} of {stats.total} topic quizzes completed. Finish all topics to unlock this assignment.
-        </div>
+          <LockKeyhole size={14} /> {translateValue(stats.done)} {translateValue("of")}{" "}{translateValue(stats.total)} {translateValue("topic quizzes completed. Finish all topics to unlock this assignment.")}</div>
       )}
     </Card>
   );
@@ -319,43 +311,43 @@ function Quizzes() {
       <PageShell>
         <div className="mx-auto w-full max-w-[1250px]">
           <StudentPageHeader
-            title="Quizzes & Assignments"
-            subtitle="Track every course assessment in one place. Topic quizzes stay connected to their lessons, and final assignments unlock after all topics are completed."
+            title={translateValue("Quizzes & Assignments")}
+            subtitle={translateValue("Track every course assessment in one place. Topic quizzes stay connected to their lessons, and final assignments unlock after all topics are completed.")}
           />
 
           {enrolledCourses.length === 0 ? (
             <Card className="mt-5 p-6 sm:p-9">
               <EmptyState
                 icon={ClipboardCheck}
-                title="Your assessments will appear here"
-                text="Enroll in a course first. Its topic quizzes and final assignment will then appear here with their individual locked, available and completed status."
-                action={<LinkButton to="/student/topics" variant="gold" icon={BookOpen}>Explore Courses</LinkButton>}
+                title={translateValue("Your assessments will appear here")}
+                text={translateValue("Enroll in a course first. Its topic quizzes and final assignment will then appear here with their individual locked, available and completed status.")}
+                action={<LinkButton to="/student/topics" variant="gold" icon={BookOpen}>{translateValue("Explore Courses")}</LinkButton>}
               />
             </Card>
           ) : (
             <>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <Card className="p-4">
-                  <p className="text-[10px] font-bold tracking-wide text-[#829596]">TOPIC QUIZZES</p>
-                  <p className="mt-1 text-2xl font-extrabold text-[#06424B]">{summary.topicQuizCount}</p>
-                  <p className="mt-1 text-[10px] text-[#829596]">Across enrolled courses</p>
+                  <p className="text-[10px] font-bold tracking-wide text-[#829596]">{translateValue("TOPIC QUIZZES")}</p>
+                  <p className="mt-1 text-2xl font-extrabold text-[#06424B]">{translateValue(summary.topicQuizCount)}</p>
+                  <p className="mt-1 text-[10px] text-[#829596]">{translateValue("Across enrolled courses")}</p>
                 </Card>
                 <Card className="p-4">
-                  <p className="text-[10px] font-bold tracking-wide text-[#829596]">QUIZZES COMPLETED</p>
-                  <p className="mt-1 text-2xl font-extrabold text-[#28765E]">{summary.completedCount}</p>
-                  <p className="mt-1 text-[10px] text-[#829596]">10 questions per topic</p>
+                  <p className="text-[10px] font-bold tracking-wide text-[#829596]">{translateValue("QUIZZES COMPLETED")}</p>
+                  <p className="mt-1 text-2xl font-extrabold text-[#28765E]">{translateValue(summary.completedCount)}</p>
+                  <p className="mt-1 text-[10px] text-[#829596]">{translateValue("10 questions per topic")}</p>
                 </Card>
                 <Card className="p-4">
-                  <p className="text-[10px] font-bold tracking-wide text-[#829596]">FINAL ASSIGNMENTS</p>
-                  <p className="mt-1 text-2xl font-extrabold text-[#06424B]">{summary.completedAssignments} / {summary.assignmentCount}</p>
-                  <p className="mt-1 text-[10px] text-[#829596]">Completed courses</p>
+                  <p className="text-[10px] font-bold tracking-wide text-[#829596]">{translateValue("FINAL ASSIGNMENTS")}</p>
+                  <p className="mt-1 text-2xl font-extrabold text-[#06424B]">{translateValue(summary.completedAssignments)} {translateValue("/")}{" "}{translateValue(summary.assignmentCount)}</p>
+                  <p className="mt-1 text-[10px] text-[#829596]">{translateValue("Completed courses")}</p>
                 </Card>
               </div>
 
               <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
                 <SectionHeading
-                  title="Your course assessments"
-                  subtitle="Only assessments for courses you have enrolled in are listed below."
+                  title={translateValue("Your course assessments")}
+                  subtitle={translateValue("Only assessments for courses you have enrolled in are listed below.")}
                 />
                 <div className="inline-flex rounded-xl border border-[#DCE6E5] bg-white p-1 shadow-sm">
                   {tabs.map((tab) => {
@@ -368,7 +360,7 @@ function Quizzes() {
                         onClick={() => setActiveTab(tab.id)}
                         className={`inline-flex min-h-9 items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-extrabold transition ${active ? "bg-[#06424B] text-white" : "text-[#607A7D] hover:bg-[#F1F6F5]"}`}
                       >
-                        <Icon size={14} /> {tab.label}
+                        <Icon size={14} /> {translateValue(tab.label)}
                       </button>
                     );
                   })}
@@ -389,8 +381,8 @@ function Quizzes() {
           )}
 
           <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[#DCE6E5] pt-5">
-            <p className="text-xs text-[#829596]">Assessments remain course-specific and follow your lesson completion.</p>
-            <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>Go to My Learning</LinkButton>
+            <p className="text-xs text-[#829596]">{translateValue("Assessments remain course-specific and follow your lesson completion.")}</p>
+            <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>{translateValue("Go to My Learning")}</LinkButton>
           </div>
         </div>
       </PageShell>

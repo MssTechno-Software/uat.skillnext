@@ -1,3 +1,4 @@
+import i18n, { translateValue } from "../../i18n";
 
 import { useEffect, useState } from "react";
 import { Link, useParams, Navigate } from "react-router-dom";
@@ -182,7 +183,7 @@ export default function CourseModules() {
 
   const remove = async (module) => {
     const confirmed = window.confirm(
-      `Delete "${module.name}" and all its content items?`
+      i18n.t("Delete \"{{name}}\" and all its content items?", { name: module.name, ns: "ui" })
     );
 
     if (!confirmed) return;
@@ -314,22 +315,20 @@ export default function CourseModules() {
 
         {/* Page Header */}
         <PageHeader
-          title="Course modules"
-          description="Build your course structure and organize learning materials into modules."
+          title={translateValue("Course modules")}
+          description={translateValue("Build your course structure and organize learning materials into modules.")}
           backLink={
             <Link
               to="/teacher/courses"
               className="mb-3 inline-flex items-center gap-2 text-[10px] font-bold text-[#829598] transition-colors hover:text-[#06424B]"
             >
               <ArrowLeft size={14} />
-              Back to courses
-            </Link>
+              {translateValue("Back to courses")}</Link>
           }
           actions={
             <Button onClick={openCreate}>
               <Plus size={15} />
-              Add module
-            </Button>
+              {translateValue("Add module")}</Button>
           }
         />
 
@@ -350,13 +349,13 @@ export default function CourseModules() {
                 <CheckCircle2 size={15} />
               )}
 
-              {notice}
+              {translateValue(notice)}
             </div>
 
             <button
               type="button"
               onClick={() => setNotice("")}
-              aria-label="Dismiss notification"
+              aria-label={translateValue("Dismiss notification")}
               className="rounded-md p-1 transition hover:bg-black/5"
             >
               <X size={14} />
@@ -376,25 +375,24 @@ export default function CourseModules() {
               <div className="min-w-0">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span className="text-[9px] font-extrabold uppercase tracking-[1.5px] text-[#B27B20]">
-                    Selected course
-                  </span>
+                    {translateValue("Selected course")}</span>
 
                   <StatusPill visible={course.visible} />
                 </div>
 
                 <h2 className="break-words text-[17px] font-extrabold text-[#06424B] sm:text-[20px]">
-                  {course.fullName}
+                  {translateValue(course.fullName)}
                 </h2>
 
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-medium text-[#87999B]">
                   <span className="inline-flex items-center gap-1.5">
                     <Hash size={12} />
-                    {course.idNumber || `COURSE-${course.id}`}
+                    {translateValue(course.idNumber || `COURSE-${course.id}`)}
                   </span>
 
                   <span className="h-1 w-1 rounded-full bg-[#C4D0D0]" />
 
-                  <span>{modules.length} modules</span>
+                  <span>{translateValue(modules.length)} {translateValue("modules")}</span>
                 </div>
               </div>
             </div>
@@ -404,8 +402,7 @@ export default function CourseModules() {
               className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#DDE7E7] px-4 py-2.5 text-[10px] font-bold text-[#52777B] transition-all hover:border-[#06424B] hover:bg-[#06424B] hover:text-white"
             >
               <ArrowLeft size={13} />
-              All courses
-            </Link>
+              {translateValue("All courses")}</Link>
           </div>
 
           {/* Course Statistics */}
@@ -418,12 +415,11 @@ export default function CourseModules() {
 
               <div>
                 <p className="text-[17px] font-extrabold text-[#06424B]">
-                  {modules.length}
+                  {translateValue(modules.length)}
                 </p>
 
                 <p className="text-[9px] font-semibold text-[#899B9D]">
-                  Total modules
-                </p>
+                  {translateValue("Total modules")}</p>
               </div>
             </div>
 
@@ -434,12 +430,11 @@ export default function CourseModules() {
 
               <div>
                 <p className="text-[17px] font-extrabold text-[#06424B]">
-                  {visibleModules}
+                  {translateValue(visibleModules)}
                 </p>
 
                 <p className="text-[9px] font-semibold text-[#899B9D]">
-                  Visible modules
-                </p>
+                  {translateValue("Visible modules")}</p>
               </div>
             </div>
 
@@ -450,12 +445,11 @@ export default function CourseModules() {
 
               <div>
                 <p className="text-[17px] font-extrabold text-[#06424B]">
-                  {totalContent}
+                  {translateValue(totalContent)}
                 </p>
 
                 <p className="text-[9px] font-semibold text-[#899B9D]">
-                  Learning content
-                </p>
+                  {translateValue("Learning content")}</p>
               </div>
             </div>
           </div>
@@ -469,23 +463,20 @@ export default function CourseModules() {
                 <span className="h-5 w-[3px] rounded-full bg-[#FFAB0B]" />
 
                 <h2 className="text-[16px] font-extrabold text-[#06424B]">
-                  Learning modules
-                </h2>
+                  {translateValue("Learning modules")}</h2>
 
                 <span className="rounded-full bg-[#EAF2F1] px-2.5 py-1 text-[9px] font-bold text-[#06424B]">
-                  {modules.length}
+                  {translateValue(modules.length)}
                 </span>
               </div>
 
               <p className="mt-1.5 pl-3 text-[10px] text-[#8B9B9D]">
-                Each module represents a learning unit in your course.
-              </p>
+                {translateValue("Each module represents a learning unit in your course.")}</p>
             </div>
 
             <div className="flex items-center gap-2 text-[9px] font-semibold text-[#819497]">
               <GripVertical size={14} />
-              Drag to rearrange
-            </div>
+              {translateValue("Drag to rearrange")}</div>
           </div>
 
           {modules.length > 0 ? (
@@ -541,8 +532,8 @@ export default function CourseModules() {
                               handleDragStart(event, module.id)
                             }
                             onDragEnd={handleDragEnd}
-                            title="Drag to change order"
-                            aria-label={`Drag to reorder ${module.name}`}
+                            title={translateValue("Drag to change order")}
+                            aria-label={translateValue("Drag to reorder {{module}}", { module: translateValue(module.name) })}
                             className="mt-1 flex h-7 w-6 shrink-0 cursor-grab items-center justify-center rounded-md text-[#9AABAC] transition hover:bg-[#EAF2F1] hover:text-[#06424B] active:cursor-grabbing"
                           >
                             <GripVertical size={17} />
@@ -556,20 +547,20 @@ export default function CourseModules() {
                                 : "bg-[#FFF4D7] text-[#A77924]"
                             }`}
                           >
-                            {String(index + 1).padStart(2, "0")}
+                            {translateValue(String(index + 1).padStart(2, "0"))}
                           </div>
 
                           {/* Module Title */}
                           <div className="min-w-0 pt-0.5">
                             <h3 className="break-words text-[12px] font-extrabold leading-5 text-[#17464D]">
-                              {module.name}
+                              {translateValue(module.name)}
                             </h3>
 
                             <div className="mt-1.5 flex flex-wrap items-center gap-2">
                               <StatusPill visible={module.visible} />
 
                               <span className="text-[9px] font-medium text-[#95A3A4]">
-                                Module {index + 1}
+                                {translateValue("Module")}{" "}{translateValue(index + 1)}
                               </span>
                             </div>
                           </div>
@@ -580,8 +571,8 @@ export default function CourseModules() {
                           <button
                             type="button"
                             onClick={() => openEdit(module)}
-                            title="Edit module"
-                            aria-label={`Edit ${module.name}`}
+                            title={translateValue("Edit module")}
+                            aria-label={translateValue("Edit {{name}}", { name: translateValue(module.name) })}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#71898C] transition-all duration-200 hover:border-[#DDE9E7] hover:bg-[#EAF2F1] hover:text-[#06424B] active:scale-95"
                           >
                             <Pencil size={14} />
@@ -590,8 +581,8 @@ export default function CourseModules() {
                           <button
                             type="button"
                             onClick={() => remove(module)}
-                            title="Delete module"
-                            aria-label={`Delete ${module.name}`}
+                            title={translateValue("Delete module")}
+                            aria-label={translateValue("Delete {{name}}", { name: translateValue(module.name) })}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#9A8581] transition-all duration-200 hover:border-[#F1DDDA] hover:bg-[#FFF2F0] hover:text-[#B65345] active:scale-95"
                           >
                             <Trash2 size={14} />
@@ -601,8 +592,8 @@ export default function CourseModules() {
 
                       {/* Module Summary */}
                       <p className="mt-4 line-clamp-2 min-h-[34px] text-[10px] leading-[1.7] text-[#87999B]">
-                        {module.summary ||
-                          "No module summary added yet."}
+                        {translateValue(module.summary ||
+                          "No module summary added yet.")}
                       </p>
 
                       <div className="my-4 border-t border-[#EDF1F1]" />
@@ -616,8 +607,7 @@ export default function CourseModules() {
                               <FileText size={13} />
                             </span>
 
-                            {contentCount} items
-                          </div>
+                            {translateValue(contentCount)} {translateValue("items")}</div>
 
                           <div className="inline-flex items-center gap-1.5 text-[9px] font-semibold text-[#819497]">
                             {module.visible ? (
@@ -632,9 +622,9 @@ export default function CourseModules() {
                               />
                             )}
 
-                            {module.visible
+                            {translateValue(module.visible
                               ? "Published"
-                              : "Hidden"}
+                              : "Hidden")}
                           </div>
                         </div>
 
@@ -644,8 +634,7 @@ export default function CourseModules() {
                           className="inline-flex items-center gap-1.5 rounded-lg bg-[#06424B] px-3.5 py-2.5 text-[9px] font-bold text-white shadow-[0_2px_7px_rgba(6,66,75,0.10)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0B5661] hover:shadow-[0_5px_12px_rgba(6,66,75,0.16)]"
                         >
                           <span className="!text-white">
-                            Manage content
-                          </span>
+                            {translateValue("Manage content")}</span>
 
                           <ArrowRight
                             size={12}
@@ -662,13 +651,12 @@ export default function CourseModules() {
           ) : (
             <EmptyState
               icon={Layers3}
-              title="No modules yet"
-              description="Create your first module to start building the course learning sequence."
+              title={translateValue("No modules yet")}
+              description={translateValue("Create your first module to start building the course learning sequence.")}
               action={
                 <Button onClick={openCreate}>
                   <Plus size={14} />
-                  Create first module
-                </Button>
+                  {translateValue("Create first module")}</Button>
               }
             />
           )}
@@ -683,13 +671,10 @@ export default function CourseModules() {
 
             <div>
               <p className="text-[10px] font-bold text-[#06424B]">
-                Organize your learning journey
-              </p>
+                {translateValue("Organize your learning journey")}</p>
 
               <p className="mt-1 text-[9px] leading-5 text-[#89999B]">
-                Drag the grip icon on any module card and drop it
-                onto another module to change the learning order.
-              </p>
+                {translateValue("Drag the grip icon on any module card and drop it onto another module to change the learning order.")}</p>
             </div>
           </div>
         )}
@@ -698,16 +683,16 @@ export default function CourseModules() {
         <Modal
           open={modalOpen}
           onClose={closeModal}
-          title={editing ? "Edit module" : "Create module"}
+          title={translateValue(editing ? "Edit module" : "Create module")}
           description={
-            editing
+            translateValue(editing
               ? "Update the module details and learning sequence."
-              : `Add a new learning unit to ${course.fullName}.`
+              : `Add a new learning unit to ${course.fullName}.`)
           }
         >
           <form onSubmit={submit} className="space-y-5">
 
-            <Field label="Module name" required>
+            <Field label={translateValue("Module name")} required>
               <input
                 required
                 maxLength={120}
@@ -718,12 +703,12 @@ export default function CourseModules() {
                     name: event.target.value,
                   })
                 }
-                placeholder="e.g. JavaScript Essentials"
+                placeholder={translateValue("e.g. JavaScript Essentials")}
                 className={inputClass}
               />
             </Field>
 
-            <Field label="Module summary">
+            <Field label={translateValue("Module summary")}>
               <textarea
                 rows={3}
                 value={form.summary}
@@ -733,12 +718,12 @@ export default function CourseModules() {
                     summary: event.target.value,
                   })
                 }
-                placeholder="Briefly describe what students will learn in this module..."
+                placeholder={translateValue("Briefly describe what students will learn in this module...")}
                 className={textareaClass}
               />
             </Field>
 
-            <Field label="Display position" required>
+            <Field label={translateValue("Display position")} required>
               <div className="relative">
                 <Hash
                   size={15}
@@ -761,8 +746,7 @@ export default function CourseModules() {
               </div>
 
               <p className="mt-1.5 text-[9px] text-[#91A0A1]">
-                Determines the position of this module in the course.
-              </p>
+                {translateValue("Determines the position of this module in the course.")}</p>
             </Field>
 
             {/* Student Visibility */}
@@ -778,12 +762,10 @@ export default function CourseModules() {
 
                 <div>
                   <p className="text-[10px] font-bold text-[#365D62]">
-                    Visible to students
-                  </p>
+                    {translateValue("Visible to students")}</p>
 
                   <p className="mt-1 text-[9px] text-[#91A0A1]">
-                    Allow students to access this module.
-                  </p>
+                    {translateValue("Allow students to access this module.")}</p>
                 </div>
               </div>
 
@@ -821,8 +803,7 @@ export default function CourseModules() {
                 onClick={closeModal}
                 disabled={busy}
               >
-                Cancel
-              </Button>
+                {translateValue("Cancel")}</Button>
 
               <Button type="submit" disabled={busy}>
                 {busy ? (
@@ -835,9 +816,9 @@ export default function CourseModules() {
                       <Plus size={14} />
                     )}
 
-                    {editing
+                    {translateValue(editing
                       ? "Save changes"
-                      : "Create module"}
+                      : "Create module")}
                   </>
                 )}
               </Button>

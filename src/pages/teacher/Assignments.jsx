@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { useMemo, useState } from "react";
 import {
@@ -364,16 +365,15 @@ export default function Assignments() {
 
         {/* Page Header */}
         <PageHeader
-          title="Assignments"
-          description="Create and manage assignments across your courses and modules."
+          title={translateValue("Assignments")}
+          description={translateValue("Create and manage assignments across your courses and modules.")}
           actions={
             <Button
               onClick={openCreate}
               disabled={!data.courses.length}
             >
               <Plus size={15} />
-              Create assignment
-            </Button>
+              {translateValue("Create assignment")}</Button>
           }
         />
 
@@ -396,13 +396,13 @@ export default function Assignments() {
             </div>
 
             <p className="flex-1 text-[11px] font-semibold leading-5">
-              {notice.message}
+              {translateValue(notice.message)}
             </p>
 
             <button
               type="button"
               onClick={() => setNotice(null)}
-              aria-label="Dismiss notification"
+              aria-label={translateValue("Dismiss notification")}
               className="rounded-md p-1 opacity-70 transition hover:bg-black/5 hover:opacity-100"
             >
               <X size={14} />
@@ -416,8 +416,7 @@ export default function Assignments() {
           <div className="group rounded-[17px] border border-[#E2EAEA] bg-white p-4 shadow-[0_3px_14px_rgba(18,59,67,0.025)] transition-all duration-300 hover:-translate-y-1 hover:border-[#D5E3E2] hover:shadow-[0_8px_22px_rgba(18,59,67,0.06)]">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold text-[#84999B]">
-                Total assignments
-              </p>
+                {translateValue("Total assignments")}</p>
 
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EAF2F1] text-[#06424B] transition-transform duration-300 group-hover:scale-110">
                 <ClipboardCheck size={17} />
@@ -425,19 +424,17 @@ export default function Assignments() {
             </div>
 
             <p className="mt-3 text-[25px] font-extrabold tracking-tight text-[#17464D]">
-              {totalAssignments}
+              {translateValue(totalAssignments)}
             </p>
 
             <p className="mt-1 text-[10px] text-[#91A1A3]">
-              Across all courses
-            </p>
+              {translateValue("Across all courses")}</p>
           </div>
 
           <div className="group rounded-[17px] border border-[#E2EAEA] bg-white p-4 shadow-[0_3px_14px_rgba(18,59,67,0.025)] transition-all duration-300 hover:-translate-y-1 hover:border-[#EAD9A9] hover:shadow-[0_8px_22px_rgba(18,59,67,0.06)]">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold text-[#84999B]">
-                Visible to students
-              </p>
+                {translateValue("Visible to students")}</p>
 
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFF4D9] text-[#A87914] transition-transform duration-300 group-hover:scale-110">
                 <CheckCircle2 size={17} />
@@ -445,19 +442,17 @@ export default function Assignments() {
             </div>
 
             <p className="mt-3 text-[25px] font-extrabold tracking-tight text-[#17464D]">
-              {visibleAssignments}
+              {translateValue(visibleAssignments)}
             </p>
 
             <p className="mt-1 text-[10px] text-[#91A1A3]">
-              Currently published
-            </p>
+              {translateValue("Currently published")}</p>
           </div>
 
           <div className="group rounded-[17px] border border-[#E2EAEA] bg-white p-4 shadow-[0_3px_14px_rgba(18,59,67,0.025)] transition-all duration-300 hover:-translate-y-1 hover:border-[#DCD2EB] hover:shadow-[0_8px_22px_rgba(18,59,67,0.06)]">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-semibold text-[#84999B]">
-                Courses with assignments
-              </p>
+                {translateValue("Courses with assignments")}</p>
 
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F0ECF7] text-[#8063A6] transition-transform duration-300 group-hover:scale-110">
                 <BookOpen size={17} />
@@ -465,12 +460,11 @@ export default function Assignments() {
             </div>
 
             <p className="mt-3 text-[25px] font-extrabold tracking-tight text-[#17464D]">
-              {coursesWithAssignments}
+              {translateValue(coursesWithAssignments)}
             </p>
 
             <p className="mt-1 text-[10px] text-[#91A1A3]">
-              Courses containing assignments
-            </p>
+              {translateValue("Courses containing assignments")}</p>
           </div>
 
         </div>
@@ -480,7 +474,7 @@ export default function Assignments() {
           <SearchField
             value={search}
             onChange={setSearch}
-            placeholder="Search assignment, course or module..."
+            placeholder={translateValue("Search assignment, course or module...")}
           />
 
           <select
@@ -490,11 +484,11 @@ export default function Assignments() {
             }
             className={`${inputClass} transition-all duration-200 focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10`}
           >
-            <option value="all">All courses</option>
+            <option value="all">{translateValue("All courses")}</option>
 
             {data.courses.map((course) => (
               <option key={course.id} value={course.id}>
-                {course.fullName}
+                {translateValue(course.fullName)}
               </option>
             ))}
           </select>
@@ -504,12 +498,10 @@ export default function Assignments() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-[13px] font-bold text-[#17464D]">
-              Assignment list
-            </h2>
+              {translateValue("Assignment list")}</h2>
 
             <p className="mt-1 text-[10px] text-[#91A1A3]">
-              {assignments.length} assignments found
-            </p>
+              {translateValue(assignments.length)} {translateValue("assignments found")}</p>
           </div>
 
           {(search || courseFilter !== "all") && (
@@ -521,8 +513,7 @@ export default function Assignments() {
               }}
               className="rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-[#9B741B] transition hover:bg-[#FFF7E6]"
             >
-              Clear filters
-            </button>
+              {translateValue("Clear filters")}</button>
           )}
         </div>
 
@@ -560,7 +551,7 @@ export default function Assignments() {
 
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-[13px] font-extrabold text-[#17464D]">
-                          {assignment.title}
+                          {translateValue(assignment.title)}
                         </h2>
 
                         <StatusPill
@@ -571,20 +562,20 @@ export default function Assignments() {
                       {/* Course and Module */}
                       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-semibold">
                         <span className="text-[#A87914]">
-                          {course?.fullName || "Course unavailable"}
+                          {translateValue(course?.fullName || "Course unavailable")}
                         </span>
 
-                        <span className="text-[#CBD5D5]">/</span>
+                        <span className="text-[#CBD5D5]">{translateValue("/")}</span>
 
                         <span className="text-[#71888B]">
-                          {module?.name || "Entire course"}
+                          {translateValue(module?.name || "Entire course")}
                         </span>
                       </div>
 
                       {/* Instructions */}
                       <p className="mt-3 line-clamp-3 text-[11px] leading-[1.8] text-[#829497]">
-                        {assignment.instructions ||
-                          "No instructions provided."}
+                        {translateValue(assignment.instructions ||
+                          "No instructions provided.")}
                       </p>
 
                       {/* Metadata */}
@@ -596,7 +587,7 @@ export default function Assignments() {
                             className="text-[#B08A37]"
                           />
 
-                          {assignment.dueDate || "No due date"}
+                          {translateValue(assignment.dueDate || "No due date")}
                         </span>
 
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#6D8589]">
@@ -605,8 +596,7 @@ export default function Assignments() {
                             className="text-[#06424B]"
                           />
 
-                          {assignment.totalMarks} marks
-                        </span>
+                          {translateValue(assignment.totalMarks)} {translateValue("marks")}</span>
 
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#6D8589]">
                           {module ? (
@@ -615,16 +605,14 @@ export default function Assignments() {
                                 size={13}
                                 className="text-[#8063A6]"
                               />
-                              Module assignment
-                            </>
+                              {translateValue("Module assignment")}</>
                           ) : (
                             <>
                               <FileText
                                 size={13}
                                 className="text-[#8063A6]"
                               />
-                              Entire course
-                            </>
+                              {translateValue("Entire course")}</>
                           )}
                         </span>
 
@@ -637,8 +625,8 @@ export default function Assignments() {
                       <button
                         type="button"
                         onClick={() => openEdit(assignment)}
-                        title="Edit assignment"
-                        aria-label={`Edit ${assignment.title}`}
+                        title={translateValue("Edit assignment")}
+                        aria-label={translateValue("Edit {{name}}", { name: translateValue(assignment.title) })}
                         className="flex h-9 w-9 items-center justify-center rounded-xl text-[#819699] transition-all duration-200 hover:bg-[#FFF4DA] hover:text-[#A87914] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFAB0B]/40"
                       >
                         <Pencil size={15} />
@@ -647,8 +635,8 @@ export default function Assignments() {
                       <button
                         type="button"
                         onClick={() => openDelete(assignment)}
-                        title="Delete assignment"
-                        aria-label={`Delete ${assignment.title}`}
+                        title={translateValue("Delete assignment")}
+                        aria-label={translateValue("Delete {{name}}", { name: translateValue(assignment.title) })}
                         className="flex h-9 w-9 items-center justify-center rounded-xl text-[#A4B0B1] transition-all duration-200 hover:bg-[#FFF1EF] hover:text-[#B65345] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B65345]/30"
                       >
                         <Trash2 size={15} />
@@ -664,18 +652,17 @@ export default function Assignments() {
         ) : (
           <EmptyState
             icon={ClipboardCheck}
-            title="No assignments found"
+            title={translateValue("No assignments found")}
             description={
-              data.courses.length
+              translateValue(data.courses.length
                 ? "Create an assignment and attach it to a course or one of its modules."
-                : "Create a course first, then you can add assignments to it."
+                : "Create a course first, then you can add assignments to it.")
             }
             action={
               data.courses.length ? (
                 <Button onClick={openCreate}>
                   <Plus size={14} />
-                  Create assignment
-                </Button>
+                  {translateValue("Create assignment")}</Button>
               ) : null
             }
           />
@@ -686,14 +673,14 @@ export default function Assignments() {
           open={modalOpen}
           onClose={closeFormModal}
           title={
-            editing ? "Edit assignment" : "Create assignment"
+            translateValue(editing ? "Edit assignment" : "Create assignment")
           }
-          description="Choose a course and optionally attach this assignment to one of its modules."
+          description={translateValue("Choose a course and optionally attach this assignment to one of its modules.")}
         >
           <form onSubmit={submit} className="space-y-4">
 
             {/* Course */}
-            <Field label="Course" required>
+            <Field label={translateValue("Course")} required>
               <select
                 required
                 value={form.courseId}
@@ -713,11 +700,11 @@ export default function Assignments() {
                     : ""
                 }`}
               >
-                <option value="">Select course</option>
+                <option value="">{translateValue("Select course")}</option>
 
                 {data.courses.map((course) => (
                   <option key={course.id} value={course.id}>
-                    {course.fullName}
+                    {translateValue(course.fullName)}
                   </option>
                 ))}
               </select>
@@ -725,13 +712,13 @@ export default function Assignments() {
               {errors.courseId && (
                 <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[#B65345]">
                   <AlertCircle size={12} />
-                  {errors.courseId}
+                  {translateValue(errors.courseId)}
                 </p>
               )}
             </Field>
 
             {/* Module */}
-            <Field label="Module (optional)">
+            <Field label={translateValue("Module (optional)")}>
               <select
                 value={form.moduleId}
                 disabled={!form.courseId}
@@ -754,30 +741,28 @@ export default function Assignments() {
                 }`}
               >
                 <option value="">
-                  Entire course assignment
-                </option>
+                  {translateValue("Entire course assignment")}</option>
 
                 {visibleModules.map((module) => (
                   <option key={module.id} value={module.id}>
-                    {module.name}
+                    {translateValue(module.name)}
                   </option>
                 ))}
               </select>
 
               <p className="mt-1.5 text-[10px] text-[#91A1A3]">
-                Leave empty to assign this to the entire course.
-              </p>
+                {translateValue("Leave empty to assign this to the entire course.")}</p>
 
               {errors.moduleId && (
                 <p className="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-[#B65345]">
                   <AlertCircle size={12} />
-                  {errors.moduleId}
+                  {translateValue(errors.moduleId)}
                 </p>
               )}
             </Field>
 
             {/* Assignment Title */}
-            <Field label="Assignment title" required>
+            <Field label={translateValue("Assignment title")} required>
               <input
                 required
                 maxLength={150}
@@ -790,7 +775,7 @@ export default function Assignments() {
 
                   clearFieldError("title");
                 }}
-                placeholder="e.g. Practical task 01"
+                placeholder={translateValue("e.g. Practical task 01")}
                 className={`${inputClass} ${
                   errors.title
                     ? "border-[#C75A4D] focus:border-[#C75A4D]"
@@ -802,22 +787,20 @@ export default function Assignments() {
                 {errors.title ? (
                   <p className="flex items-center gap-1 text-[10px] font-medium text-[#B65345]">
                     <AlertCircle size={12} />
-                    {errors.title}
+                    {translateValue(errors.title)}
                   </p>
                 ) : (
                   <span className="text-[10px] text-[#91A1A3]">
-                    Enter a clear assignment title.
-                  </span>
+                    {translateValue("Enter a clear assignment title.")}</span>
                 )}
 
                 <span className="text-[10px] text-[#A2B0B1]">
-                  {form.title.length}/150
-                </span>
+                  {translateValue(form.title.length)}{translateValue("/150")}</span>
               </div>
             </Field>
 
             {/* Instructions */}
-            <Field label="Instructions" required>
+            <Field label={translateValue("Instructions")} required>
               <textarea
                 required
                 rows={5}
@@ -830,7 +813,7 @@ export default function Assignments() {
 
                   clearFieldError("instructions");
                 }}
-                placeholder="Explain the task, submission requirements and evaluation criteria..."
+                placeholder={translateValue("Explain the task, submission requirements and evaluation criteria...")}
                 className={`${textareaClass} ${
                   errors.instructions
                     ? "border-[#C75A4D] focus:border-[#C75A4D]"
@@ -841,7 +824,7 @@ export default function Assignments() {
               {errors.instructions && (
                 <p className="mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[#B65345]">
                   <AlertCircle size={12} />
-                  {errors.instructions}
+                  {translateValue(errors.instructions)}
                 </p>
               )}
             </Field>
@@ -849,7 +832,7 @@ export default function Assignments() {
             {/* Due Date and Marks */}
             <div className="grid gap-4 sm:grid-cols-2">
 
-              <Field label="Due date">
+              <Field label={translateValue("Due date")}>
                 <input
                   type="date"
                   value={form.dueDate || ""}
@@ -863,7 +846,7 @@ export default function Assignments() {
                 />
               </Field>
 
-              <Field label="Total marks" required>
+              <Field label={translateValue("Total marks")} required>
                 <input
                   type="number"
                   min="1"
@@ -887,7 +870,7 @@ export default function Assignments() {
                 {errors.totalMarks && (
                   <p className="mt-1.5 flex items-center gap-1 text-[10px] font-medium text-[#B65345]">
                     <AlertCircle size={12} />
-                    {errors.totalMarks}
+                    {translateValue(errors.totalMarks)}
                   </p>
                 )}
               </Field>
@@ -903,12 +886,10 @@ export default function Assignments() {
 
                 <div>
                   <p className="text-[11px] font-bold text-[#244E54]">
-                    Visible to enrolled students
-                  </p>
+                    {translateValue("Visible to enrolled students")}</p>
 
                   <p className="mt-1 text-[10px] text-[#91A1A3]">
-                    Allow students to view this assignment.
-                  </p>
+                    {translateValue("Allow students to view this assignment.")}</p>
                 </div>
               </div>
 
@@ -933,8 +914,7 @@ export default function Assignments() {
                 onClick={closeFormModal}
                 disabled={busy}
               >
-                Cancel
-              </Button>
+                {translateValue("Cancel")}</Button>
 
               <Button
                 type="submit"
@@ -943,8 +923,7 @@ export default function Assignments() {
                 {busy ? (
                   <>
                     <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Saving...
-                  </>
+                    {translateValue("Saving...")}</>
                 ) : (
                   <>
                     {editing ? (
@@ -953,9 +932,9 @@ export default function Assignments() {
                       <Plus size={14} />
                     )}
 
-                    {editing
+                    {translateValue(editing
                       ? "Save changes"
-                      : "Create assignment"}
+                      : "Create assignment")}
                   </>
                 )}
               </Button>
@@ -968,8 +947,8 @@ export default function Assignments() {
         <Modal
           open={deleteModalOpen}
           onClose={closeDeleteModal}
-          title="Delete assignment"
-          description="Please confirm before deleting this assignment."
+          title={translateValue("Delete assignment")}
+          description={translateValue("Please confirm before deleting this assignment.")}
         >
           <div className="space-y-4">
 
@@ -980,16 +959,14 @@ export default function Assignments() {
 
               <div className="min-w-0">
                 <p className="text-[12px] font-bold text-[#87473F]">
-                  Are you sure you want to delete?
-                </p>
+                  {translateValue("Are you sure you want to delete?")}</p>
 
                 <p className="mt-1 break-words text-[11px] leading-5 text-[#9B7771]">
-                  {deletingAssignment?.title}
+                  {translateValue(deletingAssignment?.title)}
                 </p>
 
                 <p className="mt-2 text-[10px] leading-5 text-[#A77C75]">
-                  This action cannot be undone.
-                </p>
+                  {translateValue("This action cannot be undone.")}</p>
               </div>
             </div>
 
@@ -999,8 +976,7 @@ export default function Assignments() {
                 onClick={closeDeleteModal}
                 disabled={deleting}
               >
-                Cancel
-              </Button>
+                {translateValue("Cancel")}</Button>
 
               <button
                 type="button"
@@ -1011,13 +987,11 @@ export default function Assignments() {
                 {deleting ? (
                   <>
                     <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Deleting...
-                  </>
+                    {translateValue("Deleting...")}</>
                 ) : (
                   <>
                     <Trash2 size={14} />
-                    Delete assignment
-                  </>
+                    {translateValue("Delete assignment")}</>
                 )}
               </button>
             </div>

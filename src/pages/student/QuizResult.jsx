@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import {
   ArrowLeft,
   ArrowRight,
@@ -39,8 +40,8 @@ function QuizResult() {
     
       <PageShell max="max-w-[950px]">
         <StudentPageHeader
-          title={isFinalAssignment ? "Final Assignment Results" : "Quiz Results"}
-          subtitle="Review your answers, understand your score and continue your learning path."
+          title={translateValue(isFinalAssignment ? "Final Assignment Results" : "Quiz Results")}
+          subtitle={translateValue("Review your answers, understand your score and continue your learning path.")}
         />
 
         <section className={`relative overflow-hidden rounded-3xl p-8 text-center shadow-[0_18px_40px_rgba(6,66,75,0.16)] ${passed ? "bg-gradient-to-br from-[#06424B] to-[#0E6B73]" : "bg-gradient-to-br from-[#40565A] to-[#52676B]"}`}>
@@ -48,27 +49,25 @@ function QuizResult() {
           <span className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFAB0B] text-[#06424B]">
             {isFinalAssignment ? passed ? <Award size={32} /> : <XCircle size={30} /> : <Trophy size={32} />}
           </span>
-          <h1 className="relative mt-4 text-3xl font-extrabold text-white">{message}</h1>
-          <p className="relative mt-1 text-sm text-white/80">{result.quizTitle}</p>
+          <h1 className="relative mt-4 text-3xl font-extrabold text-white">{translateValue(message)}</h1>
+          <p className="relative mt-1 text-sm text-white/80">{translateValue(result.quizTitle)}</p>
           <p className="relative mt-5 text-[56px] font-extrabold leading-none text-white">
-            {result.score}<span className="text-2xl font-semibold text-white/70"> / {result.total}</span>
+            {translateValue(result.score)}<span className="text-2xl font-semibold text-white/70"> {translateValue("/")}{" "}{translateValue(result.total)}</span>
           </p>
-          <p className="relative mt-2 text-base font-bold text-[#FFAB0B]">{percentage}% score</p>
+          <p className="relative mt-2 text-base font-bold text-[#FFAB0B]">{translateValue(percentage)}{translateValue("% score")}</p>
           <ProgressBar value={percentage} className="relative mx-auto mt-4 max-w-[380px] bg-white/20" />
           {isFinalAssignment ? (
             <>
               <p className="relative mt-4 text-xs font-semibold text-white/80">
-                Required to pass: {passPercentage}% ({Math.ceil((result.total * passPercentage) / 100)} correct answers)
-              </p>
+                {translateValue("Required to pass:")}{" "}{translateValue(passPercentage)}{translateValue("% (")}{translateValue(Math.ceil((result.total * passPercentage) / 100))} {translateValue("correct answers)")}</p>
               <span className={`relative mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-extrabold ${passed ? "bg-white/15 text-[#BFF0D9]" : "bg-white/15 text-[#FFE0A0]"}`}>
                 {passed ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
-                {passed ? "PASSED" : "NOT PASSED"}
+                {translateValue(passed ? "PASSED" : "NOT PASSED")}
               </span>
             </>
           ) : (
             <span className="relative mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-xs font-extrabold text-[#BFF0D9]">
-              <CheckCircle2 size={15} /> TOPIC COMPLETED · NO PASS MARK
-            </span>
+              <CheckCircle2 size={15} /> {translateValue("TOPIC COMPLETED · NO PASS MARK")}</span>
           )}
         </section>
 
@@ -77,10 +76,9 @@ function QuizResult() {
             <div className="flex items-start gap-3">
               <XCircle size={19} className="mt-0.5 shrink-0 text-[#94650C]" />
               <div>
-                <h2 className="font-extrabold text-[#06424B]">80% is required to earn your certificate</h2>
+                <h2 className="font-extrabold text-[#06424B]">{translateValue("80% is required to earn your certificate")}</h2>
                 <p className="mt-1 text-sm leading-6 text-[#6F5313]">
-                  Review the answers below and retake the 15-question final assignment. Your course will be completed and its certificate issued only after you score at least 80%.
-                </p>
+                  {translateValue("Review the answers below and retake the 15-question final assignment. Your course will be completed and its certificate issued only after you score at least 80%.")}</p>
               </div>
             </div>
           </Card>
@@ -91,10 +89,9 @@ function QuizResult() {
             <div className="flex items-start gap-3">
               <Award size={20} className="mt-0.5 shrink-0 text-[#28765E]" />
               <div>
-                <h2 className="font-extrabold text-[#06424B]">Your course certificate has been earned.</h2>
+                <h2 className="font-extrabold text-[#06424B]">{translateValue("Your course certificate has been earned.")}</h2>
                 <p className="mt-1 text-sm leading-6 text-[#4F6B6F]">
-                  You achieved the required score in the final assignment. Your course is complete, and the certificate is available on the Certificates page.
-                </p>
+                  {translateValue("You achieved the required score in the final assignment. Your course is complete, and the certificate is available on the Certificates page.")}</p>
               </div>
             </div>
           </Card>
@@ -105,17 +102,16 @@ function QuizResult() {
             <div className="flex items-start gap-3">
               <CheckCircle2 size={19} className="mt-0.5 shrink-0 text-[#28765E]" />
               <div>
-                <h2 className="font-extrabold text-[#06424B]">Your topic progress has been saved.</h2>
+                <h2 className="font-extrabold text-[#06424B]">{translateValue("Your topic progress has been saved.")}</h2>
                 <p className="mt-1 text-sm leading-6 text-[#4F6B6F]">
-                  Your score is recorded for review, but this 10-question topic quiz has no pass requirement. You can continue to the next topic.
-                </p>
+                  {translateValue("Your score is recorded for review, but this 10-question topic quiz has no pass requirement. You can continue to the next topic.")}</p>
               </div>
             </div>
           </Card>
         )}
 
         <section className="mt-8">
-          <SectionHeading title="Answer review" subtitle="See what you selected and why the correct answer is right." />
+          <SectionHeading title={translateValue("Answer review")} subtitle={translateValue("See what you selected and why the correct answer is right.")} />
           <div className="space-y-4">
             {result.questions?.length ? (
               result.questions.map((question, index) => {
@@ -126,36 +122,36 @@ function QuizResult() {
                     <div className="flex items-start gap-4">
                       {isCorrect ? <CheckCircle2 size={26} className="mt-0.5 shrink-0 text-[#1E8A6B]" /> : <XCircle size={26} className="mt-0.5 shrink-0 text-[#D9822B]" />}
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold tracking-wider text-[#6C8589]">QUESTION {index + 1}</p>
-                        <h3 className="mt-1 text-lg font-bold leading-7 text-[#06424B]">{question.question}</h3>
+                        <p className="text-xs font-bold tracking-wider text-[#6C8589]">{translateValue("QUESTION")}{" "}{translateValue(index + 1)}</p>
+                        <h3 className="mt-1 text-lg font-bold leading-7 text-[#06424B]">{translateValue(question.question)}</h3>
                         <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                          <p className="rounded-xl bg-white px-4 py-2.5 text-[#3F5C60] ring-1 ring-[#E1ECEA]">Your answer: <strong className={isCorrect ? "text-[#1E8A6B]" : "text-[#C46A12]"}>{chosen || "Not answered"}</strong></p>
-                          <p className="rounded-xl bg-white px-4 py-2.5 text-[#3F5C60] ring-1 ring-[#E1ECEA]">Correct: <strong className="text-[#06424B]">{question.answer}</strong></p>
+                          <p className="rounded-xl bg-white px-4 py-2.5 text-[#3F5C60] ring-1 ring-[#E1ECEA]">{translateValue("Your answer:")}{" "}<strong className={isCorrect ? "text-[#1E8A6B]" : "text-[#C46A12]"}>{translateValue(chosen || "Not answered")}</strong></p>
+                          <p className="rounded-xl bg-white px-4 py-2.5 text-[#3F5C60] ring-1 ring-[#E1ECEA]">{translateValue("Correct:")}{" "}<strong className="text-[#06424B]">{translateValue(question.answer)}</strong></p>
                         </div>
-                        <p className="mt-3 text-[15px] leading-6 text-[#3F5C60]">{question.explanation}</p>
+                        <p className="mt-3 text-[15px] leading-6 text-[#3F5C60]">{translateValue(question.explanation)}</p>
                       </div>
                     </div>
                   </Card>
                 );
               })
             ) : (
-              <Card className="border-dashed p-8 text-center text-sm text-[#5A7478]">Open a quiz and submit your answers to see the detailed review.</Card>
+              <Card className="border-dashed p-8 text-center text-sm text-[#5A7478]">{translateValue("Open a quiz and submit your answers to see the detailed review.")}</Card>
             )}
           </div>
         </section>
 
         <div className="mt-8 flex flex-wrap gap-3">
           {isFinalAssignment && !passed && result.quizSlug && (
-            <LinkButton to={`/student/quiz/${result.quizSlug}`} variant="gold" icon={RotateCcw}>Retake Final Assignment</LinkButton>
+            <LinkButton to={`/student/quiz/${result.quizSlug}`} variant="gold" icon={RotateCcw}>{translateValue("Retake Final Assignment")}</LinkButton>
           )}
           {isFinalAssignment && passed && (
-            <LinkButton to="/student/certificates" variant="gold" icon={Award}>View Certificate</LinkButton>
+            <LinkButton to="/student/certificates" variant="gold" icon={Award}>{translateValue("View Certificate")}</LinkButton>
           )}
           {!isFinalAssignment && result.nextPath && (
-            <LinkButton to={result.nextPath} variant="gold" iconRight={ArrowRight}>Continue Learning</LinkButton>
+            <LinkButton to={result.nextPath} variant="gold" iconRight={ArrowRight}>{translateValue("Continue Learning")}</LinkButton>
           )}
-          <LinkButton to={coursePath} variant="outline" icon={ArrowLeft}>Back to My Learning</LinkButton>
-          <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>My Learning</LinkButton>
+          <LinkButton to={coursePath} variant="outline" icon={ArrowLeft}>{translateValue("Back to My Learning")}</LinkButton>
+          <LinkButton to="/student/my-learning" variant="outline" icon={BookOpen}>{translateValue("My Learning")}</LinkButton>
         </div>
       </PageShell>
     

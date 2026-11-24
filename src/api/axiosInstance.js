@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAccessToken } from "../services/authSession";
+import i18n from "../i18n";
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -13,6 +14,9 @@ const API = axios.create({
 API.interceptors.request.use(
   (config) => {
     const requiresAuth = config.requiresAuth !== false;
+
+    // Send the selected language to endpoints that provide localized content.
+    config.headers["Accept-Language"] = i18n.resolvedLanguage || i18n.language || "en";
 
     // Preserve the authentication requirement for response handling
     config.requiresAuth = requiresAuth;

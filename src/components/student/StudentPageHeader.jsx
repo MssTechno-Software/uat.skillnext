@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { Bell, Search } from "lucide-react";
 import { getUserRole } from "../../services/authSession";
 import StudentProfileMenu from "./StudentProfileMenu";
@@ -10,16 +11,15 @@ function StudentPageHeader({ title, subtitle, actions }) {
     <header className="relative z-40 mb-5 flex w-full items-start justify-between gap-3 sm:mb-6 sm:gap-4">
       <div className="min-w-0 flex-1 pt-0.5">
         <p className="text-[9px] font-bold tracking-[1.15px] text-[#B07A06] sm:text-[11px] sm:tracking-[1.4px]">
-          {roleLabel.toUpperCase()} WORKSPACE
-        </p>
+          {translateValue(roleLabel).toUpperCase()} {translateValue("WORKSPACE")}</p>
 
         <h1 className="mt-1 break-words text-xl font-extrabold leading-tight tracking-[-0.4px] text-[#06424B] sm:text-2xl lg:text-[28px] lg:tracking-[-0.5px]">
-          {title}
+          {translateValue(title)}
         </h1>
 
         {subtitle && (
           <p className="mt-1 max-w-2xl text-xs leading-5 text-[#5A7478] sm:text-sm">
-            {subtitle}
+            {translateValue(subtitle)}
           </p>
         )}
       </div>
@@ -27,14 +27,14 @@ function StudentPageHeader({ title, subtitle, actions }) {
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {/* Search remains desktop-only to keep the mobile header uncluttered. */}
         <label className="relative hidden lg:block">
-          <span className="sr-only">Search learning</span>
+          <span className="sr-only">{translateValue("Search learning")}</span>
           <Search
             size={17}
             className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6C8589]"
           />
           <input
             type="search"
-            placeholder="Search learning..."
+            placeholder={translateValue("Search learning...")}
             className="h-11 w-[240px] rounded-xl border border-[#D5E4E2] bg-white pl-10 pr-3 text-sm text-[#2F4A4E] shadow-sm outline-none placeholder:text-[#8AA0A3] focus:border-[#06424B] focus:ring-4 focus:ring-[#FFAB0B]/25"
           />
         </label>
@@ -42,7 +42,7 @@ function StudentPageHeader({ title, subtitle, actions }) {
         {/* Notifications remain desktop-only. */}
         <button
           type="button"
-          aria-label="Notifications"
+          aria-label={translateValue("Notifications")}
           className="relative hidden h-11 w-11 items-center justify-center rounded-xl border border-[#D5E4E2] bg-white text-[#06424B] shadow-sm transition-colors hover:bg-[#FFF4D6] lg:flex"
         >
           <Bell size={18} />
@@ -54,7 +54,7 @@ function StudentPageHeader({ title, subtitle, actions }) {
         {/* The desktop trigger is hidden on mobile; mobile trigger lives in Sidebar. */}
         <StudentProfileMenu className="hidden lg:block" showProfileErrorDialog />
 
-        {actions}
+        {translateValue(actions)}
       </div>
     </header>
   );

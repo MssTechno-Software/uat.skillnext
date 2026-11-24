@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import {
   BookOpen,
@@ -65,8 +66,8 @@ function StudyResources() {
   return (
     <PageShell max="max-w-[1300px]">
       <StudentPageHeader
-        title="Study Resources"
-        subtitle="Everything you need to learn, revise and practice."
+        title={translateValue("Study Resources")}
+        subtitle={translateValue("Everything you need to learn, revise and practice.")}
       />
 
       <div className="relative mt-6 overflow-hidden rounded-[26px] bg-[#06424B] px-6 py-10 shadow-[0_12px_35px_rgba(6,66,75,0.12)] sm:px-10 sm:py-12">
@@ -82,28 +83,21 @@ function StudyResources() {
             <div className="inline-flex items-center gap-2 rounded-full border border-[#FFAB0B]/30 bg-[#FFAB0B]/10 px-4 py-2">
               <Sparkles size={14} className="text-[#FFAB0B]" />
               <span className="text-[10px] font-extrabold tracking-[1.8px] text-[#FFCB65]">
-                YOUR LEARNING LIBRARY
-              </span>
+                {translateValue("YOUR LEARNING LIBRARY")}</span>
             </div>
 
             <h2 className="mt-5 max-w-[620px] text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
-              Learn More.
-              <span className="block text-[#FFAB0B]">
-                Explore More.
-              </span>
+              {translateValue("Learn More.")}<span className="block text-[#FFAB0B]">
+                {translateValue("Explore More.")}</span>
             </h2>
 
             <p className="mt-4 max-w-[530px] text-sm leading-7 text-white/65">
-              Your learning journey deserves more than lessons.
-              Explore notes, presentations, reference materials and
-              practice resources to make learning easier.
-            </p>
+              {translateValue("Your learning journey deserves more than lessons. Explore notes, presentations, reference materials and practice resources to make learning easier.")}</p>
 
             <div className="mt-7 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.08] px-4 py-3">
               <span className="h-2 w-2 rounded-full bg-[#FFAB0B] animate-pulse" />
               <span className="text-xs font-bold tracking-wide text-white">
-                COMING SOON
-              </span>
+                {translateValue("COMING SOON")}</span>
             </div>
           </div>
 
@@ -146,17 +140,14 @@ function StudyResources() {
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-[#06424B]">
-              What's Inside?
-            </h2>
+              {translateValue("What's Inside?")}</h2>
             <p className="mt-1 text-xs leading-5 text-[#829596]">
-              Explore the different types of learning resources.
-            </p>
+              {translateValue("Explore the different types of learning resources.")}</p>
           </div>
 
           <span className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#DCE7E5] bg-white px-3 py-2 text-[10px] font-bold text-[#527477]">
             <BookOpen size={13} />
-            6 RESOURCE CATEGORIES
-          </span>
+            {translateValue("6 RESOURCE CATEGORIES")}</span>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -176,22 +167,21 @@ function StudyResources() {
                   </div>
 
                   <span className="rounded-md bg-[#F3F6F5] px-2.5 py-1.5 text-[9px] font-extrabold tracking-wide text-[#718486]">
-                    {item.tag}
+                    {translateValue(item.tag)}
                   </span>
                 </div>
 
                 <h3 className="mt-5 text-[15px] font-extrabold text-[#06424B]">
-                  {item.title}
+                  {translateValue(item.title)}
                 </h3>
 
                 <p className="mt-2 min-h-[48px] text-xs leading-6 text-[#829596]">
-                  {item.description}
+                  {translateValue(item.description)}
                 </p>
 
                 <div className="mt-5 flex items-center justify-between border-t border-[#EDF1EF] pt-4">
                   <span className="text-[10px] font-bold tracking-wide text-[#A0ACAC]">
-                    COMING SOON
-                  </span>
+                    {translateValue("COMING SOON")}</span>
 
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F5F8F7] text-[#06424B] transition-all group-hover:bg-[#FFAB0B]">
                     <ArrowRight size={15} />
@@ -212,11 +202,9 @@ function StudyResources() {
 
         <div>
           <p className="text-xs font-bold text-[#06424B]">
-            Your resources are on their way!
-          </p>
+            {translateValue("Your resources are on their way!")}</p>
           <p className="mt-1 text-[11px] leading-5 text-[#829596]">
-            Get ready to explore, read, revise and download your learning materials.
-          </p>
+            {translateValue("Get ready to explore, read, revise and download your learning materials.")}</p>
         </div>
       </div>
     </PageShell>

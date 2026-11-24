@@ -1,3 +1,4 @@
+import { translateValue } from "../i18n";
 
 import {
   createContext,
@@ -173,7 +174,7 @@ export function ProfileProvider({ children }) {
         updateProfileData,
       }}
     >
-      {children}
+      {translateValue(children)}
     </ProfileContext.Provider>
   );
 }

@@ -18,52 +18,33 @@ const SPECIFIC_STATUS_MESSAGES = Object.freeze({
 });
 
 export const getHttpStatusMessage = (status) => {
-  if (
-    !Number.isInteger(status) ||
-    status < 100 ||
-    status > 599
-  ) {
-    return "Something went wrong. Please try again.";
+  if (!Number.isInteger(status) || status < 100 || status > 599) {
+    return ("Something went wrong. Please try again.");
   }
 
   const statusClass = Math.floor(status / 100);
-
-  return STATUS_CLASS_MESSAGES[statusClass];
+  return (STATUS_CLASS_MESSAGES[statusClass] || "Something went wrong. Please try again.");
 };
 
 export const getApiErrorMessage = (
   error,
   fallbackMessage = "Something went wrong. Please try again."
 ) => {
-  // Request timeout
-  if (
-    error?.code === "ECONNABORTED" ||
-    error?.code === "ETIMEDOUT"
-  ) {
-    return "The request took too long. Please try again.";
+  if (error?.code === "ECONNABORTED" || error?.code === "ETIMEDOUT") {
+    return ("The request took too long. Please try again.");
   }
 
   const status = error?.response?.status;
 
-  // Network error
   if (!Number.isInteger(status)) {
     if (error?.request) {
-      return "Unable to connect. Please check your internet connection and try again.";
+      return ("Unable to connect. Please check your internet connection and try again.");
     }
-
-    return fallbackMessage;
+    return (fallbackMessage);
   }
 
-  // Successful responses are not errors
-  if (status >= 200 && status < 300) {
-    return fallbackMessage;
-  }
+  if (status >= 200 && status < 300) return (fallbackMessage);
+  if (SPECIFIC_STATUS_MESSAGES[status]) return (SPECIFIC_STATUS_MESSAGES[status]);
 
-  // Specific status messages take priority
-  if (SPECIFIC_STATUS_MESSAGES[status]) {
-    return SPECIFIC_STATUS_MESSAGES[status];
-  }
-
-  // Remaining errors use status-class messages
   return getHttpStatusMessage(status);
 };

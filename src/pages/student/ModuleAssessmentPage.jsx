@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
@@ -37,6 +38,14 @@ import {
 import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 
 const EMPTY_IDS = Object.freeze([]);
+
+const getLocalizedText = (value, language, fallback = "") => {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const shortLanguage = String(language || "en").split("-")[0];
+    return value[shortLanguage] ?? value[language] ?? value.en ?? value.fr ?? fallback;
+  }
+  return value ?? fallback;
+};
 
 
 const normalizeLearningPath = (response) => {
@@ -88,7 +97,9 @@ const getStudentErrorMessage = (error, fallbackMessage) => {
   }
 
   // Reuse the shared application error handler for network, timeout and HTTP errors.
-  return validationMessage || getApiErrorMessage(error, fallbackMessage);
+  return validationMessage
+    ? validationMessage
+    : getApiErrorMessage(error, fallbackMessage);
 };
 
 // Detects the backend message returned when every attempt has been used.
@@ -151,6 +162,8 @@ function AssessmentLoadingState({
   title = "Preparing your questions",
   message = "We’re getting your quiz ready. Please keep this page open.",
 }) {
+  const { t } = useTranslation("ui");
+
   return (
     <PageShell max="max-w-[1180px]">
       <div className="mx-auto w-full">
@@ -162,15 +175,14 @@ function AssessmentLoadingState({
               </span>
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[1.6px] text-[#FFD47A]">
-                  Module assessment
-                </p>
+                  {t("Module assessment")}</p>
                 <h2 className="mt-1 text-xl font-extrabold text-white sm:text-2xl">
-                  {title}
+                  {t(title)}
                 </h2>
               </div>
             </div>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-white/75">
-              {message}
+              {t(message)}
             </p>
           </div>
 
@@ -211,6 +223,7 @@ function AssessmentLoadError({
   isRestarting = false,
   restartError = "",
 }) {
+  const { t } = useTranslation("ui");
   const backPath = courseId
     ? `/student/my-learning?course=${encodeURIComponent(courseId)}`
     : "/student/my-learning";
@@ -225,10 +238,10 @@ function AssessmentLoadError({
             </span>
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFD47A]">
-                {attemptsExhausted ? "Attempts completed" : "Assessment unavailable"}
+                {t(attemptsExhausted ? "Attempts completed" : "Assessment unavailable")}
               </p>
               <h2 className="mt-1 text-xl font-extrabold sm:text-2xl">
-                {attemptsExhausted ? "All attempts used" : "We couldn't open your quiz"}
+                {t(attemptsExhausted ? "All attempts used" : "We couldn't open your quiz")}
               </h2>
             </div>
           </div>
@@ -242,10 +255,9 @@ function AssessmentLoadError({
             >
               <Info size={18} className="mt-0.5 shrink-0 text-[#B07A06]" />
               <div>
-                <p className="text-sm font-bold leading-6 text-[#805C17]">{message}</p>
+                <p className="text-sm font-bold leading-6 text-[#805C17]">{t(message)}</p>
                 <p className="mt-1 text-sm leading-6 text-[#8A6B2A]">
-                  Restart this module to read it again and unlock a fresh assessment.
-                </p>
+                  {t("Restart this module to read it again and unlock a fresh assessment.")}</p>
               </div>
             </div>
           ) : (
@@ -254,7 +266,7 @@ function AssessmentLoadError({
               className="flex items-start gap-3 rounded-2xl border border-[#F0D8D2] bg-[#FFF8F6] p-4"
             >
               <AlertCircle size={18} className="mt-0.5 shrink-0 text-[#A85A50]" />
-              <p className="text-sm leading-6 text-[#80534D]">{message}</p>
+              <p className="text-sm leading-6 text-[#80534D]">{t(message)}</p>
             </div>
           )}
 
@@ -264,7 +276,7 @@ function AssessmentLoadError({
               className="mt-4 flex items-start gap-2 rounded-xl border border-[#F0D8D2] bg-[#FFF8F6] px-4 py-3 text-xs leading-6 text-[#80534D]"
             >
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
-              <span>{restartError}</span>
+              <span>{t(restartError)}</span>
             </div>
           )}
 
@@ -282,7 +294,7 @@ function AssessmentLoadError({
                 ) : (
                   <RotateCcw size={16} />
                 )}
-                {isRestarting ? "Restarting module..." : "Restart Module"}
+                {t(isRestarting ? "Restarting module..." : "Restart Module")}
               </button>
             ) : (
               <button
@@ -291,8 +303,7 @@ function AssessmentLoadError({
                 className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2"
               >
                 <TimerReset size={16} />
-                Try Again
-              </button>
+                {t("Try Again")}</button>
             )}
             <Link
               to={backPath}
@@ -300,8 +311,7 @@ function AssessmentLoadError({
               className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-5 text-sm font-bold text-[#06424B] !no-underline transition hover:bg-[#F4F7F7]"
             >
               <ArrowLeft size={16} />
-              Back to My Learning
-            </Link>
+              {t("Back to My Learning")}</Link>
           </div>
         </div>
       </Card>
@@ -363,29 +373,30 @@ const getMonacoLanguage = (language) => {
   return aliases[value] || value.replace(/[^a-z0-9+#-]/g, "") || "plaintext";
 };
 
-function buildBrowserPreviewDocument({ language, code, stdin, runId }) {
+function buildBrowserPreviewDocument({ language, code, stdin, runId, labels }) {
   const safeCode = String(code || '').replace(/<\/script/gi, '<\\/script');
   const inputLines = JSON.stringify(String(stdin || '').replace(/\r\n/g, '\n').split('\n'));
-  const bridge = `<script>(()=>{const runId=${JSON.stringify(runId)};const inputs=${inputLines};const send=(kind,value)=>parent.postMessage({type:'skillnext-code-output',runId,kind,value:String(value??'')},'*');['log','info','warn','error'].forEach(k=>{const original=console[k].bind(console);console[k]=(...args)=>{original(...args);send(k,args.map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join(' '))}});window.prompt=(message)=>{send('log',message||'Input requested');return inputs.length?inputs.shift():''};window.addEventListener('error',e=>send('error',e.message));window.addEventListener('unhandledrejection',e=>send('error',e.reason?.message||e.reason));window.addEventListener('load',()=>send('ready','Preview loaded'))})();</script>`;
+  const bridge = `<script>(()=>{const runId=${JSON.stringify(runId)};const inputs=${inputLines};const send=(kind,value)=>parent.postMessage({type:'skillnext-code-output',runId,kind,value:String(value??'')},'*');['log','info','warn','error'].forEach(k=>{const original=console[k].bind(console);console[k]=(...args)=>{original(...args);send(k,args.map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join(' '))}});window.prompt=(message)=>{send('log',message||${JSON.stringify(labels.inputRequested)});return inputs.length?inputs.shift():''};window.addEventListener('error',e=>send('error',e.message));window.addEventListener('unhandledrejection',e=>send('error',e.reason?.message||e.reason));window.addEventListener('load',()=>send('ready',${JSON.stringify(labels.previewLoaded)}))})();</script>`;
 
   if (language === 'html') {
     if (/<html[\s>]/i.test(code) || /<!doctype/i.test(code)) return String(code).replace(/<\/head>/i, `${bridge}</head>`);
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${bridge}</head><body>${code}</body></html>`;
   }
   if (language === 'css') {
-    return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:24px;color:#173A40}.sample{padding:24px;border:1px solid #dce8e6;border-radius:16px;background:#f4f7f7}${code}</style>${bridge}</head><body><div class="sample"><h2>CSS Preview</h2><p>Change the CSS to style this sample content.</p><button class="demo-button">Preview button</button></div></body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:24px;color:#173A40}.sample{padding:24px;border:1px solid #dce8e6;border-radius:16px;background:#f4f7f7}${code}</style>${bridge}</head><body><div class="sample"><h2>${labels.cssPreview}</h2><p>${labels.cssInstructions}</p><button class="demo-button">${labels.previewButton}</button></div></body></html>`;
   }
   if (language === 'react') {
     const hasMount = /createRoot\s*\(|ReactDOM\.render\s*\(/.test(code);
-    const mount = hasMount ? '' : `\nconst root=ReactDOM.createRoot(document.getElementById('root'));root.render(typeof App!=='undefined'?<App/>:<div style={{padding:20}}>Create an App component to preview.</div>);`;
+    const mount = hasMount ? '' : `\nconst root=ReactDOM.createRoot(document.getElementById('root'));root.render(typeof App!=='undefined'?<App/>:<div style={{padding:20}}>${labels.createAppToPreview}</div>);`;
     const reactCode = `${code}${mount}`.replace(/<\/script/gi, '<\\/script');
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial;padding:20px;color:#173A40}</style>${bridge}<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script><script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script></head><body><div id="root"></div><script type="text/babel" data-presets="env,react">${reactCode}</script></body></html>`;
   }
-  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px;color:#173A40}</style>${bridge}</head><body><p style="font-size:12px;color:#829596">JavaScript sandbox preview. Use console.log() to print output.</p><script>${safeCode}</script></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:20px;color:#173A40}</style>${bridge}</head><body><p style="font-size:12px;color:#829596">${labels.javascriptPreviewInstructions}</p><script>${safeCode}</script></body></html>`;
 }
 
 function CodingEditor({ question, value, onChange, disabled }) {
-  const [copied,setCopied]=useState(false);
+  const { t, i18n } = useTranslation("ui");
+  const [copied, setCopied]=useState(false);
   const [stdin,setStdin]=useState('');
   const [output,setOutput]=useState('');
   const [runError,setRunError]=useState('');
@@ -416,10 +427,10 @@ function CodingEditor({ question, value, onChange, disabled }) {
     return()=>window.removeEventListener('message',onMessage);
   },[]);
 
-  const copyCode=async()=>{try{await navigator.clipboard.writeText(code);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch(error){setRunError('Clipboard access is unavailable in this browser.');}};
+  const copyCode=async()=>{try{await navigator.clipboard.writeText(code);setCopied(true);window.setTimeout(()=>setCopied(false),1500);}catch(error){setRunError(t("Clipboard access is unavailable in this browser."));}};
 
   const runPythonCode=async()=>{
-    if(!String(code).trim()){setRunError('Write your Python code before running it.');return;}
+    if(!String(code).trim()){setRunError(t("Write your Python code before running it."));return;}
     setIsRunning(true);setOutput('');setRunError('');setShowPreview(false);setActiveTab('output');
     try{
       const pyodide=await loadPyodideRuntime();setRuntimeReady(true);
@@ -427,48 +438,63 @@ function CodingEditor({ question, value, onChange, disabled }) {
       pyodide.setStdin({stdin:()=>lines.length?lines.shift():null});
       pyodide.setStdout({batched:chunk=>out.push(chunk)});pyodide.setStderr({batched:chunk=>err.push(chunk)});
       await pyodide.runPythonAsync(String(code));
-      setOutput(out.join('')||(err.length?'':'Program executed successfully with no output.'));
+      setOutput(out.join("") || (err.length ? "" : t("Program executed successfully with no output.")));
       if(err.length)setRunError(err.join(''));
-    }catch(error){setRunError(error?.message||'Python execution failed. Check your code and try again.');}
+    }catch(error){setRunError(t(error?.message || "Python execution failed. Check your code and try again."));}
     finally{setIsRunning(false);}
   };
 
   const runBrowserCode=()=>{
-    if(!String(code).trim()){setRunError('Write your code before running it.');return;}
+    if(!String(code).trim()){setRunError(t("Write your code before running it."));return;}
     const runId=`${question.id}-${Date.now()}`;activeRunIdRef.current=runId;
     setIsRunning(true);setRuntimeReady(false);setOutput('');setRunError('');
     setActiveTab(['html','css','react'].includes(language)?'preview':'output');setShowPreview(true);
-    setPreviewDocument(buildBrowserPreviewDocument({language,code,stdin,runId}));
+    setPreviewDocument(buildBrowserPreviewDocument({
+      language,
+      code,
+      stdin,
+      runId,
+      labels: {
+        cssPreview: t("CSS Preview"),
+        cssInstructions: t("Change the CSS to style this sample content."),
+        previewButton: t("Preview button"),
+        createAppToPreview: t("Create an App component to preview."),
+        javascriptPreviewInstructions: t("JavaScript sandbox preview. Use console.log() to print output."),
+        inputRequested: t("Input requested"),
+        previewLoaded: t("Preview loaded"),
+      },
+    }));
     window.setTimeout(()=>{if(activeRunIdRef.current===runId)setIsRunning(false);},3000);
   };
 
   const runJavaCode=()=>{
     setOutput('');setActiveTab('output');setShowPreview(false);
-    setRunError('Java needs both a compiler and a JVM. CheerpJ CDN runs compiled .class/.jar files; it does not compile Java source typed in this editor. A secure Java execution API or browser-based Java compiler is required to enable this Run Code button.');
+    setRunError(t("Java needs both a compiler and a JVM. CheerpJ CDN runs compiled .class/.jar files; it does not compile Java source typed in this editor. A secure Java execution API or browser-based Java compiler is required to enable this Run Code button."));
   };
-  const handleRun=()=>isPython?runPythonCode():isBrowserLanguage?runBrowserCode():isJava?runJavaCode():setRunError(`Run Code is not configured for ${question.language||'this language'}.`);
+  const handleRun = () => isPython ? runPythonCode() : isBrowserLanguage ? runBrowserCode() : isJava ? runJavaCode() : setRunError(t("Run Code is not configured for {{language}}.", { language: question.language || t("this language") }));
   const monacoLanguage=getMonacoLanguage(language==='react'?'javascript':language);
 
   return (
     <div className="mt-6 overflow-hidden rounded-[22px] border border-[#D8E4E2] bg-[#102B30] shadow-[0_16px_38px_rgba(6,66,75,0.12)]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#173A40] px-4 py-3 sm:px-5">
-        <div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFAB0B]/15 text-[#FFAB0B]"><Code2 size={18}/></span><div><p className="text-xs font-extrabold text-white">Coding workspace</p><p className="mt-0.5 text-[10px] text-[#A9C0C0]">{isPython?'Python browser runtime':isBrowserLanguage?'Live browser preview':isJava?'Java compiler setup required':'Code editor'}</p></div></div>
-        <div className="flex items-center gap-2"><span className="rounded-lg border border-white/10 bg-white/[0.07] px-3 py-2 text-[10px] font-bold uppercase tracking-[1px] text-[#FFD47A]">{question.language||'Python'}</span><button type="button" onClick={copyCode} disabled={!code} className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.07] px-3 text-[11px] font-semibold text-white transition hover:bg-white/[0.13] disabled:opacity-40"><Copy size={13}/>{copied?'Copied':'Copy'}</button></div>
+        <div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFAB0B]/15 text-[#FFAB0B]"><Code2 size={18}/></span><div><p className="text-xs font-extrabold text-white">{t("Coding workspace")}</p><p className="mt-0.5 text-[10px] text-[#A9C0C0]">{t(isPython ? "Python browser runtime" : isBrowserLanguage ? "Live browser preview" : isJava ? "Java compiler setup required" : "Code editor")}</p></div></div>
+        <div className="flex items-center gap-2"><span className="rounded-lg border border-white/10 bg-white/[0.07] px-3 py-2 text-[10px] font-bold uppercase tracking-[1px] text-[#FFD47A]">{getLocalizedText(question.language, i18n.resolvedLanguage, "Python")}</span><button type="button" onClick={copyCode} disabled={!code} className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.07] px-3 text-[11px] font-semibold text-white transition hover:bg-white/[0.13] disabled:opacity-40"><Copy size={13}/>{t(copied ? "Copied" : "Copy")}</button></div>
       </div>
-      <div className="overflow-hidden bg-[#102B30]"><Editor height="360px" language={monacoLanguage} theme="vs-dark" value={code} onChange={next=>onChange(next??'')} loading={<div className="flex h-[360px] items-center justify-center text-xs text-[#A9C0C0]">Loading code editor...</div>} options={{readOnly:disabled,minimap:{enabled:false},fontSize:13,lineHeight:23,fontFamily:"'Cascadia Code','Fira Code',Consolas,monospace",fontLigatures:true,automaticLayout:true,scrollBeyondLastLine:false,wordWrap:'on',tabSize:4,insertSpaces:true,padding:{top:16,bottom:16},lineNumbers:'on',renderLineHighlight:'all',roundedSelection:true,cursorBlinking:'smooth',smoothScrolling:true,contextmenu:true,suggestOnTriggerCharacters:true,quickSuggestions:true,overviewRulerBorder:false,scrollbar:{verticalScrollbarSize:8,horizontalScrollbarSize:8}}}/></div>
+      <div className="overflow-hidden bg-[#102B30]"><Editor height="360px" language={monacoLanguage} theme="vs-dark" value={code} onChange={next=>onChange(next??'')} loading={<div className="flex h-[360px] items-center justify-center text-xs text-[#A9C0C0]">{t("Loading code editor...")}</div>} options={{readOnly:disabled,minimap:{enabled:false},fontSize:13,lineHeight:23,fontFamily:"'Cascadia Code','Fira Code',Consolas,monospace",fontLigatures:true,automaticLayout:true,scrollBeyondLastLine:false,wordWrap:'on',tabSize:4,insertSpaces:true,padding:{top:16,bottom:16},lineNumbers:'on',renderLineHighlight:'all',roundedSelection:true,cursorBlinking:'smooth',smoothScrolling:true,contextmenu:true,suggestOnTriggerCharacters:true,quickSuggestions:true,overviewRulerBorder:false,scrollbar:{verticalScrollbarSize:8,horizontalScrollbarSize:8}}}/></div>
       <div className="grid gap-4 border-t border-white/10 bg-[#173A40] p-4 sm:p-5 lg:grid-cols-2">
-        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><label htmlFor={`stdin-${question.id}`} className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#D9E7E5]"><Terminal size={14} className="text-[#FFAB0B]"/>Input (stdin)</label><span className="text-[10px] text-[#A9C0C0]">One value per line</span></div><textarea id={`stdin-${question.id}`} value={stdin} onChange={e=>setStdin(e.target.value)} disabled={disabled||isRunning} rows={4} placeholder={'Example:\n10\n20'} className="w-full resize-y rounded-xl border border-white/10 bg-[#102B30] px-3 py-3 font-mono text-xs leading-6 text-white outline-none placeholder:text-[#668084] focus:border-[#FFAB0B]/60 disabled:opacity-60"/></div>
-        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><button type="button" onClick={()=>setActiveTab('output')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='output'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>Output</button>{isBrowserLanguage&&<button type="button" onClick={()=>setActiveTab('preview')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='preview'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>Preview</button>}</div>{runtimeReady&&<span className="text-[10px] text-[#A7D98E]">Runtime ready</span>}</div>
-          {activeTab==='preview'&&showPreview&&isBrowserLanguage?<iframe key={activeRunIdRef.current} ref={previewFrameRef} title={`Code preview ${question.id}`} srcDoc={previewDocument} sandbox="allow-scripts allow-modals" className="h-[230px] w-full rounded-xl border border-white/10 bg-white"/>:<div className="min-h-[112px] max-h-[230px] overflow-auto rounded-xl border border-white/10 bg-[#0B2024] p-3 font-mono text-xs leading-6 text-[#DCE9E7]">{runError?<pre className="whitespace-pre-wrap break-words text-[#FFB4A9]">{runError}</pre>:output?<pre className="whitespace-pre-wrap break-words">{output}</pre>:<p className="text-[#668084]">Run your code to see the output here.</p>}</div>}
+        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><label htmlFor={`stdin-${question.id}`} className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#D9E7E5]"><Terminal size={14} className="text-[#FFAB0B]"/>{t("Input (stdin)")}</label><span className="text-[10px] text-[#A9C0C0]">{t("One value per line")}</span></div><textarea id={`stdin-${question.id}`} value={stdin} onChange={e=>setStdin(e.target.value)} disabled={disabled||isRunning} rows={4} placeholder={t('Example:\n10\n20')} className="w-full resize-y rounded-xl border border-white/10 bg-[#102B30] px-3 py-3 font-mono text-xs leading-6 text-white outline-none placeholder:text-[#668084] focus:border-[#FFAB0B]/60 disabled:opacity-60"/></div>
+        <div className="min-w-0"><div className="mb-2 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><button type="button" onClick={()=>setActiveTab('output')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='output'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>{t("Output")}</button>{isBrowserLanguage&&<button type="button" onClick={()=>setActiveTab('preview')} className={`rounded-lg px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${activeTab==='preview'?'bg-white/10 text-white':'text-[#A9C0C0]'}`}>{t("Preview")}</button>}</div>{runtimeReady&&<span className="text-[10px] text-[#A7D98E]">{t("Runtime ready")}</span>}</div>
+          {activeTab==='preview'&&showPreview&&isBrowserLanguage?<iframe key={activeRunIdRef.current} ref={previewFrameRef} title={t("Code preview {{id}}", { id: question.id })} srcDoc={previewDocument} sandbox="allow-scripts allow-modals" className="h-[230px] w-full rounded-xl border border-white/10 bg-white"/>:<div className="min-h-[112px] max-h-[230px] overflow-auto rounded-xl border border-white/10 bg-[#0B2024] p-3 font-mono text-xs leading-6 text-[#DCE9E7]">{runError?<pre className="whitespace-pre-wrap break-words text-[#FFB4A9]">{runError}</pre>:output?<pre className="whitespace-pre-wrap break-words">{output}</pre>:<p className="text-[#668084]">{t("Run your code to see the output here.")}</p>}</div>}
           {runError&&activeTab==='preview'&&<pre className="mt-2 max-h-20 overflow-auto whitespace-pre-wrap break-words text-[11px] text-[#FFB4A9]">{runError}</pre>}
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#102B30] px-4 py-3 sm:px-5"><p className="max-w-xl text-[10px] leading-5 text-[#A9C0C0]">{isPython?'Python runs in-browser using Pyodide.':isBrowserLanguage?'HTML, CSS, JavaScript and React run inside a sandboxed browser preview.':isJava?'Java source compilation needs an execution service or browser compiler.':'Execution is not configured.'} Your code is included in the assessment submission.</p><div className="flex items-center gap-3"><span className="hidden rounded-full bg-[#FFAB0B]/10 px-3 py-1.5 text-[10px] font-bold text-[#FFD47A] sm:inline-flex">{Number(question.score)||0} {Number(question.score)===1?'mark':'marks'}</span><button type="button" onClick={handleRun} disabled={disabled||isRunning||(!isPython&&!isBrowserLanguage&&!isJava)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#173A40] shadow-[0_5px_16px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC044] disabled:cursor-not-allowed disabled:opacity-50">{isRunning?<LoaderCircle size={15} className="animate-spin"/>:<Play size={15} fill="currentColor"/>}{isRunning?'Running...':'Run Code'}</button></div></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#102B30] px-4 py-3 sm:px-5"><p className="max-w-xl text-[10px] leading-5 text-[#A9C0C0]">{t(isPython ? "Python runs in-browser using Pyodide." : isBrowserLanguage ? "HTML, CSS, JavaScript and React run inside a sandboxed browser preview." : isJava ? "Java source compilation needs an execution service or browser compiler." : "Execution is not configured.")} {t("Your code is included in the assessment submission.")}</p><div className="flex items-center gap-3"><span className="hidden rounded-full bg-[#FFAB0B]/10 px-3 py-1.5 text-[10px] font-bold text-[#FFD47A] sm:inline-flex">{t("{{count}} mark", { count: Number(question.score) || 0 })}</span><button type="button" onClick={handleRun} disabled={disabled||isRunning||(!isPython&&!isBrowserLanguage&&!isJava)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-xs font-extrabold text-[#173A40] shadow-[0_5px_16px_rgba(255,171,11,0.18)] transition hover:bg-[#FFC044] disabled:cursor-not-allowed disabled:opacity-50">{isRunning?<LoaderCircle size={15} className="animate-spin"/>:<Play size={15} fill="currentColor"/>}{t(isRunning ? "Running..." : "Run Code")}</button></div></div>
     </div>
   );
 }
 
 function QuestionAnswer({ question, value, onChange, disabled }) {
+  const { t, i18n } = useTranslation("ui");
   const options = Array.isArray(question.options) ? question.options : [];
   const questionType = String(question.questionType || "text")
     .trim()
@@ -500,7 +526,7 @@ function QuestionAnswer({ question, value, onChange, disabled }) {
               onClick={() => onChange(option)}
               className={`flex min-h-[62px] items-center justify-between rounded-2xl border px-5 py-4 text-left text-sm font-bold transition ${selected ? "border-[#06424B] bg-[#EDF5F3] text-[#06424B] shadow-[0_6px_18px_rgba(6,66,75,0.07)]" : "border-[#E2EBE9] bg-white text-[#38565A] hover:border-[#D6B76D] hover:bg-[#FFFCF5]"} disabled:cursor-not-allowed disabled:opacity-60`}
             >
-              <span>{option ? "True" : "False"}</span>
+              <span>{t(option ? "True" : "False")}</span>
               <span className={`flex h-7 w-7 items-center justify-center rounded-full border ${selected ? "border-[#06424B] bg-[#06424B] text-white" : "border-[#D5E1DE] bg-[#F7FAF9] text-transparent"}`}><Check size={15} /></span>
             </button>
           );
@@ -535,7 +561,7 @@ function QuestionAnswer({ question, value, onChange, disabled }) {
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-extrabold transition ${selected ? "bg-[#06424B] text-white" : "bg-[#F0F5F4] text-[#5D777A] group-hover:bg-[#FFF0CC] group-hover:text-[#8D6817]"}`}>
                 {isMultiple ? (selected ? <Check size={16} /> : <span>{index + 1}</span>) : String.fromCharCode(65 + index)}
               </span>
-              <span className="min-w-0 flex-1 font-semibold leading-6">{option.text ?? option.label ?? String(option.value ?? "")}</span>
+              <span className="min-w-0 flex-1 font-semibold leading-6">{t(getLocalizedText(option.text ?? option.label ?? option.value ?? "", i18n.resolvedLanguage))}</span>
               {selected && <CheckCircle2 size={18} className="shrink-0 text-[#06424B]" />}
             </label>
           );
@@ -548,20 +574,21 @@ function QuestionAnswer({ question, value, onChange, disabled }) {
   return (
     <div className="mt-6">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <label htmlFor={`answer-${question.id}`} className="block text-xs font-extrabold uppercase tracking-[0.8px] text-[#526D71]">{answerLabel}</label>
-        {isEssay && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1 text-[10px] font-bold text-[#526D71]">Long answer</span>}
+        <label htmlFor={`answer-${question.id}`} className="block text-xs font-extrabold uppercase tracking-[0.8px] text-[#526D71]">{t(answerLabel)}</label>
+        {isEssay && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1 text-[10px] font-bold text-[#526D71]">{t("Long answer")}</span>}
       </div>
       {isEssay ? (
-        <textarea id={`answer-${question.id}`} value={value ?? ""} onChange={(event) => onChange(event.target.value)} disabled={disabled} rows={7} placeholder="Write your response here..." className="w-full resize-y rounded-2xl border border-[#DCE8E6] bg-[#FCFDFD] px-4 py-4 text-sm leading-7 text-[#23464B] outline-none transition focus:border-[#06424B] focus:ring-4 focus:ring-[#06424B]/[0.07] disabled:bg-[#F4F7F7]" />
+        <textarea id={`answer-${question.id}`} value={value ?? ""} onChange={(event) => onChange(event.target.value)} disabled={disabled} rows={7} placeholder={t("Write your response here...")} className="w-full resize-y rounded-2xl border border-[#DCE8E6] bg-[#FCFDFD] px-4 py-4 text-sm leading-7 text-[#23464B] outline-none transition focus:border-[#06424B] focus:ring-4 focus:ring-[#06424B]/[0.07] disabled:bg-[#F4F7F7]" />
       ) : (
-        <input id={`answer-${question.id}`} type="text" value={value ?? ""} onChange={(event) => onChange(event.target.value)} disabled={disabled} placeholder="Enter your answer..." autoComplete="off" className="h-12 w-full rounded-2xl border border-[#DCE8E6] bg-[#FCFDFD] px-4 text-sm text-[#23464B] outline-none transition focus:border-[#06424B] focus:ring-4 focus:ring-[#06424B]/[0.07] disabled:bg-[#F4F7F7]" />
+        <input id={`answer-${question.id}`} type="text" value={value ?? ""} onChange={(event) => onChange(event.target.value)} disabled={disabled} placeholder={t("Enter your answer...")} autoComplete="off" className="h-12 w-full rounded-2xl border border-[#DCE8E6] bg-[#FCFDFD] px-4 text-sm text-[#23464B] outline-none transition focus:border-[#06424B] focus:ring-4 focus:ring-[#06424B]/[0.07] disabled:bg-[#F4F7F7]" />
       )}
-      <p className="mt-2 text-[11px] text-[#8A9B9D]">Your response will be included when you submit the assessment.</p>
+      <p className="mt-2 text-[11px] text-[#8A9B9D]">{t("Your response will be included when you submit the assessment.")}</p>
     </div>
   );
 }
 
 function SubmitConfirmation({ open, onCancel, onConfirm, isSubmitting, answeredCount, totalQuestions }) {
+  const { t } = useTranslation("ui");
   if (!open) return null;
 
   return (
@@ -577,24 +604,21 @@ function SubmitConfirmation({ open, onCancel, onConfirm, isSubmitting, answeredC
             <Send size={20} />
           </span>
           <h2 id="submit-confirmation-title" className="mt-4 text-xl font-extrabold">
-            Ready to submit?
-          </h2>
+            {t("Ready to submit?")}</h2>
           <p className="mt-1 text-sm leading-6 text-white/75">
-            Take a moment to make sure your answers are complete.
-          </p>
+            {t("Take a moment to make sure your answers are complete.")}</p>
         </div>
 
         <div className="p-6">
           <div className="flex items-center justify-between rounded-2xl bg-[#F4F7F7] px-4 py-3">
-            <span className="text-sm font-semibold text-[#526D71]">Questions answered</span>
+            <span className="text-sm font-semibold text-[#526D71]">{t("Questions answered")}</span>
             <span className="text-sm font-extrabold tabular-nums text-[#06424B]">
-              {answeredCount} / {totalQuestions}
+              {answeredCount} {"/"}{" "}{totalQuestions}
             </span>
           </div>
 
           <p className="mt-4 text-xs leading-5 text-[#718486]">
-            Once submitted, your answers cannot be changed for this attempt.
-          </p>
+            {t("Once submitted, your answers cannot be changed for this attempt.")}</p>
 
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
@@ -603,8 +627,7 @@ function SubmitConfirmation({ open, onCancel, onConfirm, isSubmitting, answeredC
               disabled={isSubmitting}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[#DCE6E4] px-5 text-sm font-bold text-[#526D71] transition hover:bg-[#F4F7F7] disabled:opacity-50"
             >
-              Review Answers
-            </button>
+              {t("Review Answers")}</button>
             <button
               type="button"
               onClick={onConfirm}
@@ -612,7 +635,7 @@ function SubmitConfirmation({ open, onCancel, onConfirm, isSubmitting, answeredC
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] transition hover:bg-[#FFC13C] disabled:cursor-wait disabled:opacity-60"
             >
               {isSubmitting ? <LoaderCircle size={16} className="animate-spin" /> : <Send size={15} />}
-              {isSubmitting ? "Submitting..." : "Submit Assessment"}
+              {t(isSubmitting ? "Submitting..." : "Submit Assessment")}
             </button>
           </div>
         </div>
@@ -622,6 +645,7 @@ function SubmitConfirmation({ open, onCancel, onConfirm, isSubmitting, answeredC
 }
 
 function ModuleAssessmentPage() {
+  const { t, i18n } = useTranslation("ui");
   const { assignmentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -792,7 +816,7 @@ function ModuleAssessmentPage() {
       console.error("Start Assessment Error:", error);
       const friendlyMessage = getStudentErrorMessage(
         error,
-        "We couldn't open your assessment. Please try again."
+        t("We couldn't open your assessment. Please try again.")
       );
       setAttemptsExhausted(isAttemptsExhaustedMessage(friendlyMessage));
       setLoadError(friendlyMessage);
@@ -874,7 +898,7 @@ function ModuleAssessmentPage() {
         console.error("Submit Assessment Error:", error);
         submitLockRef.current = false;
         setSubmitError(
-          getStudentErrorMessage(error, "We couldn't submit your answers. Please try again.")
+          getStudentErrorMessage(error, t("We couldn't submit your answers. Please try again."))
         );
       } finally {
         setIsSubmitting(false);
@@ -955,9 +979,7 @@ function ModuleAssessmentPage() {
         (question) => !isAnswerComplete(answers[question.id])
       );
       setQuestionIndex(Math.max(0, firstUnansweredIndex));
-      setAnswerValidation(
-        `You still have ${unansweredCount} ${unansweredCount === 1 ? "question" : "questions"} to answer. Complete them before submitting.`
-      );
+      setAnswerValidation("You still have {{count}} question to answer. Complete them before submitting.");
       return;
     }
 
@@ -998,7 +1020,7 @@ function ModuleAssessmentPage() {
     } catch (error) {
       console.error("Restart Module Error:", error);
       setRestartError(
-        getStudentErrorMessage(error, "We couldn't restart this module. Please try again.")
+        getStudentErrorMessage(error, t("We couldn't restart this module. Please try again."))
       );
     } finally {
       setIsRestarting(false);
@@ -1015,10 +1037,10 @@ function ModuleAssessmentPage() {
     return (
       <>
         <AssessmentLoadingState
-          title="Preparing your assessment"
-          message="We’re loading your questions and checking your learning progress."
+          title={t("Preparing your assessment")}
+          message={t("We’re loading your questions and checking your learning progress.")}
         />
-        <Loader open={isLoading} text="Loading your assessment..." />
+        <Loader open={isLoading} text={t("Loading your assessment...")} />
       </>
     );
   }
@@ -1027,10 +1049,10 @@ function ModuleAssessmentPage() {
     return (
       <>
         <AssessmentLoadingState
-          title="Submitting your answers"
-          message="Your responses are being evaluated. Please keep this page open while we prepare your result."
+          title={t("Submitting your answers")}
+          message={t("Your responses are being evaluated. Please keep this page open while we prepare your result.")}
         />
-        <Loader open={isSubmitting} text="Submitting your assessment..." />
+        <Loader open={isSubmitting} text={t("Submitting your assessment...")} />
       </>
     );
   }
@@ -1038,7 +1060,7 @@ function ModuleAssessmentPage() {
   if (loadError || !assignment || !attempt || !questions.length) {
     return (
       <AssessmentLoadError
-        message={loadError || "Your assessment details are not available right now."}
+        message={t(loadError || "Your assessment details are not available right now.")}
         onRetry={handleRetry}
         courseId={courseIdFromRoute}
         passedModuleIds={passedModuleIds}
@@ -1068,13 +1090,12 @@ function ModuleAssessmentPage() {
               state={{ courseId: Number(courseIdFromRoute), passedModuleIds }}
               className="!text-[#607B7E] !no-underline transition hover:!text-[#06424B]"
             >
-              My Learning
-            </Link>
-            <span className="text-[#BBC8C7]">/</span>
-            <span className="max-w-[220px] truncate text-[#607B7E]">{courseName}</span>
-            <span className="text-[#BBC8C7]">/</span>
+              {t("My Learning")}</Link>
+            <span className="text-[#BBC8C7]">{"/"}</span>
+            <span className="max-w-[220px] truncate text-[#607B7E]">{t(getLocalizedText(courseName, i18n.resolvedLanguage))}</span>
+            <span className="text-[#BBC8C7]">{"/"}</span>
             <span className="max-w-[220px] truncate font-bold text-[#06424B]">
-              {moduleName}
+              {t(getLocalizedText(moduleName, i18n.resolvedLanguage))}
             </span>
           </div>
 
@@ -1084,8 +1105,7 @@ function ModuleAssessmentPage() {
             className="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-3 text-xs font-bold text-[#526D71] !no-underline transition hover:border-[#B8CECA] hover:bg-[#F7FAF9] hover:text-[#06424B]"
           >
             <ArrowLeft size={14} />
-            Back to Lesson
-          </Link>
+            {t("Back to Lesson")}</Link>
         </div>
 
         {/* Assessment overview */}
@@ -1103,32 +1123,31 @@ function ModuleAssessmentPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#FFD47A]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
-                Your learning checkpoint
-              </div>
+                {t("Your learning checkpoint")}</div>
 
               <h1 className="mt-4 max-w-3xl text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl lg:text-[36px]">
-                {assignment.title || "Module Assessment"}
+                {t(getLocalizedText(assignment.title, i18n.resolvedLanguage, "Module Assessment"))}
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">
-                Answer the questions at your own pace. You can move between questions and review your answers before you finish.
-              </p>
+                {t("Answer the questions at your own pace. You can move between questions and review your answers before you finish.")}</p>
 
               <div className="mt-6 flex flex-wrap gap-2.5">
                 <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white/90">
                   <BookOpen size={15} className="text-[#FFAB0B]" />
-                  {questions.length} {questions.length === 1 ? "question" : "questions"}
+                  {questions.length} {t("{{count}} question", { count: questions.length })}
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white/90">
                   <GraduationCap size={15} className="text-[#FFAB0B]" />
-                  Attempt {attempt.attemptNo || 1}
-                  {assignment.maxAttempts ? ` of ${assignment.maxAttempts}` : ""}
+                  {t(assignment.maxAttempts ? "Attempt {{attempt}} of {{maxAttempts}}" : "Attempt {{attempt}}", {
+                    attempt: attempt.attemptNo || 1,
+                    maxAttempts: assignment.maxAttempts,
+                  })}
                 </span>
                 {passPercentage > 0 && (
                   <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white/90">
                     <ShieldCheck size={15} className="text-[#FFAB0B]" />
-                    {passPercentage}% to pass
-                  </span>
+                    {t("{{percentage}}% to pass", { percentage: passPercentage })}</span>
                 )}
               </div>
             </div>
@@ -1136,15 +1155,14 @@ function ModuleAssessmentPage() {
             <div className="rounded-[22px] border border-white/15 bg-white/[0.09] p-5 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-xs font-bold text-white/70">
                 <Clock3 size={15} className={timerIsLow ? "text-[#FFB6A7]" : "text-[#FFAB0B]"} />
-                Time remaining
-              </div>
+                {t("Time remaining")}</div>
               <p
                 className={`mt-2 text-[34px] font-extrabold tabular-nums tracking-tight ${
                   timerIsLow ? "text-[#FFD0C7]" : "text-white"
                 }`}
                 aria-live="off"
               >
-                {secondsLeft === null ? "No limit" : formatDuration(secondsLeft)}
+                {secondsLeft === null ? t("No limit") : formatDuration(secondsLeft)}
               </p>
               <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/15">
                 <div
@@ -1166,21 +1184,23 @@ function ModuleAssessmentPage() {
                 />
               </div>
               <p className="mt-3 text-[11px] leading-5 text-white/60">
-                {secondsLeft === null
+                {t(secondsLeft === null
                   ? "Take the time you need."
                   : timerIsLow
                     ? "Your time is nearly up. Review and submit your answers."
-                    : "Your remaining time is shown here."}
+                    : "Your remaining time is shown here.")}
               </p>
             </div>
           </div>
 
           <div className="relative mt-7 border-t border-white/15 pt-5">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
-              <span className="text-white/75">Your assessment progress</span>
+              <span className="text-white/75">{t("Your assessment progress")}</span>
               <span className="tabular-nums text-[#FFD47A]">
-                {answeredCount} of {questions.length} answered
-              </span>
+                {t("{{answered}} of {{total}} answered", {
+                  answered: answeredCount,
+                  total: questions.length,
+                })}</span>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
               <div
@@ -1201,19 +1221,19 @@ function ModuleAssessmentPage() {
                     <BookOpen size={16} />
                   </span>
                   <span className="text-xs font-extrabold uppercase tracking-[1px] text-[#526D71]">
-                    Question {questionIndex + 1}
+                    {t("Question")}{" "}{questionIndex + 1}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] font-bold text-[#829596]">
                   {currentQuestion.score !== undefined && (
                     <span className="rounded-full bg-[#EEF3F4] px-3 py-1.5">
-                      {currentQuestion.score} {Number(currentQuestion.score) === 1 ? "mark" : "marks"}
+                      {t("{{count}} mark", { count: Number(currentQuestion.score) })}
                     </span>
                   )}
                   <span className="rounded-full bg-[#EEF3F4] px-3 py-1.5">
-                    {currentQuestion.questionType
+                    {t(currentQuestion.questionType
                       ? String(currentQuestion.questionType).replace(/[_-]+/g, " ")
-                      : "Question"}
+                      : "Question")}
                   </span>
                 </div>
               </div>
@@ -1225,15 +1245,14 @@ function ModuleAssessmentPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-extrabold uppercase tracking-[1.25px] text-[#B07A06]">
-                      Your question
-                    </p>
+                      {t("Your question")}</p>
                     <h2
                       onCopy={(event) => event.preventDefault()}
                       onCut={(event) => event.preventDefault()}
                       onContextMenu={(event) => event.preventDefault()}
                       className="mt-2 select-none whitespace-pre-wrap text-lg font-extrabold leading-8 text-[#123B43] sm:text-[21px]"
                     >
-                      {currentQuestion.text || currentQuestion.question || "Question"}
+                      {t(getLocalizedText(currentQuestion.text || currentQuestion.question, i18n.resolvedLanguage, "Question"))}
                     </h2>
                   </div>
                 </div>
@@ -1251,7 +1270,7 @@ function ModuleAssessmentPage() {
                     className="mt-5 flex items-start gap-2 rounded-xl border border-[#F0D9A5] bg-[#FFFAED] px-4 py-3 text-xs leading-5 text-[#795B1D]"
                   >
                     <Info size={15} className="mt-0.5 shrink-0" />
-                    {answerValidation}
+                    {t(answerValidation, { count: unansweredCount })}
                   </div>
                 )}
 
@@ -1262,7 +1281,7 @@ function ModuleAssessmentPage() {
                   >
                     <div className="flex items-start gap-2 text-sm leading-6 text-[#80534D]">
                       <AlertCircle size={17} className="mt-0.5 shrink-0 text-[#A85A50]" />
-                      <span>{submitError}</span>
+                      <span>{t(submitError)}</span>
                     </div>
                     <button
                       type="button"
@@ -1271,8 +1290,7 @@ function ModuleAssessmentPage() {
                       className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#06424B] px-3 text-xs font-bold text-white transition hover:bg-[#0B5962] disabled:opacity-60"
                     >
                       <RefreshCw size={13} />
-                      Try submitting again
-                    </button>
+                      {t("Try submitting again")}</button>
                   </div>
                 )}
 
@@ -1282,8 +1300,7 @@ function ModuleAssessmentPage() {
                     className="mt-5 flex items-center gap-2 rounded-xl border border-[#F0D8D2] bg-[#FFF8F6] px-4 py-3 text-xs font-semibold text-[#80534D]"
                   >
                     <Clock3 size={15} />
-                    Time is up. Your answers are being submitted.
-                  </div>
+                    {t("Time is up. Your answers are being submitted.")}</div>
                 )}
 
                 <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[#EAF0EF] pt-6">
@@ -1297,8 +1314,7 @@ function ModuleAssessmentPage() {
                     className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E4] bg-white px-4 text-sm font-bold text-[#526D71] transition hover:bg-[#F4F7F7] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ArrowLeft size={15} />
-                    Previous
-                  </button>
+                    {t("Previous")}</button>
 
                   <div className="flex flex-1 justify-end gap-2 sm:flex-none">
                     {isLastQuestion ? (
@@ -1309,8 +1325,7 @@ function ModuleAssessmentPage() {
                         className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] shadow-[0_6px_16px_rgba(255,171,11,0.17)] transition hover:-translate-y-0.5 hover:bg-[#FFC13C] disabled:cursor-wait disabled:opacity-60"
                       >
                         <Send size={15} />
-                        Review & Submit
-                      </button>
+                        {t("Review & Submit")}</button>
                     ) : (
                       <button
                         type="button"
@@ -1323,8 +1338,7 @@ function ModuleAssessmentPage() {
                         disabled={isSubmitting}
                         className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#06424B] px-5 text-sm font-extrabold text-white transition hover:bg-[#0A5660] disabled:opacity-60"
                       >
-                        Next Question
-                        <ArrowRight size={15} />
+                        {t("Next Question")}<ArrowRight size={15} />
                       </button>
                     )}
                   </div>
@@ -1334,18 +1348,16 @@ function ModuleAssessmentPage() {
 
             <div className="mt-4 flex items-start gap-2 rounded-2xl border border-[#E6EDEB] bg-white/80 px-4 py-3 text-[11px] leading-5 text-[#829596]">
               <ShieldCheck size={15} className="mt-0.5 shrink-0 text-[#527477]" />
-              Your answers are saved when you submit. You can revisit questions and change your responses before submitting.
-            </div>
+              {t("Your answers are saved when you submit. You can revisit questions and change your responses before submitting.")}</div>
           </section>
 
           {/* Progress and question navigation */}
           <aside className="space-y-4 lg:sticky lg:top-5">
             <Card className="overflow-hidden border border-[#E1EAE8] p-0 shadow-[0_8px_26px_rgba(6,66,75,0.045)]">
               <div className="border-b border-[#EAF0EF] bg-[#FAFCFB] px-5 py-4">
-                <h3 className="font-extrabold text-[#06424B]">Question navigator</h3>
+                <h3 className="font-extrabold text-[#06424B]">{t("Question navigator")}</h3>
                 <p className="mt-1 text-[11px] text-[#829596]">
-                  Select a number to move to that question.
-                </p>
+                  {t("Select a number to move to that question.")}</p>
               </div>
 
               <div className="p-5">
@@ -1363,7 +1375,7 @@ function ModuleAssessmentPage() {
                           setAnswerValidation("");
                         }}
                         disabled={isSubmitting}
-                        aria-label={`Go to question ${index + 1}`}
+                        aria-label={t("Go to question {{number}}", { number: index + 1 })}
                         aria-current={active ? "step" : undefined}
                         className={`relative flex h-10 items-center justify-center rounded-xl text-xs font-extrabold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2 ${
                           active
@@ -1387,31 +1399,27 @@ function ModuleAssessmentPage() {
                 <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 border-t border-[#EAF0EF] pt-4 text-[10px] font-semibold text-[#829596]">
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded bg-[#06424B]" />
-                    Current
-                  </span>
+                    {t("Current")}</span>
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded bg-[#DCEDE8]" />
-                    Answered
-                  </span>
+                    {t("Answered")}</span>
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded bg-[#F0F4F3]" />
-                    Not answered
-                  </span>
+                    {t("Not answered")}</span>
                 </div>
               </div>
             </Card>
 
             <Card className="border border-[#E1EAE8] p-5 shadow-[0_8px_26px_rgba(6,66,75,0.04)]">
-              <h3 className="text-sm font-extrabold text-[#06424B]">Your progress</h3>
+              <h3 className="text-sm font-extrabold text-[#06424B]">{t("Your progress")}</h3>
               <div className="mt-4 flex items-end justify-between gap-3">
                 <div>
                   <p className="text-3xl font-extrabold tabular-nums text-[#06424B]">
-                    {Math.round(answeredProgress)}%
-                  </p>
-                  <p className="mt-1 text-[11px] text-[#829596]">Questions completed</p>
+                    {Math.round(answeredProgress)}%</p>
+                  <p className="mt-1 text-[11px] text-[#829596]">{t("Questions completed")}</p>
                 </div>
                 <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-[#FFF4D9] px-2.5 py-1 text-[10px] font-extrabold text-[#8A650E]">
-                  {answeredCount}/{questions.length}
+                  {answeredCount}{"/"}{questions.length}
                 </span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#EAF0EE]">
@@ -1426,13 +1434,13 @@ function ModuleAssessmentPage() {
                   <p className="text-xl font-extrabold tabular-nums text-[#06424B]">
                     {answeredCount}
                   </p>
-                  <p className="mt-1 text-[10px] font-bold text-[#829596]">Answered</p>
+                  <p className="mt-1 text-[10px] font-bold text-[#829596]">{t("Answered")}</p>
                 </div>
                 <div className="rounded-xl bg-[#F4F7F7] px-3 py-3">
                   <p className="text-xl font-extrabold tabular-nums text-[#06424B]">
                     {unansweredCount}
                   </p>
-                  <p className="mt-1 text-[10px] font-bold text-[#829596]">Remaining</p>
+                  <p className="mt-1 text-[10px] font-bold text-[#829596]">{t("Remaining")}</p>
                 </div>
               </div>
             </Card>
@@ -1440,21 +1448,18 @@ function ModuleAssessmentPage() {
             <Card className="border border-[#E1EAE8] bg-[#FBFDFC] p-5">
               <div className="flex items-center gap-2 text-[#06424B]">
                 <Info size={16} className="text-[#B88736]" />
-                <h3 className="text-sm font-extrabold">Before you submit</h3>
+                <h3 className="text-sm font-extrabold">{t("Before you submit")}</h3>
               </div>
               <ul className="mt-3 space-y-2.5 text-xs leading-5 text-[#718486]">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[#2F806B]" />
-                  Answer every question.
-                </li>
+                  {t("Answer every question.")}</li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[#2F806B]" />
-                  Review your selections.
-                </li>
+                  {t("Review your selections.")}</li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[#2F806B]" />
-                  Submit before your time runs out.
-                </li>
+                  {t("Submit before your time runs out.")}</li>
               </ul>
             </Card>
           </aside>

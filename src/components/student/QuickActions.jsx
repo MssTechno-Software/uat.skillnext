@@ -1,5 +1,7 @@
+import { translateValue } from "../../i18n";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
   Brain,
@@ -71,6 +73,12 @@ function QuickIcon({ className }) {
 }
 
 function QuickActions() {
+  const { i18n: activeI18n } = useTranslation();
+  const currentLanguage = String(
+    activeI18n.resolvedLanguage || activeI18n.language || "en"
+  ).toLowerCase();
+  const isFrench = currentLanguage === "fr" || currentLanguage.startsWith("fr-");
+
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const hoverBlocked = useRef(false);
@@ -142,6 +150,10 @@ function QuickActions() {
     hoverBlocked.current = true;
   };
 
+  const openNavigationWidth = isFrench
+    ? "mr-2 max-w-[320px] sm:max-w-[480px] opacity-100"
+    : "mr-2 max-w-[340px] opacity-100";
+
   return (
     <div
       ref={rootRef}
@@ -157,12 +169,10 @@ function QuickActions() {
         }`}
       >
         <nav
-          aria-label="Quick actions"
+          aria-label={translateValue("Quick actions")}
           aria-hidden={!open}
           className={`flex items-start overflow-hidden transition-all duration-300 ease-out ${
-            open
-              ? "mr-2 max-w-[340px] opacity-100"
-              : "max-w-0 opacity-0"
+            open ? openNavigationWidth : "max-w-0 opacity-0"
           }`}
         >
           {shortcuts.map(
@@ -170,15 +180,15 @@ function QuickActions() {
               <Link
                 key={label}
                 to={path}
-                title={`${title} - ${text}`}
+                title={`${translateValue(title)} - ${translateValue(text)}`}
                 tabIndex={open ? 0 : -1}
                 onClick={handleNavigation}
                 style={{
                   transitionDelay: open ? `${index * 50}ms` : "0ms",
                 }}
-                className={`group flex w-[64px] shrink-0 flex-col items-center gap-1.5 !no-underline transition-all duration-300 focus-visible:outline-none sm:w-[80px] ${
-                  open ? "translate-x-0" : "translate-x-6"
-                }`}
+                className={`group flex shrink-0 flex-col items-center gap-1.5 !no-underline transition-all duration-300 focus-visible:outline-none ${
+                  isFrench ? "w-[76px] sm:w-[112px]" : "w-[64px] sm:w-[80px]"
+                } ${open ? "translate-x-0" : "translate-x-6"}`}
               >
                 <span
                   className={`flex h-11 w-11 items-center justify-center rounded-full shadow-[0_3px_10px_rgba(6,66,75,0.16)] transition-transform duration-200 group-hover:scale-110 group-focus-visible:ring-2 group-focus-visible:ring-[#FFAB0B] group-focus-visible:ring-offset-2 ${
@@ -190,8 +200,14 @@ function QuickActions() {
                   <Icon className="h-5 w-5" />
                 </span>
 
-                <span className="flex min-h-6 items-start justify-center text-center text-[10px] font-semibold leading-3 text-[#2F4A4E] transition-colors group-hover:text-[#B27B20] sm:whitespace-nowrap">
-                  {label}
+                <span
+                  className={`flex items-start justify-center text-center text-[10px] font-semibold leading-3 text-[#2F4A4E] transition-colors group-hover:text-[#B27B20] ${
+                    isFrench
+                      ? "min-h-9 w-full max-w-full whitespace-normal break-words px-1 hyphens-auto"
+                      : "min-h-6 sm:whitespace-nowrap"
+                  }`}
+                >
+                  {translateValue(label)}
                 </span>
               </Link>
             )
@@ -209,8 +225,8 @@ function QuickActions() {
           type="button"
           onClick={handleBallClick}
           aria-expanded={open}
-          aria-label={open ? "Close quick actions" : "Open quick actions"}
-          title="Quick actions"
+          aria-label={translateValue(open ? "Close quick actions" : "Open quick actions")}
+          title={translateValue("Quick actions")}
           className={`flex h-14 w-14 items-center justify-center rounded-full ring-4 ring-white shadow-[0_8px_20px_rgba(6,66,75,0.28)] transition-all duration-300 hover:scale-105 focus-visible:outline-none focus-visible:ring-[#FFD36B] ${
             open
               ? "bg-[#06424B] text-[#FFAB0B]"
@@ -235,7 +251,7 @@ function QuickActions() {
             open ? "opacity-0" : "opacity-100"
           }`}
         >
-          Quick actions
+          {translateValue("Quick actions")}
         </span>
       </div>
     </div>

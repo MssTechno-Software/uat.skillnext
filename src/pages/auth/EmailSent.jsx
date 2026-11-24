@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -134,12 +135,10 @@ function EmailSent() {
               size={15}
               className="transition-transform group-hover:-translate-x-1"
             />
-            Back to registration
-          </button>
+            {translateValue("Back to registration")}</button>
 
           <span className="text-[9px] font-bold tracking-[1.5px] text-[#06424B]/60 sm:text-[10px] sm:tracking-[2px]">
-            EMAIL VERIFICATION
-          </span>
+            {translateValue("EMAIL VERIFICATION")}</span>
         </header>
 
         {/* Main Card */}
@@ -154,7 +153,7 @@ function EmailSent() {
               {/* Logo */}
               <img
                 src="/logo.png"
-                alt="Skill Next Consulting Inc."
+                alt={translateValue("Skill Next Consulting Inc.")}
                 className="mx-auto h-[clamp(38px,6vh,55px)] w-auto max-w-[190px] shrink-0 object-contain"
               />
 
@@ -205,19 +204,17 @@ function EmailSent() {
                   <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
 
                   <span className="text-[9px] font-bold tracking-[1.5px] text-[#795B19]">
-                    EMAIL SENT
-                  </span>
+                    {translateValue("EMAIL SENT")}</span>
                 </div>
 
                 <h1 className="mt-2 text-[27px] font-bold leading-tight tracking-[-1.1px] text-[#06424B] sm:text-[32px]">
-                  Check your inbox
-                  <span className="text-[#FFAB0B]">.</span>
+                  {translateValue("Check your inbox")}<span className="text-[#FFAB0B]">{translateValue(".")}</span>
                 </h1>
 
                 <p className="mx-auto mt-2 max-w-[390px] text-[11px] leading-5 text-[#839194] sm:text-[12px]">
-                  {firstName
+                  {translateValue(firstName
                     ? `You're almost there, ${firstName}! We've sent a verification link to complete your ${role} registration.`
-                    : "You're almost there! We've sent a verification link to complete your registration."}
+                    : "You're almost there! We've sent a verification link to complete your registration.")}
                 </p>
               </div>
 
@@ -230,8 +227,7 @@ function EmailSent() {
 
                 <div className="min-w-0 flex-1 text-left">
                   <p className="text-[8px] font-bold tracking-[1.3px] text-[#8A9899]">
-                    VERIFICATION EMAIL
-                  </p>
+                    {translateValue("VERIFICATION EMAIL")}</p>
 
                   <input
                     type="email"
@@ -240,8 +236,8 @@ function EmailSent() {
                       setEmailInput(event.target.value);
                       setMessage("");
                     }}
-                    placeholder="Enter your email address"
-                    aria-label="Verification email address"
+                    placeholder={translateValue("Enter your email address")}
+                    aria-label={translateValue("Verification email address")}
                     autoComplete="email"
                     className="mt-1 w-full min-w-0 bg-transparent text-[12px] font-semibold text-[#06424B] outline-none placeholder:font-normal placeholder:text-[#A0ABAD] sm:text-[13px]"
                   />
@@ -261,11 +257,11 @@ function EmailSent() {
                       className="flex flex-col items-center gap-1.5 rounded-xl bg-[#F5F8F7] px-1.5 py-2"
                     >
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#06424B] text-[10px] font-bold text-white">
-                        {index + 1}
+                        {translateValue(index + 1)}
                       </span>
 
                       <span className="text-center text-[9px] font-semibold text-[#52686B]">
-                        {step}
+                        {translateValue(step)}
                       </span>
                     </div>
                   )
@@ -281,7 +277,7 @@ function EmailSent() {
                     : "border-[#FFAB0B]/40 bg-[#FFF5DC] text-[#795B19]"
                     }`}
                 >
-                  {message}
+                  {translateValue(message)}
                 </div>
               )}
 
@@ -295,11 +291,11 @@ function EmailSent() {
                   className="group flex min-h-[43px] items-center justify-center gap-2 rounded-xl bg-[#06424B] px-3 text-[11px] font-bold text-white shadow-[0_7px_18px_rgba(6,66,75,0.15)] transition-all hover:-translate-y-0.5 hover:bg-[#042E35] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span>
-                    {isResending
+                    {translateValue(isResending
                       ? "Sending..."
                       : resendCountdown > 0
                         ? `Resend in ${resendCountdown}s`
-                        : "Resend verification"}
+                        : "Resend verification")}
                   </span>
 
                   <RefreshCw
@@ -319,8 +315,7 @@ function EmailSent() {
                   onClick={() => navigate("/login")}
                   className="flex min-h-[43px] items-center justify-center gap-2 rounded-xl border border-[#DCE6E8] bg-white px-3 text-[11px] font-bold text-[#06424B] transition-all hover:border-[#06424B] hover:bg-[#F4F8F7]"
                 >
-                  Back to Sign In
-                  <ArrowUpRight size={14} />
+                  {translateValue("Back to Sign In")}<ArrowUpRight size={14} />
                 </button>
               </div>
 
@@ -331,18 +326,14 @@ function EmailSent() {
 
               <div className="mb-7">
                 <span className="text-[9px] font-bold tracking-[2px] text-[#A17B28]">
-                  YOUR JOURNEY STARTS HERE
-                </span>
+                  {translateValue("YOUR JOURNEY STARTS HERE")}</span>
 
                 <h2 className="mt-3 text-[25px] font-bold leading-tight tracking-[-0.8px] text-[#06424B]">
-                  Just a few steps
-                  <br />
-                  to get started.
-                </h2>
+                  {translateValue("Just a few steps")}<br />
+                  {translateValue("to get started.")}</h2>
 
                 <p className="mt-3 max-w-[300px] text-[12px] leading-6 text-[#89979A]">
-                  Complete your email verification and get ready to explore your learning journey.
-                </p>
+                  {translateValue("Complete your email verification and get ready to explore your learning journey.")}</p>
               </div>
 
               {/* Steps */}
@@ -371,16 +362,16 @@ function EmailSent() {
                     className="relative flex items-start gap-4"
                   >
                     <div className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#DCE6E8] bg-white text-[11px] font-bold text-[#06424B] shadow-sm">
-                      {index + 1}
+                      {translateValue(index + 1)}
                     </div>
 
                     <div className="pt-0.5">
                       <h3 className="text-[12px] font-bold text-[#344B4F]">
-                        {step.title}
+                        {translateValue(step.title)}
                       </h3>
 
                       <p className="mt-1 max-w-[245px] text-[10px] leading-5 text-[#89979A]">
-                        {step.description}
+                        {translateValue(step.description)}
                       </p>
                     </div>
                   </div>
@@ -393,21 +384,18 @@ function EmailSent() {
                   <ShieldCheck size={17} className="text-[#06424B]" />
 
                   <p className="text-[11px] font-bold text-[#344B4F]">
-                    Didn't receive the email?
-                  </p>
+                    {translateValue("Didn't receive the email?")}</p>
                 </div>
 
                 <p className="mt-2 text-[10px] leading-5 text-[#89979A]">
-                  Check your spam or junk folder. Make sure you entered the correct email address during registration.
-                </p>
+                  {translateValue("Check your spam or junk folder. Make sure you entered the correct email address during registration.")}</p>
               </div>
 
               {/* Bottom Accent */}
               <div className="mt-6 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
                 <span className="text-[9px] font-semibold tracking-[1px] text-[#8A9899]">
-                  LEARNING WITHOUT LIMITS
-                </span>
+                  {translateValue("LEARNING WITHOUT LIMITS")}</span>
               </div>
             </div>
 
@@ -418,8 +406,7 @@ function EmailSent() {
             <p className="flex items-center gap-2 text-center text-[9px] text-[#879497]">
               <ShieldCheck size={13} className="shrink-0 text-[#06424B]" />
 
-              © 2026 Skill Next Consulting Inc. · Learning without limits.
-            </p>
+              {translateValue("© 2026 Skill Next Consulting Inc. · Learning without limits.")}</p>
           </footer>
 
         </section>

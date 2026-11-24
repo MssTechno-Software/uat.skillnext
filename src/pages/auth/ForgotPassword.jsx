@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { forgotPassword } from "../../api/auth.api";
@@ -155,12 +156,10 @@ function ForgotPassword() {
               size={15}
               className="transition-transform group-hover:-translate-x-1"
             />
-            Back to sign in
-          </button>
+            {translateValue("Back to sign in")}</button>
 
           <span className="text-[9px] font-bold tracking-[1.5px] text-[#06424B]/60 sm:text-[10px]">
-            ACCOUNT RECOVERY
-          </span>
+            {translateValue("ACCOUNT RECOVERY")}</span>
         </header>
 
         {/* Main Card */}
@@ -174,7 +173,7 @@ function ForgotPassword() {
             {/* Logo */}
             <img
               src="/logo.png"
-              alt="Skill Next Consulting Inc."
+              alt={translateValue("Skill Next Consulting Inc.")}
               className="mx-auto h-[56px] w-auto max-w-[190px] object-contain sm:h-[62px]"
             />
 
@@ -203,19 +202,15 @@ function ForgotPassword() {
                   <div className="inline-flex items-center gap-2 rounded-full bg-[#FFF5DC] px-3 py-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
                     <span className="text-[9px] font-bold tracking-[1.5px] text-[#795B19]">
-                      PASSWORD RECOVERY
-                    </span>
+                      {translateValue("PASSWORD RECOVERY")}</span>
                   </div>
 
                   <h1 className="mt-3 text-[28px] font-bold leading-tight tracking-[-1.1px] text-[#06424B] sm:text-[32px]">
-                    Forgot your password
-                    <span className="text-[#FFAB0B]">?</span>
+                    {translateValue("Forgot your password")}<span className="text-[#FFAB0B]">{translateValue("?")}</span>
                   </h1>
 
                   <p className="mx-auto mt-3 max-w-[380px] text-[11px] leading-6 text-[#839194] sm:text-[12px]">
-                    Enter the email address linked to your account and we'll
-                    send you a link to reset your password.
-                  </p>
+                    {translateValue("Enter the email address linked to your account and we'll send you a link to reset your password.")}</p>
                 </div>
 
                 {/* Email Form */}
@@ -228,8 +223,7 @@ function ForgotPassword() {
                     htmlFor="recovery-email"
                     className="mb-2 block text-[11px] font-bold text-[#344B4F]"
                   >
-                    Registered Email Address
-                  </label>
+                    {translateValue("Registered Email Address")}</label>
 
                   <div className="relative">
                     <Mail
@@ -248,7 +242,7 @@ function ForgotPassword() {
                         setFormError("");
                       }}
                       onBlur={() => setTouched(true)}
-                      placeholder="Enter your registered email"
+                      placeholder={translateValue("Enter your registered email")}
                       autoComplete="email"
                       disabled={submitting}
                       aria-invalid={Boolean(showEmailError)}
@@ -278,7 +272,7 @@ function ForgotPassword() {
                       className="fp-rise mt-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[#C2553F]"
                     >
                       <AlertCircle size={12} className="shrink-0" />
-                      {emailError}
+                      {translateValue(emailError)}
                     </p>
                   )}
 
@@ -288,7 +282,7 @@ function ForgotPassword() {
                       className="mt-3 flex items-start gap-2 rounded-xl border border-[#E3A99D] bg-[#FFF8F6] px-3 py-2.5 text-[10px] leading-5 text-[#C2553F]"
                     >
                       <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                      {formError}
+                      {translateValue(formError)}
                     </div>
                   )}
 
@@ -299,13 +293,11 @@ function ForgotPassword() {
                   >
                     {submitting ? (
                       <>
-                        Sending link
-                        <Loader2 size={17} className="animate-spin" />
+                        {translateValue("Sending link")}<Loader2 size={17} className="animate-spin" />
                       </>
                     ) : (
                       <>
-                        Send reset link
-                        <ArrowUpRight size={17} />
+                        {translateValue("Send reset link")}<ArrowUpRight size={17} />
                       </>
                     )}
                   </button>
@@ -320,24 +312,20 @@ function ForgotPassword() {
 
                   <div>
                     <p className="text-[10px] font-bold text-[#344B4F]">
-                      Your account security matters
-                    </p>
+                      {translateValue("Your account security matters")}</p>
 
                     <p className="mt-1 text-[9px] leading-5 text-[#89979A]">
-                      For your safety, the reset link is only sent to the email
-                      address registered with your account.
-                    </p>
+                      {translateValue("For your safety, the reset link is only sent to the email address registered with your account.")}</p>
                   </div>
                 </div>
 
                 <p className="mt-6 text-[10px] font-medium text-[#89979A]">
-                  Remember your password?{" "}
+                  {translateValue("Remember your password?")}{translateValue(" ")}
                   <Link
                     to="/login"
                     className="font-bold text-[#06424B] transition-colors hover:text-[#A87500]"
                   >
-                    Sign in
-                  </Link>
+                    {translateValue("Sign in")}</Link>
                 </p>
               </div>
             ) : (
@@ -383,19 +371,15 @@ function ForgotPassword() {
                   <div className="inline-flex items-center gap-2 rounded-full bg-[#FFF5DC] px-3 py-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#FFAB0B]" />
                     <span className="text-[9px] font-bold tracking-[1.5px] text-[#795B19]">
-                      EMAIL SENT
-                    </span>
+                      {translateValue("EMAIL SENT")}</span>
                   </div>
 
                   <h1 className="mt-3 text-[28px] font-bold leading-tight tracking-[-1.1px] text-[#06424B] sm:text-[32px]">
-                    Check your inbox
-                    <span className="text-[#FFAB0B]">.</span>
+                    {translateValue("Check your inbox")}<span className="text-[#FFAB0B]">{translateValue(".")}</span>
                   </h1>
 
                   <p className="mx-auto mt-3 max-w-[390px] text-[11px] leading-6 text-[#839194] sm:text-[12px]">
-                    If an account exists for this email, we've sent a link to
-                    reset your password.
-                  </p>
+                    {translateValue("If an account exists for this email, we've sent a link to reset your password.")}</p>
                 </div>
 
                 {/* Address */}
@@ -406,10 +390,9 @@ function ForgotPassword() {
 
                   <div className="min-w-0 flex-1">
                     <p className="text-[8px] font-bold tracking-[1.3px] text-[#8A9899]">
-                      SENT TO
-                    </p>
+                      {translateValue("SENT TO")}</p>
                     <p className="mt-1 truncate text-[12px] font-semibold text-[#06424B] sm:text-[13px]">
-                      {sentTo}
+                      {translateValue(sentTo)}
                     </p>
                   </div>
 
@@ -419,8 +402,7 @@ function ForgotPassword() {
                     className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-[10px] font-bold text-[#06424B] transition-colors hover:bg-[#EEF3F4]"
                   >
                     <Pencil size={12} />
-                    Change
-                  </button>
+                    {translateValue("Change")}</button>
                 </div>
 
                 {resentNotice && (
@@ -429,8 +411,7 @@ function ForgotPassword() {
                     className="fp-rise mx-auto mt-3 flex max-w-[420px] items-center gap-2 rounded-xl border border-[#BFDCC4] bg-[#EAF4EB] px-3 py-2.5 text-left text-[10px] text-[#3F7A49]"
                   >
                     <Check size={14} strokeWidth={3} className="shrink-0" />
-                    A new link has been sent.
-                  </div>
+                    {translateValue("A new link has been sent.")}</div>
                 )}
 
                 {formError && (
@@ -439,7 +420,7 @@ function ForgotPassword() {
                     className="mx-auto mt-3 flex max-w-[420px] items-start gap-2 rounded-xl border border-[#E3A99D] bg-[#FFF8F6] px-3 py-2.5 text-left text-[10px] leading-5 text-[#C2553F]"
                   >
                     <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                    {formError}
+                    {translateValue(formError)}
                   </div>
                 )}
 
@@ -453,15 +434,13 @@ function ForgotPassword() {
                   >
                     {submitting ? (
                       <>
-                        Sending
-                        <Loader2 size={14} className="animate-spin" />
+                        {translateValue("Sending")}<Loader2 size={14} className="animate-spin" />
                       </>
                     ) : cooldown > 0 ? (
                       `Resend in ${cooldown}s`
                     ) : (
                       <>
-                        Resend link
-                        <RefreshCw
+                        {translateValue("Resend link")}<RefreshCw
                           size={14}
                           className="transition-transform duration-500 group-hover:rotate-180"
                         />
@@ -474,8 +453,7 @@ function ForgotPassword() {
                     onClick={() => navigate("/login")}
                     className="flex min-h-[47px] items-center justify-center gap-2 rounded-xl border border-[#DCE6E8] bg-white px-3 text-[11px] font-bold text-[#06424B] transition-all hover:border-[#06424B] hover:bg-[#F4F8F7]"
                   >
-                    Back to Sign In
-                    <ArrowUpRight size={14} />
+                    {translateValue("Back to Sign In")}<ArrowUpRight size={14} />
                   </button>
                 </div>
 
@@ -488,12 +466,9 @@ function ForgotPassword() {
 
                   <div>
                     <p className="text-[10px] font-bold text-[#344B4F]">
-                      Didn't receive the email?
-                    </p>
+                      {translateValue("Didn't receive the email?")}</p>
                     <p className="mt-1 text-[9px] leading-5 text-[#89979A]">
-                      Check your spam or junk folder, and make sure the address
-                      above is the one you registered with.
-                    </p>
+                      {translateValue("Check your spam or junk folder, and make sure the address above is the one you registered with.")}</p>
                   </div>
                 </div>
               </div>
@@ -504,8 +479,7 @@ function ForgotPassword() {
           <footer className="border-t border-[#E7ECEC] bg-[#FAFCFC] px-4 py-3 text-center">
             <p className="flex items-center justify-center gap-2 text-[9px] text-[#879497]">
               <ShieldCheck size={13} className="text-[#06424B]" />
-              © 2026 Skill Next Consulting Inc. · Learning without limits.
-            </p>
+              {translateValue("© 2026 Skill Next Consulting Inc. · Learning without limits.")}</p>
           </footer>
         </section>
       </div>

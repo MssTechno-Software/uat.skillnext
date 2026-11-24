@@ -1,3 +1,4 @@
+import { translateValue } from "../../i18n";
 
 import { Link } from "react-router-dom";
 import {
@@ -47,8 +48,8 @@ export default function Modules() {
 
         {/* Header */}
         <PageHeader
-          title="Modules"
-          description="Explore your courses and manage the learning modules inside each course."
+          title={translateValue("Modules")}
+          description={translateValue("Explore your courses and manage the learning modules inside each course.")}
         />
 
         {/* Overview */}
@@ -60,10 +61,9 @@ export default function Modules() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[1px] text-[#91A1A3]">
-                Courses
-              </p>
+                {translateValue("Courses")}</p>
               <p className="mt-1 text-2xl font-extrabold text-[#17464D]">
-                {courseGroups.length}
+                {translateValue(courseGroups.length)}
               </p>
             </div>
           </div>
@@ -74,10 +74,9 @@ export default function Modules() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[1px] text-[#91A1A3]">
-                Total Modules
-              </p>
+                {translateValue("Total Modules")}</p>
               <p className="mt-1 text-2xl font-extrabold text-[#17464D]">
-                {totalModules}
+                {translateValue(totalModules)}
               </p>
             </div>
           </div>
@@ -88,10 +87,9 @@ export default function Modules() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[1px] text-[#91A1A3]">
-                Learning Content
-              </p>
+                {translateValue("Learning Content")}</p>
               <p className="mt-1 text-2xl font-extrabold text-[#17464D]">
-                {totalContent}
+                {translateValue(totalContent)}
               </p>
             </div>
           </div>
@@ -118,16 +116,15 @@ export default function Modules() {
                     <div className="min-w-0">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         <span className="text-[9px] font-extrabold uppercase tracking-[1.2px] text-[#A0ADAE]">
-                          Course {String(courseIndex + 1).padStart(2, "0")}
+                          {translateValue("Course")}{" "}{translateValue(String(courseIndex + 1).padStart(2, "0"))}
                         </span>
                         <span className="h-1 w-1 rounded-full bg-[#C5CECE]" />
                         <span className="text-[9px] font-bold text-[#688589]">
-                          {course.modules.length} Modules
-                        </span>
+                          {translateValue(course.modules.length)} {translateValue("Modules")}</span>
                       </div>
 
                       <h2 className="truncate text-[15px] font-extrabold text-[#17464D] sm:text-[17px]">
-                        {course.fullName}
+                        {translateValue(course.fullName)}
                       </h2>
                     </div>
                   </div>
@@ -135,8 +132,7 @@ export default function Modules() {
                   <div className="flex items-center gap-2 self-start rounded-full border border-[#DDE9E7] bg-white px-3 py-1.5 sm:self-center">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#4D8B65]" />
                     <span className="text-[10px] font-bold text-[#527276]">
-                      {course.modules.filter((module) => module.visible).length} Active
-                    </span>
+                      {translateValue(course.modules.filter((module) => module.visible).length)} {translateValue("Active")}</span>
                   </div>
                 </div>
 
@@ -145,17 +141,13 @@ export default function Modules() {
 
                   <div className="hidden grid-cols-[minmax(0,1.5fr)_110px_120px_155px] items-center gap-4 px-4 py-3 md:grid">
                     <span className="text-[9px] font-extrabold uppercase tracking-[1px] text-[#9AA9AA]">
-                      Module Details
-                    </span>
+                      {translateValue("Module Details")}</span>
                     <span className="text-[9px] font-extrabold uppercase tracking-[1px] text-[#9AA9AA]">
-                      Content
-                    </span>
+                      {translateValue("Content")}</span>
                     <span className="text-[9px] font-extrabold uppercase tracking-[1px] text-[#9AA9AA]">
-                      Status
-                    </span>
+                      {translateValue("Status")}</span>
                     <span className="text-[9px] font-extrabold uppercase tracking-[1px] text-[#9AA9AA]">
-                      Action
-                    </span>
+                      {translateValue("Action")}</span>
                   </div>
 
                   <div className="space-y-2">
@@ -179,10 +171,10 @@ export default function Modules() {
 
                             <div className="min-w-0">
                               <p className="truncate text-[12px] font-bold text-[#244F54]">
-                                {module.name}
+                                {translateValue(module.name)}
                               </p>
                               <p className="mt-1 text-[10px] font-medium text-[#98A7A8]">
-                                Module {module.position}
+                                {translateValue("Module")}{" "}{translateValue(module.position)}
                               </p>
                             </div>
                           </div>
@@ -190,29 +182,25 @@ export default function Modules() {
                           {/* Content */}
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] font-bold text-[#9AA9AA] md:hidden">
-                              Content
-                            </span>
+                              {translateValue("Content")}</span>
                             <div className="flex items-center gap-1.5 rounded-lg bg-[#F5F8F8] px-2.5 py-1.5">
                               <FileText size={12} className="text-[#688589]" />
                               <span className="text-[10px] font-bold text-[#547277]">
-                                {contentCount} items
-                              </span>
+                                {translateValue(contentCount)} {translateValue("items")}</span>
                             </div>
                           </div>
 
                           {/* Status */}
                           <div className="flex items-center gap-2">
                             <span className="text-[9px] font-bold text-[#9AA9AA] md:hidden">
-                              Status
-                            </span>
+                              {translateValue("Status")}</span>
                             <StatusPill visible={module.visible} />
                           </div>
 
                           {/* Manage Content */}
                           <div className="flex items-center justify-between gap-2 md:justify-start">
                             <span className="text-[9px] font-bold text-[#9AA9AA] md:hidden">
-                              Action
-                            </span>
+                              {translateValue("Action")}</span>
 
                             <Link
                               to={`/teacher/courses/${course.id}/modules/${module.id}`}
@@ -220,8 +208,7 @@ export default function Modules() {
                             >
                               <FolderOpen size={13} className="text-white" />
                               <span className="text-white">
-                                Manage Content
-                              </span>
+                                {translateValue("Manage Content")}</span>
                               <ChevronRight size={13} className="text-white" />
                             </Link>
                           </div>
@@ -235,15 +222,13 @@ export default function Modules() {
                 {/* Course Footer */}
                 <div className="flex items-center justify-between border-t border-[#EDF1F1] bg-[#FBFCFC] px-5 py-3 sm:px-6">
                   <p className="text-[10px] font-medium text-[#91A1A3]">
-                    {course.modules.length} modules in this course
-                  </p>
+                    {translateValue(course.modules.length)} {translateValue("modules in this course")}</p>
 
                   <Link
                     to="/teacher/courses"
                     className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#527276] transition-colors hover:text-[#06424B]"
                   >
-                    View Courses
-                    <ArrowRight size={13} />
+                    {translateValue("View Courses")}<ArrowRight size={13} />
                   </Link>
                 </div>
 
@@ -255,15 +240,15 @@ export default function Modules() {
           <div className="rounded-[20px] border border-[#E3EBEB] bg-white px-5 py-12">
             <EmptyState
               icon={Layers3}
-              title="No modules created"
-              description="Open a course and add its first module to build a learning sequence."
+              title={translateValue("No modules created")}
+              description={translateValue("Open a course and add its first module to build a learning sequence.")}
               action={
                 <Link
                   to="/teacher/courses"
                   className="inline-flex items-center gap-2 rounded-xl bg-[#06424B] px-5 py-3 text-[11px] font-bold !text-white transition-colors hover:bg-[#0A5660]"
                 >
                   <GraduationCap size={15} />
-                  <span className="text-white">Browse Courses</span>
+                  <span className="text-white">{translateValue("Browse Courses")}</span>
                   <ArrowRight size={14} className="text-white" />
                 </Link>
               }

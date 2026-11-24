@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 
 // Authentication Pages
 import Login from "./pages/auth/Login";
@@ -21,8 +21,13 @@ import TeacherRoutes from "./teacher/TeacherRoutes";
 // Session
 import { clearAuthSession } from "./services/authSession";
 import { ProfileProvider } from "./components/ProfileProvider";
+import LanguageSwitcher from "./components/common/LanguageSwitcher";
+import NativeValidationLanguage from "./components/common/NativeValidationLanguage";
+import { useTranslation } from "react-i18next";
 
 function SessionExpiredPopup({ onLogin }) {
+  const { t } = useTranslation("ui");
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#06424B]/25 p-4 backdrop-blur-[6px]">
       <div className="w-full max-w-[420px] rounded-[28px] border border-[#E8EFED] bg-white p-7 text-center shadow-2xl sm:p-9" role="alertdialog" aria-modal="true" aria-labelledby="session-expired-title" aria-describedby="session-expired-description">
@@ -34,27 +39,30 @@ function SessionExpiredPopup({ onLogin }) {
         </div>
 
         <h2 id="session-expired-title" className="mt-5 text-xl font-extrabold text-[#06424B]">
-          Your Session Has Expired
+          {t("Your Session Has Expired")}
         </h2>
 
         <p id="session-expired-description" className="mx-auto mt-3 max-w-[320px] text-sm leading-6 text-[#718486]">
-          For your security, your session has expired. Please log in again to continue learning.
+          {t("For your security, your session has expired. Please log in again to continue learning.")}
         </p>
 
         <button type="button" onClick={onLogin} className="mt-7 flex h-12 w-full items-center justify-center rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] transition hover:bg-[#FFC13C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06424B] focus-visible:ring-offset-2">
-          Login Again
+          {t("Login Again")}
         </button>
 
         <p className="mt-4 text-[11px] font-medium text-[#9AA9AA]">
-          SKILL NEXT CONSULTING INC.
-        </p>
+          SKILL NEXT CONSULTING INC.</p>
       </div>
     </div>
   );
 }
 
 function App() {
+  // Subscribe the routed application tree to language changes.
+  useTranslation("ui");
   const navigate = useNavigate();
+  const location = useLocation();
+  const isPortalRoute = location.pathname.startsWith("/student") || location.pathname.startsWith("/teacher");
   const [sessionExpired, setSessionExpired] = useState(false);
 
   // Listen for session expiration from authenticated requests
@@ -74,6 +82,12 @@ function App() {
 
   return (
     <>
+      <NativeValidationLanguage />
+      {!isPortalRoute && (
+        <div className="fixed right-4 top-4 z-[10000] sm:right-6 sm:top-6">
+          <LanguageSwitcher variant="floating" />
+        </div>
+      )}
       <Routes>
         {/* Default Route */}
         <Route path="/" element={<Navigate to="/login" replace />} />

@@ -1,3 +1,4 @@
+import { getLocalizedValue, translateValue } from "../../i18n";
 import {
   ArrowLeft,
   ArrowRight,
@@ -41,7 +42,7 @@ import Loader from "../../components/Loader";
 ===================================================== */
 
 const getCategoryIcon = (name = "") => {
-  const value = name.toLowerCase();
+  const value = String(name?.en || getLocalizedValue(name) || "").toLowerCase();
 
   if (value.includes("hair")) return Scissors;
   if (value.includes("welding")) return Wrench;
@@ -80,7 +81,7 @@ const cardThemes = [
 
 const getResponseData = (response) => {
   if (response?.success === false) {
-    throw new Error(response.message || "Unable to load information.");
+    throw new Error(getLocalizedValue(response.message || "Unable to load information."));
   }
 
   return response?.data;
@@ -116,14 +117,14 @@ const getPageError = (error) => {
   if (backend?.detail) {
     return typeof backend.detail === "string"
       ? backend.detail
-      : "Unable to load the requested information.";
+      : translateValue("Unable to load the requested information.");
   }
 
   if (!error?.response && !error?.request && error?.message) {
     return error.message;
   }
 
-  return getApiErrorMessage(error, "Something went wrong. Please try again.");
+  return getApiErrorMessage(error, translateValue("Something went wrong. Please try again."));
 };
 
 /* =====================================================
@@ -155,21 +156,20 @@ function CategoryCard({ category, index, onClick }) {
 
         <div className="relative mt-5">
           <p className={`text-[10px] font-bold tracking-[1.5px] ${theme.category}`}>
-            CATEGORY
-          </p>
+            {translateValue("CATEGORY")}</p>
           <h3 className="mt-1 text-xl font-extrabold tracking-tight text-white">
-            {category.name}
+            {getLocalizedValue(category.name)}
           </h3>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col p-5">
         <p className="min-h-[48px] text-xs leading-6 text-[#718486]">
-          {category.description || "Explore the available learning paths in this category."}
+          {getLocalizedValue(category.description || "Explore the available learning paths in this category.")}
         </p>
 
         <div className="mt-auto flex items-center justify-between border-t border-[#EAF0EE] pt-4">
-          <span className="text-[11px] font-bold text-[#527477]">Explore Category</span>
+          <span className="text-[11px] font-bold text-[#527477]">{translateValue("Explore Category")}</span>
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFAB0B] text-[#06424B] transition-transform group-hover:translate-x-1">
             <ArrowRight size={15} />
           </span>
@@ -187,7 +187,7 @@ function CategoryCard({ category, index, onClick }) {
 
 function CourseCard({ course, index, categoryName, categoryPath }) {
   const theme = cardThemes[index % cardThemes.length];
-  const courseName = course.fullName || course.shortName || "Untitled course";
+  const courseName = getLocalizedValue(course.fullName || course.shortName || "Untitled course");
 
   return (
     <Link
@@ -208,12 +208,11 @@ function CourseCard({ course, index, categoryName, categoryPath }) {
           </div>
 
           <span className="rounded-lg bg-[#FFAB0B] px-3 py-1.5 text-[10px] font-extrabold text-[#06424B]">
-            AVAILABLE COURSE
-          </span>
+            {translateValue("AVAILABLE COURSE")}</span>
         </div>
 
         <div className="relative mt-5">
-          <p className="text-[10px] font-bold tracking-[1.5px] text-[#D5E7E5]">COURSE</p>
+          <p className="text-[10px] font-bold tracking-[1.5px] text-[#D5E7E5]">{translateValue("COURSE")}</p>
           <h3 className="mt-1 text-xl font-extrabold tracking-tight text-white">
             {courseName}
           </h3>
@@ -222,11 +221,11 @@ function CourseCard({ course, index, categoryName, categoryPath }) {
 
       <div className="flex flex-1 flex-col p-5">
         <p className="min-h-[48px] text-xs leading-6 text-[#718486]">
-          {course.summary || "Open this course to review its overview."}
+          {getLocalizedValue(course.summary || "Open this course to review its overview.")}
         </p>
 
         <div className="mt-auto flex items-center justify-between rounded-xl bg-[#FFAB0B] px-4 py-3 text-[#06424B] transition group-hover:bg-[#FFC13C]">
-          <span className="text-xs font-extrabold">View Course Overview</span>
+          <span className="text-xs font-extrabold">{translateValue("View Course Overview")}</span>
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#06424B] text-[#FFAB0B] transition-transform group-hover:translate-x-1">
             <ArrowRight size={15} />
           </span>
@@ -264,10 +263,9 @@ function ErrorState({ message, onRetry }) {
         <AlertCircle size={23} />
       </div>
       <h3 className="mt-4 text-base font-extrabold text-[#06424B]">
-        Unable to load information
-      </h3>
+        {translateValue("Unable to load information")}</h3>
       <p className="mx-auto mt-2 max-w-[450px] text-sm leading-6 text-[#718486]">
-        {message}
+        {getLocalizedValue(message)}
       </p>
       <button
         type="button"
@@ -275,8 +273,7 @@ function ErrorState({ message, onRetry }) {
         className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 py-3 text-xs font-extrabold text-[#06424B] transition hover:bg-[#FFC13C]"
       >
         <RefreshCw size={14} />
-        Try Again
-      </button>
+        {translateValue("Try Again")}</button>
     </div>
   );
 }
@@ -288,12 +285,12 @@ function EmptyState({ searchTerm, onClear }) {
         <Search size={22} />
       </div>
       <h3 className="mt-4 text-base font-extrabold text-[#06424B]">
-        {searchTerm ? "No matching results" : "Nothing available yet"}
+        {translateValue(searchTerm ? "No matching results" : "Nothing available yet")}
       </h3>
       <p className="mt-1 text-sm text-[#718486]">
-        {searchTerm
+        {translateValue(searchTerm
           ? "Try another search term."
-          : "No subcategories or courses are available in this category yet."}
+          : "No subcategories or courses are available in this category yet.")}
       </p>
       {searchTerm && (
         <button
@@ -301,8 +298,7 @@ function EmptyState({ searchTerm, onClear }) {
           onClick={onClear}
           className="mt-4 rounded-lg bg-[#FFAB0B] px-4 py-2.5 text-xs font-extrabold text-[#06424B]"
         >
-          Clear Search
-        </button>
+          {translateValue("Clear Search")}</button>
       )}
     </div>
   );
@@ -335,6 +331,7 @@ function ExploreTopics() {
     setSearchTerm("");
     setError("");
     setIsLoading(true);
+    setCourses([]);
 
     try {
       const response = await getCategories({ topLevel: true });
@@ -355,6 +352,7 @@ function ExploreTopics() {
      LOAD SELECTED CATEGORY: CHILDREN + DIRECT COURSES
   --------------------------------------------------- */
 
+
   const loadCategoryContents = useCallback(async (category, nextPath) => {
     const currentRequest = ++requestId.current;
 
@@ -362,6 +360,9 @@ function ExploreTopics() {
     setSearchTerm("");
     setError("");
     setIsLoading(true);
+
+    // Clear previous courses while loading the selected category.
+    setCourses([]);
 
     try {
       const [categoryResponse, courseResponse] = await Promise.all([
@@ -376,19 +377,29 @@ function ExploreTopics() {
 
       if (currentRequest !== requestId.current) return;
 
-      const childCategories = extractCategories(categoryResponse);
-      const directCourses = extractCourses(courseResponse);
-
-      setVisibleCategories(
-        childCategories.filter((item) => item.visible !== false)
+      const childCategories = extractCategories(categoryResponse).filter(
+        (item) => item.visible !== false
       );
-      setCourses(directCourses.filter((item) => item.visible !== false));
+
+      const directCourses = extractCourses(courseResponse).filter(
+        (item) => item.visible !== false
+      );
+
+      setVisibleCategories(childCategories);
+
+      // Show courses only at the last category level.
+      setCourses(
+        childCategories.length === 0 ? directCourses : []
+      );
     } catch (err) {
       if (currentRequest !== requestId.current) return;
+
       console.error("Category Contents Error:", err);
       setError(getPageError(err));
     } finally {
-      if (currentRequest === requestId.current) setIsLoading(false);
+      if (currentRequest === requestId.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -448,7 +459,7 @@ function ExploreTopics() {
     if (!query) return visibleCategories;
 
     return visibleCategories.filter((category) =>
-      [category.name, category.description, category.idNumber]
+      [category.name, getLocalizedValue(category.name), category.description, getLocalizedValue(category.description), category.idNumber]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -461,7 +472,7 @@ function ExploreTopics() {
     if (!query) return courses;
 
     return courses.filter((course) =>
-      [course.fullName, course.shortName, course.summary]
+      [course.fullName, getLocalizedValue(course.fullName), course.shortName, getLocalizedValue(course.shortName), course.summary, getLocalizedValue(course.summary)]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -480,8 +491,8 @@ function ExploreTopics() {
     <PageShell>
       <div className="mx-auto w-full max-w-[1250px]">
         <StudentPageHeader
-          title="Explore Topics"
-          subtitle="Discover career-focused courses, explore the curriculum and build practical skills."
+          title={translateValue("Explore Topics")}
+          subtitle={translateValue("Discover career-focused courses, explore the curriculum and build practical skills.")}
         />
 
         {/* HERO */}
@@ -494,24 +505,19 @@ function ExploreTopics() {
             <div className="max-w-[650px]">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#FFAB0B]/30 bg-[#FFAB0B]/10 px-3 py-1.5 text-[10px] font-bold tracking-[1.4px] text-[#FFCB65]">
                 <Sparkles size={13} />
-                EXPLORE YOUR NEXT SKILL
-              </div>
+                {translateValue("EXPLORE YOUR NEXT SKILL")}</div>
               <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl lg:text-[36px]">
-                What would you like <span className="text-[#FFAB0B]">to learn?</span>
+                {translateValue("What would you like")}{" "}<span className="text-[#FFAB0B]">{translateValue("to learn?")}</span>
               </h1>
               <p className="mt-3 max-w-[570px] text-xs leading-6 text-white/70 sm:text-sm sm:leading-7">
-                Start with a category, discover its learning paths and choose the course you want to explore.
-              </p>
+                {translateValue("Start with a category, discover its learning paths and choose the course you want to explore.")}</p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-2 text-[11px] font-semibold text-white">
-                  <BookOpen size={14} className="text-[#FFAB0B]" /> Structured Lessons
-                </span>
+                  <BookOpen size={14} className="text-[#FFAB0B]" /> {translateValue("Structured Lessons")}</span>
                 <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-2 text-[11px] font-semibold text-white">
-                  <Code2 size={14} className="text-[#FFAB0B]" /> Practical Learning
-                </span>
+                  <Code2 size={14} className="text-[#FFAB0B]" /> {translateValue("Practical Learning")}</span>
                 <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-2 text-[11px] font-semibold text-white">
-                  <GraduationCap size={14} className="text-[#FFAB0B]" /> Topic Quizzes & Final Assessment
-                </span>
+                  <GraduationCap size={14} className="text-[#FFAB0B]" /> {translateValue("Topic Quizzes & Final Assessment")}</span>
               </div>
             </div>
 
@@ -534,12 +540,11 @@ function ExploreTopics() {
                 type="button"
                 onClick={() => handleBreadcrumbClick(-1)}
                 className={`font-bold transition ${categoryPath.length === 0
-                    ? "text-[#06424B]"
-                    : "text-[#829596] hover:text-[#06424B]"
+                  ? "text-[#06424B]"
+                  : "text-[#829596] hover:text-[#06424B]"
                   }`}
               >
-                All Categories
-              </button>
+                {translateValue("All Categories")}</button>
 
               {categoryPath.map((category, index) => (
                 <div key={category.id} className="flex items-center gap-2">
@@ -548,11 +553,11 @@ function ExploreTopics() {
                     type="button"
                     onClick={() => handleBreadcrumbClick(index)}
                     className={`font-bold transition ${index === categoryPath.length - 1
-                        ? "text-[#06424B]"
-                        : "text-[#829596] hover:text-[#06424B]"
+                      ? "text-[#06424B]"
+                      : "text-[#829596] hover:text-[#06424B]"
                       }`}
                   >
-                    {category.name}
+                    {getLocalizedValue(category.name)}
                   </button>
                 </div>
               ))}
@@ -564,7 +569,7 @@ function ExploreTopics() {
                   <button
                     type="button"
                     onClick={handleBack}
-                    aria-label="Go back to previous category"
+                    aria-label={translateValue("Go back to previous category")}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#DCE7E5] bg-white text-[#06424B] transition hover:bg-[#EEF3F3]"
                   >
                     <ArrowLeft size={17} />
@@ -572,26 +577,26 @@ function ExploreTopics() {
                 )}
                 <div>
                   <h2 className="text-lg font-extrabold tracking-tight text-[#06424B]">
-                    {currentCategory?.name || "Explore Categories"}
+                    {getLocalizedValue(currentCategory?.name || "Explore Categories")}
                   </h2>
                   <p className="mt-1 text-xs text-[#829596]">
-                    {currentCategory
+                    {translateValue(currentCategory
                       ? "Explore subcategories and available courses."
-                      : "Choose a category to discover its learning paths."}
+                      : "Choose a category to discover its learning paths.")}
                   </p>
                 </div>
               </div>
 
               <span className="rounded-lg border border-[#DCE7E5] bg-white px-3 py-2 text-[10px] font-bold text-[#527477]">
                 {isLoading
-                  ? "LOADING..."
-                  : `${filteredCategories.length + filteredCourses.length} RESULTS`}
+                  ? translateValue("LOADING...")
+                  : translateValue("{{count}} RESULTS", { count: filteredCategories.length + filteredCourses.length })}
               </span>
             </div>
 
             {currentCategory?.description && (
               <p className="mt-3 max-w-[800px] text-xs leading-6 text-[#718486]">
-                {currentCategory.description}
+                {getLocalizedValue(currentCategory.description)}
               </p>
             )}
           </div>
@@ -604,15 +609,15 @@ function ExploreTopics() {
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={currentCategory ? "Search subcategories or courses..." : "Search main categories..."}
-                aria-label="Search categories and courses"
+                placeholder={translateValue(currentCategory ? "Search subcategories or courses..." : "Search main categories...")}
+                aria-label={translateValue("Search categories and courses")}
                 className="h-12 w-full rounded-xl border border-[#DCE7E5] bg-white pl-11 pr-11 text-sm text-[#29494D] shadow-[0_2px_8px_rgba(6,66,75,0.035)] outline-none transition placeholder:text-[#9AA9AA] focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm("")}
-                  aria-label="Clear search"
+                  aria-label={translateValue("Clear search")}
                   className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-[#829596] transition hover:bg-[#EEF3F3] hover:text-[#06424B]"
                 >
                   <X size={15} />
@@ -641,7 +646,7 @@ function ExploreTopics() {
                   <div className="mb-4 flex items-center gap-2">
                     <FolderOpen size={17} className="text-[#B88736]" />
                     <h3 className="text-sm font-extrabold text-[#06424B]">
-                      {categoryPath.length === 0 ? "Main Categories" : "Subcategories"}
+                      {translateValue(categoryPath.length === 0 ? "Main Categories" : "Subcategories")}
                     </h3>
                   </div>
 
@@ -662,7 +667,7 @@ function ExploreTopics() {
                 <div>
                   <div className="mb-4 flex items-center gap-2">
                     <BookOpen size={17} className="text-[#B88736]" />
-                    <h3 className="text-sm font-extrabold text-[#06424B]">Courses</h3>
+                    <h3 className="text-sm font-extrabold text-[#06424B]">{translateValue("Courses")}</h3>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -693,17 +698,16 @@ function ExploreTopics() {
         <div className="mt-6 flex items-center justify-center gap-2 border-t border-[#DCE6E3] py-4">
           <Sparkles size={13} className="text-[#B88736]" />
           <p className="text-[10px] font-medium text-[#829596]">
-            Skill Next · Every skill starts with curiosity.
-          </p>
+            {translateValue("Skill Next · Every skill starts with curiosity.")}</p>
         </div>
       </div>
       <Loader
         open={isLoading}
         blur={true}
         text={
-          currentCategory
+          translateValue(currentCategory
             ? "Loading courses..."
-            : "Loading categories..."
+            : "Loading categories...")
         }
       />
     </PageShell>
