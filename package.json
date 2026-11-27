@@ -17,12 +17,13 @@
     "@monaco-editor/react": "^4.7.0",
     "@uiw/react-codemirror": "^4.25.12",
     "axios": "^1.21.1",
+    "i18next": "27.2.4",
     "lucide-react": "^1.72.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-i18next": "18.0.3",
     "react-router-dom": "^7.18.5",
-    "i18next": "27.2.4",
-    "react-i18next": "18.0.3"
+    "react-speech-recognition": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

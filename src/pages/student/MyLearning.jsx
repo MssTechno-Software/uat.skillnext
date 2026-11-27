@@ -706,7 +706,7 @@ function CourseModulesWorkspace({ learningPath, onBack }) {
         <ArrowLeft size={16} /> {translateValue("Back to My Learning")}</button>
 
       <Hero
-        eyebrow={course.categoryName || course.shortName || "YOUR ENROLLED COURSE"}
+        eyebrow={translateValue(course.categoryName || course.shortName || "YOUR ENROLLED COURSE")}
         title={translateValue(course.fullName || course.shortName || "Continue learning")}
         text={translateValue(course.summary || "Continue through your course modules one step at a time.")}
       >

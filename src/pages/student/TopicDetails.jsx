@@ -43,7 +43,13 @@ import { getApiErrorMessage } from "../../utils/apiErrorHandler";
 const formatDate = (value, language, t) => {
   if (!value) return t("Not specified");
 
-  const date = new Date(`${value}T00:00:00`);
+  // Backend date fields are usually YYYY-MM-DD. Preserve local date display
+  // for date-only values, while also accepting full ISO timestamps safely.
+  const dateInput =
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? `${value}T00:00:00`
+      : value;
+  const date = new Date(dateInput);
 
   if (Number.isNaN(date.getTime())) return String(value);
 
@@ -139,9 +145,13 @@ const normalizeCourseOverview = (response) => {
     );
   }
 
-  const payload = response.data;
+  const payload = response?.data;
 
-  const course = payload?.course;
+  if (!payload || typeof payload !== "object") {
+    throw new Error("The course overview response is empty or invalid.");
+  }
+
+  const course = payload.course;
 
   if (!course || course.id === undefined || course.id === null) {
     throw new Error(
@@ -217,27 +227,31 @@ const normalizeCourseOverview = (response) => {
 ===================================================== */
 
 function CourseDetailsLoading() {
+  const { t } = useTranslation("ui");
+
   return (
     <PageShell max="max-w-[1250px]">
-      <div className="animate-pulse space-y-6">
-        <div className="h-7 w-2/3 rounded-lg bg-[#DCE7E5]" />
+      <div data-a11y-page="topic-details" className="w-full">
+        <div
+          className="animate-pulse space-y-6"
+          role="status"
+          aria-busy="true"
+          aria-label={t("Loading course details")}
+        >
+          <div className="h-7 w-2/3 rounded-lg bg-[#DCE7E5]" />
+          <div className="h-4 w-1/2 rounded bg-[#E5ECEA]" />
+          <div className="h-[165px] rounded-[22px] bg-[#DCE7E5]" />
 
-        <div className="h-4 w-1/2 rounded bg-[#E5ECEA]" />
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-4">
+              <div className="h-7 w-1/3 rounded bg-[#DCE7E5]" />
+              <div className="h-36 rounded-2xl bg-white" />
+              <div className="h-7 w-1/3 rounded bg-[#DCE7E5]" />
+              <div className="h-24 rounded-2xl bg-white" />
+            </div>
 
-        <div className="h-[165px] rounded-[22px] bg-[#DCE7E5]" />
-
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-4">
-            <div className="h-7 w-1/3 rounded bg-[#DCE7E5]" />
-
-            <div className="h-36 rounded-2xl bg-white" />
-
-            <div className="h-7 w-1/3 rounded bg-[#DCE7E5]" />
-
-            <div className="h-24 rounded-2xl bg-white" />
+            <div className="h-72 rounded-2xl bg-white" />
           </div>
-
-          <div className="h-72 rounded-2xl bg-white" />
         </div>
       </div>
     </PageShell>
@@ -249,35 +263,43 @@ function CourseDetailsError({ message, onRetry }) {
 
   return (
     <PageShell max="max-w-[1250px]">
-      <Card className="px-6 py-12 text-center sm:px-10">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500">
-          <AlertCircle size={25} />
-        </div>
+      <div data-a11y-page="topic-details" className="w-full">
+        <Card className="px-6 py-12 text-center sm:px-10">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+            <AlertCircle size={25} />
+          </div>
 
-        <h1 className="mt-4 text-xl font-extrabold text-[#06424B]">
-          {t("Unable to load course details")}</h1>
+          <h1 className="mt-4 text-xl font-extrabold text-[#06424B]">
+            {t("Unable to load course details")}
+          </h1>
 
-        <p className="mx-auto mt-2 max-w-[520px] text-sm leading-6 text-[#718486]">
-          {t(message, { defaultValue: message })}
-        </p>
-
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-bold text-[#06424B] transition hover:bg-[#FFC13C]"
+          <p
+            role="alert"
+            className="mx-auto mt-2 max-w-[520px] text-sm leading-6 text-[#718486]"
           >
-            <RefreshCw size={15} />
-            {t("Try Again")}</button>
+            {t(message, { defaultValue: message })}
+          </p>
 
-          <Link
-            to="/student/topics"
-            className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E3] bg-white px-5 text-sm font-bold text-[#06424B] !no-underline transition hover:bg-[#F4F7F7]"
-          >
-            <ArrowLeft size={15} />
-            {t("Back to Explore Topics")}</Link>
-        </div>
-      </Card>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-bold text-[#06424B] transition hover:bg-[#FFC13C]"
+            >
+              <RefreshCw size={15} />
+              {t("Try Again")}
+            </button>
+
+            <Link
+              to="/student/topics"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#DCE6E3] bg-white px-5 text-sm font-bold text-[#06424B] !no-underline transition hover:bg-[#F4F7F7]"
+            >
+              <ArrowLeft size={15} />
+              {t("Back to Explore Topics")}
+            </Link>
+          </div>
+        </Card>
+      </div>
     </PageShell>
   );
 }
@@ -663,7 +685,7 @@ function TopicDetails() {
 
   return (
     <PageShell max="max-w-[1250px]">
-      <div className="mx-auto w-full">
+      <div data-a11y-page="topic-details" className="mx-auto w-full">
         <StudentPageHeader
           title={courseName}
           subtitle={summary}
@@ -681,27 +703,25 @@ function TopicDetails() {
 
         {/* COURSE HERO */}
 
-        <Hero
-          eyebrow={categoryNameLabel.toLocaleUpperCase(language === "fr" ? "fr-FR" : "en-IN")}
-          title={t("Learn {{course}}", { course: courseName })}
-          text={summary}
-        >
-          <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
-            <BookOpen
-              size={15}
-              className="text-[#FFAB0B]"
-            />
+        <div data-a11y-region="topic-details-hero">
+          <Hero
+            eyebrow={categoryNameLabel.toLocaleUpperCase(
+              language === "fr" ? "fr-FR" : "en-IN"
+            )}
+            title={t("Learn {{course}}", { course: courseName })}
+            text={summary}
+          >
+            <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
+              <BookOpen size={15} className="text-[#FFAB0B]" />
+              {totalModules} {t("learning modules")}
+            </span>
 
-            {totalModules} {t("learning modules")}</span>
-
-          <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
-            <GraduationCap
-              size={15}
-              className="text-[#FFAB0B]"
-            />
-
-            {totalContents} {t("learning items")}</span>
-        </Hero>
+            <span className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-xs font-bold text-white">
+              <GraduationCap size={15} className="text-[#FFAB0B]" />
+              {totalContents} {t("learning items")}
+            </span>
+          </Hero>
+        </div>
 
         <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* MAIN CONTENT */}
@@ -1015,6 +1035,7 @@ function TopicDetails() {
 
       {showEnrollmentDialog && (
         <div
+          data-a11y-region="topic-details-dialog"
           className="fixed inset-0 z-[100] flex items-center justify-center bg-[#063B43]/40 p-4 backdrop-blur-[3px]"
           role="presentation"
         >

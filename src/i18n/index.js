@@ -4,6 +4,7 @@ import { initReactI18next } from "react-i18next";
 
 import enUi from "./locales/en/ui.json";
 import frUi from "./locales/fr/ui.json";
+import { getDynamicTranslation } from "./dynamicTranslationStore";
 
 // Stores the selected language in the browser.
 export const LANGUAGE_STORAGE_KEY = "skillnext_language";
@@ -37,6 +38,31 @@ function readSavedLanguage() {
   }
 }
 
+// Lets t() resolve API-authored content already translated at runtime.
+// Static ui.json translations always take priority over this dynamic cache.
+const dynamicApiTextPostProcessor = {
+  type: "postProcessor",
+  name: "dynamicApiText",
+  process(value, key, options = {}) {
+    if (typeof key !== "string") return value;
+
+    const language = normalizeLanguage(
+      options.lng || i18n.resolvedLanguage || i18n.language || DEFAULT_LANGUAGE
+    );
+
+    // Check the requested language's own catalog instead of fallbackLng.
+    // This ensures a missing French static key can still resolve a dynamic API
+    // translation registered at runtime.
+    if (Object.prototype.hasOwnProperty.call(resources[language]?.ui || {}, key)) return value;
+
+    const inputText = typeof options.defaultValue === "string"
+      ? options.defaultValue
+      : key;
+
+    return getDynamicTranslation(inputText, language) ?? value;
+  },
+};
+
 // Registers English and French translation resources.
 // Each language uses the "ui" namespace for interface translations.
 const resources = {
@@ -47,7 +73,7 @@ const resources = {
 // Initializes the single i18next instance before React renders.
 // Prevents the same translation instance from being initialized multiple times.
 if (!i18n.isInitialized) {
-  i18n.use(initReactI18next).init({
+  i18n.use(dynamicApiTextPostProcessor).use(initReactI18next).init({
     resources,
     lng: readSavedLanguage(),
     fallbackLng: DEFAULT_LANGUAGE,
@@ -60,6 +86,7 @@ if (!i18n.isInitialized) {
     returnNull: false,
     returnEmptyString: false,
     interpolation: { escapeValue: false },
+    postProcess: ["dynamicApiText"],
     react: {
       useSuspense: false,
       bindI18n: "languageChanged loaded",
@@ -92,6 +119,11 @@ i18n.on("languageChanged", (language) => {
     } catch {
       // Keeps the language change active even if browser storage is unavailable.
     }
+
+    // Re-translate API content already loaded in the current page without a reload.
+    window.dispatchEvent(
+      new CustomEvent("skillnext-language-changed", { detail: { language: normalized } })
+    );
   }
 });
 
@@ -116,7 +148,6 @@ export async function changeAppLanguage(language) {
   const next = normalizeLanguage(language);
 
   await i18n.changeLanguage(next);
-
   return next;
 }
 
@@ -128,10 +159,27 @@ export async function changeAppLanguage(language) {
  */
 export function translateValue(value, options = {}) {
   if (typeof value === "string") {
+    const language = normalizeLanguage(
+      options.lng || i18n.resolvedLanguage || i18n.language || DEFAULT_LANGUAGE
+    );
+    const staticCatalog = resources[language]?.ui || {};
+
+    // Static interface copy has priority. Otherwise, read the exact dynamic
+    // API-text cache directly instead of relying only on the i18next
+    // post-processor. This covers components that render API fields with t(),
+    // translateValue() or getLocalizedValue().
+    if (!Object.prototype.hasOwnProperty.call(staticCatalog, value)) {
+      const dynamicValue = getDynamicTranslation(value, language);
+      if (typeof dynamicValue === "string" && dynamicValue.length > 0) {
+        return dynamicValue;
+      }
+    }
+
     return i18n.t(value, {
       ns: "ui",
       defaultValue: value,
       ...options,
+      lng: language,
     });
   }
 
@@ -158,11 +206,11 @@ export function getLocalizedValue(
       value[normalized] ?? value.en ?? value[DEFAULT_LANGUAGE];
 
     return typeof selected === "string"
-      ? translateValue(selected)
+      ? translateValue(selected, { lng: normalized })
       : selected ?? "";
   }
 
-  return value == null ? "" : translateValue(String(value));
+  return value == null ? "" : translateValue(String(value), { lng: normalized });
 }
 
 // Exports the initialized i18next instance for use throughout the application.

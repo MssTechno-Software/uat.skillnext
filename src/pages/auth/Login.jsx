@@ -321,6 +321,7 @@ function Login() {
 
     return (
         <main
+            data-a11y-region="auth-page"
             className="w-screen overflow-hidden bg-white flex"
             style={{ height: "100dvh" }}
         >
@@ -328,6 +329,7 @@ function Login() {
 
             {/* Renders the login panel. */}
             <section
+                data-a11y-region="auth-shell"
                 className="flex-1 overflow-y-auto lg:border-l lg:border-[#DCE6E8] lg:shadow-[-14px_0_40px_rgba(6,66,75,0.07)]"
                 style={{ background: "#EEF3F4" }}
             >
@@ -343,10 +345,13 @@ function Login() {
                     />
 
                     {/* Contains the login form and related actions. */}
-                    <div className="relative z-10 w-full max-w-[440px] rounded-3xl border border-[#E1EAEC] bg-white px-7 py-7 shadow-[0_24px_70px_rgba(6,66,75,0.12)] sm:px-9 sm:py-8">
+                    <div
+                        data-a11y-region="auth-card"
+                        className="relative z-10 w-full max-w-[440px] rounded-3xl border border-[#E1EAEC] bg-white px-7 py-7 shadow-[0_24px_70px_rgba(6,66,75,0.12)] sm:px-9 sm:py-8"
+                    >
                         {/* Displays the logo on smaller screens. */}
                         <div className="lg:hidden mb-4 flex justify-center">
-                            <Logo style={{ width: 210 }} />
+                            <Logo className="auth-brand-logo" style={{ width: 210 }} />
                         </div>
 
                         <div className="mb-6">
@@ -474,6 +479,7 @@ function Login() {
                             </div>
 
                             <button
+                                data-a11y-action="auth-primary"
                                 type="submit"
                                 disabled={isSubmitting}
                                 className="group w-full h-12 rounded-xl text-[#06424B] font-bold text-sm flex items-center justify-center gap-3 shadow-lg shadow-[#FFAB0B]/30 hover:brightness-95 active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"

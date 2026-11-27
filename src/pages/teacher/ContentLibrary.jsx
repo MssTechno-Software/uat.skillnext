@@ -169,6 +169,7 @@ export default function ContentLibrary() {
           />
 
           <select
+            aria-label={translateValue("Filter content by type")}
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="h-[43px] rounded-xl border border-[#DDE7E7] bg-white px-3.5 text-[12px] font-medium text-[#244E54] outline-none transition-all duration-200 hover:border-[#B8CACA] focus:border-[#06424B] focus:ring-2 focus:ring-[#06424B]/10"

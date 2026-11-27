@@ -419,7 +419,7 @@ function LearningSpaceCard({ course, index, language }) {
       to={coursePath}
       className={`group flex min-h-[224px] flex-col overflow-hidden rounded-[19px] border border-[#E2E9E7] bg-white !no-underline shadow-[0_3px_12px_rgba(6,66,75,0.045)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(6,66,75,0.10)] ${theme.border}`}
     >
-      <div className={`relative overflow-hidden px-5 pb-4 pt-4 ${theme.header}`}>
+      <div data-a11y-dark-panel={isGold ? "gold" : "teal"} className={`relative overflow-hidden px-5 pb-4 pt-4 ${theme.header}`}>
         <div className="pointer-events-none absolute -right-8 -top-12 h-32 w-32 rounded-full border-[18px] border-white/30" />
 
         <div className="relative flex items-center justify-between">
@@ -898,7 +898,10 @@ function StudentDashboard() {
                   {translateValue("View My Analytics")}</LinkButton>
               </div>
 
-              <div className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.08] py-2 pl-2.5 pr-4">
+              <div
+                data-a11y-region="progress-summary"
+                className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-white/[0.08] py-2 pl-2.5 pr-4"
+              >
                 <MiniRing percent={overallPercent} />
 
                 <div>

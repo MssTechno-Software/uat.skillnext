@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import SearchResults from "../pages/student/SearchResults";
 
 // Common layout for all student pages
 import StudentLayout from "../components/student/StudentLayout";
@@ -7,7 +8,6 @@ import StudentLayout from "../components/student/StudentLayout";
 import StudentDashboard from "../pages/student/StudentDashboard";
 import MyLearning from "../pages/student/MyLearning";
 import FinalAssessmentPage from "../pages/student/FinalAssessmentPage";
-
 
 // Explore Topics and lesson pages
 import ExploreTopics from "../pages/student/ExploreTopics";
@@ -25,10 +25,10 @@ import StudyResources from "../pages/student/StudyResources";
 import AIPractice from "../pages/student/AIPractice";
 import SelfIntroductionPractice from "../pages/student/SelfIntroductionPractice";
 import InterviewPrepCourses from "../pages/student/InterviewPrepCourses";
-import InterviewPrepSubtopics from "../pages/student/InterviewPrepSubtopics";
 import InterviewPrepDifficulty from "../pages/student/InterviewPrepDifficulty";
 import TopicTheoryPractice from "../pages/student/TopicTheoryPractice";
 import AIFeedback from "../pages/student/AIFeedback";
+import TopicTheoryFeedback from "../pages/student/TopicTheoryFeedback";
 
 // Analytics
 import MyAnalytics from "../pages/student/MyAnalytics";
@@ -44,6 +44,9 @@ function StudentRoutes() {
     <Routes>
       {/* All student routes share the same layout */}
       <Route element={<StudentLayout />}>
+        {/* Global Search Results */}
+        <Route path="search" element={<SearchResults />} />
+
         {/* Redirect the default student route to Dashboard */}
         <Route index element={<Navigate to="dashboard" replace />} />
 
@@ -76,10 +79,12 @@ function StudentRoutes() {
           path="assessment-result"
           element={<AssessmentResultPage />}
         />
+
         <Route
           path="final-assessment"
           element={<FinalAssessmentPage />}
         />
+
         {/* Study Resources */}
         <Route path="resources" element={<StudyResources />} />
 
@@ -98,21 +103,9 @@ function StudentRoutes() {
           element={<InterviewPrepCourses />}
         />
 
-        {/* Interview Preparation Subtopics */}
+        {/* Interview Difficulty Selection - Direct Course Flow */}
         <Route
-          path="ai-practice/topic-theory/:courseId/topics"
-          element={<InterviewPrepSubtopics />}
-        />
-
-        {/* Technology-specific Interview Subtopics */}
-        <Route
-          path="ai-practice/topic-theory/:courseId/technology/:technologyId/topics"
-          element={<InterviewPrepSubtopics />}
-        />
-
-        {/* Interview Difficulty Selection */}
-        <Route
-          path="ai-practice/topic-theory/:courseId/topic/:topicId/difficulty"
+          path="ai-practice/topic-theory/:courseId/difficulty"
           element={<InterviewPrepDifficulty />}
         />
 
@@ -122,7 +115,13 @@ function StudentRoutes() {
           element={<TopicTheoryPractice />}
         />
 
-        {/* AI Interview Feedback */}
+        {/* Topic Theory API Feedback - Separate page */}
+        <Route
+          path="ai-practice/topic-theory/feedback"
+          element={<TopicTheoryFeedback />}
+        />
+
+        {/* Self Introduction AI Feedback - Existing page unchanged */}
         <Route
           path="ai-practice/feedback"
           element={<AIFeedback />}

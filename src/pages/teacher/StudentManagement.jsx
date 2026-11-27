@@ -1,6 +1,6 @@
 import { translateValue } from "../../i18n";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Users,
@@ -279,6 +279,7 @@ function StatCard({ title, value, subtitle, icon: Icon, color }) {
         </div>
 
         <div
+          data-a11y-region="stat-icon"
           className="flex h-11 w-11 items-center justify-center rounded-xl"
           style={{ backgroundColor: color + "15", color }}
         >
@@ -332,6 +333,63 @@ function Avatar({ name, size = "md" }) {
 }
 
 function Modal({ open, onClose, title, description, children, width = "max-w-lg" }) {
+  const dialogRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousFocus = document.activeElement;
+    const dialog = dialogRef.current;
+    const getFocusable = () => Array.from(
+      dialog?.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || []
+    ).filter((element) => !element.hasAttribute("aria-hidden"));
+
+    const firstFocusable = getFocusable()[0];
+    (firstFocusable || dialog)?.focus();
+
+    const handleDialogKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onCloseRef.current?.();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (!focusable.length) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleDialogKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleDialogKeyDown);
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+        previousFocus.focus();
+      }
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -342,15 +400,21 @@ function Modal({ open, onClose, title, description, children, width = "max-w-lg"
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-management-modal-title"
+        aria-describedby={description ? "student-management-modal-description" : undefined}
+        tabIndex={-1}
         className={`my-auto w-full ${width} overflow-hidden rounded-[22px] border border-[#E5ECEC] bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)]`}
       >
         <div className="flex items-start justify-between border-b border-[#EDF1F1] px-5 py-5 sm:px-6">
           <div>
-            <h2 className="text-[16px] font-extrabold text-[#17464D]">
+            <h2 id="student-management-modal-title" className="text-[16px] font-extrabold text-[#17464D]">
               {translateValue(title)}
             </h2>
             {description && (
-              <p className="mt-1.5 text-[11px] leading-5 text-[#8B9B9D]">
+              <p id="student-management-modal-description" className="mt-1.5 text-[11px] leading-5 text-[#8B9B9D]">
                 {translateValue(description)}
               </p>
             )}
@@ -358,6 +422,7 @@ function Modal({ open, onClose, title, description, children, width = "max-w-lg"
 
           <button
             type="button"
+            aria-label={translateValue("Close dialog")}
             onClick={onClose}
             className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#819395] transition hover:bg-[#F1F5F5] hover:text-[#17464D]"
           >
@@ -673,12 +738,16 @@ export default function StudentManagement() {
         {/* TOAST */}
 
         {toast && (
-          <div className="fixed right-5 top-5 z-[120] flex items-center gap-3 rounded-xl border border-[#D5E9DF] bg-white px-4 py-3 shadow-xl">
+          <div role="status" aria-live="polite" aria-atomic="true" className="fixed right-5 top-5 z-[120] flex items-center gap-3 rounded-xl border border-[#D5E9DF] bg-white px-4 py-3 shadow-xl">
             <CheckCircle2 size={17} className="text-[#398366]" />
             <span className="text-[11px] font-semibold text-[#31565B]">
               {translateValue(toast)}
             </span>
-            <button onClick={() => setToast("")}>
+            <button
+              type="button"
+              aria-label={translateValue("Dismiss notification")}
+              onClick={() => setToast("")}
+            >
               <X size={14} />
             </button>
           </div>
@@ -825,6 +894,7 @@ export default function StudentManagement() {
                 <div className="flex h-10 items-center gap-2 rounded-xl border border-[#E1E9E9] bg-[#FAFCFC] px-3 sm:w-[240px]">
                   <Search size={15} className="text-[#91A1A3]" />
                   <input
+                    aria-label={translateValue("Search students")}
                     value={search}
                     onChange={(event) => {
                       setSearch(event.target.value);
@@ -834,7 +904,11 @@ export default function StudentManagement() {
                     className="w-full bg-transparent text-[11px] text-[#31565B] outline-none placeholder:text-[#AAB6B7]"
                   />
                   {search && (
-                    <button onClick={() => setSearch("")}>
+                    <button
+                      type="button"
+                      aria-label={translateValue("Clear student search")}
+                      onClick={() => setSearch("")}
+                    >
                       <X size={13} className="text-[#91A1A3]" />
                     </button>
                   )}
@@ -846,6 +920,7 @@ export default function StudentManagement() {
                     className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#819395]"
                   />
                   <select
+                    aria-label={translateValue("Filter students by status")}
                     value={statusFilter}
                     onChange={(event) => {
                       setStatusFilter(event.target.value);
@@ -865,6 +940,7 @@ export default function StudentManagement() {
 
                 <div className="relative">
                   <select
+                    aria-label={translateValue("Filter students by course")}
                     value={courseFilter}
                     onChange={(event) => {
                       setCourseFilter(event.target.value);
@@ -957,6 +1033,7 @@ export default function StudentManagement() {
                           <td className="px-5 py-4">
                             <input
                               type="checkbox"
+                              aria-label={translateValue("Select {{name}}", { name: student.name })}
                               checked={selected.includes(student.id)}
                               onChange={() => toggleStudent(student.id)}
                               className="h-4 w-4 accent-[#06424B]"

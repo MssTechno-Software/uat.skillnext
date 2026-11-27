@@ -2,7 +2,6 @@ import { translateValue } from "../../i18n";
 
 import {
   ArrowUpRight,
-  Brain,
   MessageSquareText,
   Mic2,
   Sparkles,

@@ -1138,7 +1138,7 @@ function CourseChapterCard({ model, courseNumber }) {
   return (
     <Reveal>
       <Card className="overflow-hidden border-[#E5ECEA] p-0 shadow-[0_8px_28px_rgba(21,57,58,0.045)]">
-        <div className="relative border-b border-[#E8EFED] bg-gradient-to-br from-[#FBFCFC] to-[#F4F9F8] px-5 py-5 sm:px-6">
+        <div data-a11y-dark-panel="teal" className="relative border-b border-[#E8EFED] bg-gradient-to-br from-[#FBFCFC] to-[#F4F9F8] px-5 py-5 sm:px-6">
           {coursePassed && <Sparkles aria-hidden="true" size={16} className="sp-spark absolute right-6 top-4 text-[#E4B33E]" />}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">

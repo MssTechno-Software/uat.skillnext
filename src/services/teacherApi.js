@@ -1,4 +1,5 @@
 import i18n from "../i18n";
+import { preloadApiContentTranslation } from "./apiContentTranslation";
 const env = import.meta.env || {};
 
 const trimSlash = (value) => String(value || "").replace(/\/$/, "");
@@ -83,6 +84,20 @@ async function request(path, options = {}) {
     const message = payload?.detail || payload?.message || payload?.error || `Request failed (${response.status}).`;
     throw new Error(typeof message === "string" ? message : JSON.stringify(message));
   }
+
+  // Teacher catalog GET responses can contain course/module/content labels.
+  // Register only course-authoring catalog data for display-only translation.
+  // Student directories and enrollment records may contain personal information
+  // and are intentionally excluded. Never mutate the returned payload.
+  const normalizedMethod = String(method || "GET").toUpperCase();
+  const normalizedPath = String(path || "").split("?")[0];
+  const isStudentData = /\/api\/(?:students?|users?|enrollments?)(?:\/|$)/i.test(normalizedPath);
+  if (normalizedMethod === "GET" && !isStudentData) {
+    void preloadApiContentTranslation(payload, i18n.resolvedLanguage || i18n.language || "en").catch((translationError) => {
+      console.warn("Teacher catalog translations could not be preloaded; original values remain available.", translationError);
+    });
+  }
+
   return payload;
 }
 

@@ -560,6 +560,7 @@ function SearchableDropdown({
                         <input
                             autoFocus
                             type="text"
+                            aria-label={tr("Search options")}
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             onKeyDown={handleSearchKeyDown}

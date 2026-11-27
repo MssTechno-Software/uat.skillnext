@@ -35,6 +35,29 @@ import {
 } from "../../api/course.api";
 import { getModuleAssessments } from "../../api/assessment.api";
 import Editor from "@monaco-editor/react";
+import { getDynamicTranslation } from "../../i18n/dynamicTranslationStore";
+
+// API content is translated by the shared Axios translation layer before it
+// reaches this page. This helper also supports the shared cache, so content
+// already loaded in English can be rendered in French after a language change.
+const normalizeLanguage = (language) =>
+  String(language || "en").toLowerCase().split("-")[0];
+
+const getApiDisplayText = (value, language) => {
+  if (typeof value !== "string") return value ?? "";
+  const cachedTranslation = getDynamicTranslation(value, normalizeLanguage(language));
+  return typeof cachedTranslation === "string" && cachedTranslation.trim()
+    ? cachedTranslation
+    : value;
+};
+
+// Keep course-type detection based on the original English labels. The visible
+// labels can be French, but the IT/vocational layouts must not change by locale.
+const getApiSourceText = (value) => {
+  const text = typeof value === "string" ? value : value?.name || "";
+  if (typeof text !== "string") return "";
+  return getDynamicTranslation(text, "en") || text;
+};
 
 const normalizeModules = (payload) => (Array.isArray(payload?.modules) ? payload.modules : [])
   .filter((module) => module && module.visible !== false && module.id !== undefined && module.id !== null)
@@ -266,7 +289,9 @@ const loadPyodideRuntime = (t) => {
 };
 
 function CodingPlayground({ block }) {
-  const { t } = useTranslation("ui");
+  const { t, i18n } = useTranslation("ui");
+  const activeLanguage = normalizeLanguage(i18n.resolvedLanguage || i18n.language);
+  const localizeApiText = (value) => getApiDisplayText(value, activeLanguage);
   const language = String(block?.language || "python").toLowerCase();
   const originalCode = String(
     block?.starterCode ?? block?.starter_code ?? block?.code ?? block?.example ?? ""
@@ -520,7 +545,7 @@ function CodingPlayground({ block }) {
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><Code2 size={19} /></span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold text-[#06424B]">{block?.title || t("Coding practice")}</p>
+            <p className="truncate text-sm font-extrabold text-[#06424B]">{block?.title ? localizeApiText(block.title) : t("Coding practice")}</p>
             <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[1.2px] text-[#789094]">{languageLabel} {t("coding workspace")}</p>
           </div>
         </div>
@@ -655,7 +680,7 @@ function CodingPlayground({ block }) {
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FFAB0B] text-[#06424B]"><Code2 size={20} /></span>
             <div className="min-w-0">
               <p className="text-[10px] font-extrabold uppercase tracking-[1.3px] text-[#B88736]">{t("Practice workspace")}</p>
-              <h4 className="mt-1 text-base font-extrabold text-[#06424B]">{block?.title || t("Try it yourself")}</h4>
+              <h4 className="mt-1 text-base font-extrabold text-[#06424B]">{block?.title ? localizeApiText(block.title) : t("Try it yourself")}</h4>
               <p className="mt-1 text-xs leading-5 text-[#607A7D]">{t("Edit, run your code and view the result in a focused workspace.")}</p>
             </div>
           </div>
@@ -671,7 +696,7 @@ function CodingPlayground({ block }) {
             role="dialog"
             aria-modal="true"
             aria-label={t("{{title}} coding workspace", {
-              title: block?.title || languageLabel,
+              title: block?.title ? localizeApiText(block.title) : languageLabel,
             })}
             className="my-auto flex max-h-[94vh] w-full max-w-[1320px] flex-col"
           >
@@ -680,7 +705,7 @@ function CodingPlayground({ block }) {
                 <p className="text-[10px] font-extrabold uppercase tracking-[1.5px] text-[#B88736]">
                   {t("Skill Next · Practice workspace")}
                 </p>
-                <h3 className="mt-1 text-lg font-extrabold text-[#06424B]">{block?.title || t("{{language}} Coding Workspace", { language: languageLabel })}</h3>
+                <h3 className="mt-1 text-lg font-extrabold text-[#06424B]">{block?.title ? localizeApiText(block.title) : t("{{language}} Coding Workspace", { language: languageLabel })}</h3>
               </div>
               <span className="rounded-full border border-[#DCE7E5] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#526D71]">{languageLabel}</span>
             </div>
@@ -693,17 +718,26 @@ function CodingPlayground({ block }) {
 }
 
 function ApiContentBlocks({ content }) {
-  const { t } = useTranslation("ui");
+  const { t, i18n } = useTranslation("ui");
+  const sourceBody = content?.body || content?.text || content?.content || "";
+  const activeLanguage = normalizeLanguage(i18n.resolvedLanguage || i18n.language);
+  const localizeApiText = (value) => getApiDisplayText(value, activeLanguage);
+
+  // The body is translated as a complete API field. Resolve it before parsing
+  // so paragraph splitting does not break the exact cache key. If Axios already
+  // supplied French text, it is preserved as-is.
+  const localizedBody = localizeApiText(sourceBody);
+
   const blocks = Array.isArray(content?.blocks) && content.blocks.length
     ? content.blocks
-    : parseTextBlocks(content?.body || content?.text || content?.content);
+    : parseTextBlocks(localizedBody);
 
   if (!blocks.length && content?.code) {
     return (
       <CodingPlayground
         block={{
           type: "code",
-          title: content.title || "Try this code",
+          title: content.title ? localizeApiText(content.title) : t("Try this code"),
           language: content.language || "python",
           code: content.code,
           runnable: content.runnable !== false,
@@ -724,10 +758,10 @@ function ApiContentBlocks({ content }) {
         const items = Array.isArray(block?.items) ? block.items : [];
 
         if (type === "heading") {
-          return <h3 key={index} className="pt-2 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{text}</h3>;
+          return <h3 key={index} className="pt-2 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{localizeApiText(text)}</h3>;
         }
         if (type === "subheading") {
-          return <h4 key={index} className="pt-1 text-base font-extrabold leading-6 text-[#123B43] sm:text-lg">{text}</h4>;
+          return <h4 key={index} className="pt-1 text-base font-extrabold leading-6 text-[#123B43] sm:text-lg">{localizeApiText(text)}</h4>;
         }
         if (["code", "code_example", "code_practice"].includes(type)) {
           return <CodingPlayground key={index} block={block} />;
@@ -736,18 +770,20 @@ function ApiContentBlocks({ content }) {
           const ListTag = type === "numbered_list" ? "ol" : "ul";
           return (
             <ListTag key={index} className={`${type === "numbered_list" ? "list-decimal" : "list-disc"} ml-6 space-y-2.5 text-sm leading-7 text-[#405D61] marker:text-[#B88736]`}>
-              {items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{item}</li>)}
+              {items.map((item, itemIndex) => <li key={itemIndex} className="pl-1">{localizeApiText(item)}</li>)}
             </ListTag>
           );
         }
-        return <p key={index} className="whitespace-pre-wrap text-sm leading-7 text-[#405D61] sm:text-[15px]">{text}</p>;
+        return <p key={index} className="whitespace-pre-wrap text-sm leading-7 text-[#405D61] sm:text-[15px]">{localizeApiText(text)}</p>;
       })}
     </div>
   );
 }
 
 function LessonContent() {
-  const { t } = useTranslation("ui");
+  const { t, i18n } = useTranslation("ui");
+  const activeLanguage = normalizeLanguage(i18n.resolvedLanguage || i18n.language);
+  const localizeApiText = (value) => getApiDisplayText(value, activeLanguage);
   const { technologySlug: courseId, topicId: moduleId } = useParams();
   const location = useLocation();
 
@@ -915,7 +951,7 @@ function LessonContent() {
     course?.categoryName,
     course?.track,
     course?.courseType,
-  ].map((value) => typeof value === "string" ? value : value?.name || "").join(" ");
+  ].map(getApiSourceText).join(" ");
   const isITCourse = /python|programming|software|web development|web technology|javascript|react|java|html|css|computer science|information technology|\bit\b/i.test(courseClassification);
 
   // Shared navigation helpers (used by every link to a module / back to the course).
@@ -1045,8 +1081,8 @@ function LessonContent() {
   // One shared error modal, rendered by every screen state below.
   const apiErrorModal = apiError ? (
     <ApiErrorModal
-      title={t(apiError.title)}
-      message={t(apiError.message)}
+      title={getDynamicTranslation(apiError.title, activeLanguage) || t(apiError.title)}
+      message={getDynamicTranslation(apiError.message, activeLanguage) || t(apiError.message)}
       onRetry={apiError.onRetry ? () => {
         const retry = apiError.onRetry;
         setApiError(null);
@@ -1064,7 +1100,7 @@ function LessonContent() {
         <Card className="p-8">
           <AlertCircle size={25} className="text-[#94650C]" />
           <h1 className="mt-3 text-xl font-extrabold text-[#06424B]">{module ? t("Unable to load lesson") : t("Lesson not found")}</h1>
-          <p className="mt-2 text-sm leading-6 text-[#5A7478]">{t(loadError || "This lesson isn't available in your course.")}</p>
+          <p className="mt-2 text-sm leading-6 text-[#5A7478]">{getDynamicTranslation(loadError, activeLanguage) || t(loadError || "This lesson isn't available in your course.")}</p>
           <div className="mt-5 flex flex-wrap gap-3">
             <button type="button" onClick={() => loadCourse({ forceRefresh: true })} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#FFAB0B] px-4 text-sm font-bold text-[#06424B]"><RefreshCw size={14} /> {t("Retry")}</button>
             <LinkButton to={learningPath} variant="outline" icon={ArrowLeft}>{t("Back to My Learning")}</LinkButton>
@@ -1090,7 +1126,7 @@ function LessonContent() {
             <p className="mt-4 text-sm leading-7 text-white/75">{t("This module is locked. Pass the previous module's assessment to unlock it.")}</p>
           </div>
           <div className="p-6 sm:p-8">
-            <p className="text-sm font-bold text-[#06424B]">{t("Previous module:")}{" "}{previousModule?.name || t("Previous module")}</p>
+            <p className="text-sm font-bold text-[#06424B]">{t("Previous module:")}{" "}{previousModule?.name ? localizeApiText(previousModule.name) : t("Previous module")}</p>
             <Link to={moduleHref(previousModule?.id)} state={moduleLinkState} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-[#FFAB0B] px-5 text-sm font-extrabold text-[#06424B] !no-underline hover:bg-[#FFC13C]"><PlayCircle size={15} /> {t("Open Previous Module")}</Link>
           </div>
         </Card>
@@ -1136,7 +1172,7 @@ function LessonContent() {
           {itemPassed ? <CheckCircle2 size={17} /> : itemUnlocked ? index + 1 : <LockKeyhole size={14} />}
         </span>
         <span className="mt-2.5 text-[10px] font-bold uppercase tracking-[1.2px] text-[#B88736]">{t("Module {{number}}", { number: String(index + 1).padStart(2, "0") })}</span>
-        <span className={`mt-1 line-clamp-2 text-[12px] leading-4 ${labelClass}`}>{item.name || t("Untitled module")}</span>
+        <span className={`mt-1 line-clamp-2 text-[12px] leading-4 ${labelClass}`}>{item.name ? localizeApiText(item.name) : t("Untitled module")}</span>
       </>
     );
     const stepClass = "group relative z-10 flex w-full flex-col items-center px-2 text-center !no-underline";
@@ -1164,7 +1200,7 @@ function LessonContent() {
         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold ${itemPassed ? "bg-[#06424B] text-white" : active ? "bg-[#FFAB0B] text-[#123B43]" : "bg-[#EEF3F4] text-[#526D71]"}`}>
           {itemPassed ? <CheckCircle2 size={15} /> : itemUnlocked ? index + 1 : <LockKeyhole size={13} />}
         </span>
-        <span className="min-w-0 flex-1 leading-5">{item.name || t("Untitled module")}</span>
+        <span className="min-w-0 flex-1 leading-5">{item.name ? localizeApiText(item.name) : t("Untitled module")}</span>
       </>
     );
     return itemUnlocked
@@ -1176,14 +1212,14 @@ function LessonContent() {
 
   return (
     <PageShell max="max-w-[1500px]">
-      <StudentPageHeader title={courseName} subtitle={t("{{course}} / {{module}}", { course: course.shortName || t("Course curriculum"), module: module.name })} />
+      <StudentPageHeader title={localizeApiText(courseName)} subtitle={t("{{course}} / {{module}}", { course: course.shortName ? localizeApiText(course.shortName) : t("Course curriculum"), module: localizeApiText(module.name) })} />
 
       <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#789094]">
         <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{t("My Learning")}</Link>
         <ChevronRight size={14} />
-        <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{courseName}</Link>
+        <Link to={learningPath} state={courseLinkState} className="!text-[#526D71] !no-underline hover:!text-[#06424B]">{localizeApiText(courseName)}</Link>
         <ChevronRight size={14} />
-        <span className="text-[#06424B]">{module.name}</span>
+        <span className="text-[#06424B]">{localizeApiText(module.name)}</span>
       </nav>
 
       <div className={`w-full ${isITCourse ? "flex flex-col gap-6" : "grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]"}`}>
@@ -1192,7 +1228,7 @@ function LessonContent() {
             <div className={`${isITCourse ? "flex flex-wrap items-center justify-between gap-3 bg-[#06424B] px-5 py-3.5 sm:px-6" : "bg-[#06424B] px-5 py-5"}`}>
               <div className={`${isITCourse ? "flex min-w-0 items-center gap-3" : ""}`}>
                 <div className="mb-1 flex items-center gap-2"><BookOpen size={15} className="text-[#FFAB0B]" /><span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#FFAB0B]">{isITCourse ? t("Course Roadmap") : t("Course Modules")}</span></div>
-                {!isITCourse && <h2 className="text-xl font-extrabold text-white">{courseName}</h2>}
+                {!isITCourse && <h2 className="text-xl font-extrabold text-white">{localizeApiText(courseName)}</h2>}
               </div>
               <p className={`${isITCourse ? "shrink-0 text-xs font-semibold text-white/75" : "mt-1 text-xs text-white/55"}`}>{t(modules.length === 1 ? "{{number}} module · {{progress}}% passed" : "{{number}} modules · {{progress}}% passed", { number: modules.length, progress: moduleProgress })}</p>
             </div>
@@ -1215,7 +1251,7 @@ function LessonContent() {
           {restartNotice && (
             <div role="status" className="flex items-start gap-3 rounded-2xl border border-[#F3E2B8] bg-[#FFFAEE] px-5 py-4 text-sm leading-6 text-[#805C17]">
               <RefreshCw size={17} className="mt-0.5 shrink-0" />
-              <span>{t(restartNotice)}</span>
+              <span>{getDynamicTranslation(restartNotice, activeLanguage) || t(restartNotice)}</span>
             </div>
           )}
 
@@ -1225,8 +1261,8 @@ function LessonContent() {
               <span className="rounded-lg bg-[#EEF3F4] px-3 py-1.5 text-[10px] font-bold text-[#526D71]">{t(contentCount === 1 ? "{{number}} learning item" : "{{number}} learning items", { number: contentCount })}</span>
               {isPassed && <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF4F2] px-3 py-1 text-[10px] font-bold text-[#06424B]"><CheckCircle2 size={13} /> {t("Assessment passed")}</span>}
             </div>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">{module.name}</h1>
-            {module.summary && <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">{module.summary}</p>}
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#123B43] sm:text-[38px]">{localizeApiText(module.name)}</h1>
+            {module.summary && <p className="mt-4 max-w-3xl text-[15px] leading-8 text-[#526D71]">{localizeApiText(module.summary)}</p>}
             <div className="mt-6 flex flex-wrap gap-3">
               <Link to={learningPath} state={courseLinkState} className={backToCourseClass}><ArrowLeft size={15} /> {t("Back to Course")}</Link>
               {previousModule && <Link to={moduleHref(previousModule.id)} state={moduleLinkState} className={backToCourseClass}>{t("Previous Module")}</Link>}
@@ -1239,8 +1275,8 @@ function LessonContent() {
               <div className="mb-6 flex items-start gap-4 border-b border-[#E7EEEE] pb-5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1D1] text-sm font-extrabold text-[#94650C]">{String(index + 1).padStart(2, "0")}</span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">{(content.contentType || content.content_type ? String(content.contentType || content.content_type).replace(/[_-]+/g, " ") : t("learning content"))}</p>
-                  <h2 className="mt-1 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{content.title || t("Learning content")}</h2>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-[#B07A06]">{t(content.contentType || content.content_type ? String(content.contentType || content.content_type).replace(/[_-]+/g, " ") : "learning content")}</p>
+                  <h2 className="mt-1 text-xl font-extrabold leading-snug text-[#123B43] sm:text-2xl">{content.title ? localizeApiText(content.title) : t("Learning content")}</h2>
                 </div>
               </div>
               <ApiContentBlocks content={content} />
@@ -1304,7 +1340,7 @@ function LessonContent() {
                         <div key={assignment.id} className="flex flex-col gap-4 rounded-2xl border border-[#E3EBE9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0">
                             {/* Keep the assessment card concise. The API description may contain the full assignment brief and is intentionally not rendered here. */}
-                            <h4 className="font-extrabold text-[#06424B]">{assignment.title || t("Module Assessment")}</h4>
+                            <h4 className="font-extrabold text-[#06424B]">{assignment.title ? localizeApiText(assignment.title) : t("Module Assessment")}</h4>
                             <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold text-[#718486]">
                               {assignment.questionCount !== undefined && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{t(assignment.questionCount === 1 ? "{{number}} question" : "{{number}} questions", { number: assignment.questionCount })}</span>}
                               {Number(assignment.timeLimitMinutes) > 0 && <span className="rounded-full bg-[#EEF3F4] px-2.5 py-1">{assignment.timeLimitMinutes} {t("min")}</span>}

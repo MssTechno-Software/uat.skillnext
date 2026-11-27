@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
-  AlertCircle,
   Bell,
   Briefcase,
   CheckCircle2,
@@ -17,10 +16,13 @@ import {
   Save,
   UserRound,
   X,
+  Eye,
+  AlertCircle,
 } from "lucide-react";
 
 import StudentPageHeader from "../../components/student/StudentPageHeader";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
+import AccessibilitySettings from "../../components/accessibility/AccessibilitySettings";
 import { Card, IconBadge, PageShell } from "../../components/student/ui";
 import Loader from "../../components/Loader";
 
@@ -274,11 +276,10 @@ function MessageDialog({ dialog, onClose }) {
 
         <div className="px-6 pb-6 pt-7">
           <span
-            className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${
-              isError
+            className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${isError
                 ? "bg-[#FFF1EE] text-[#C0392B]"
                 : "bg-[#E8F7EF] text-[#28765E]"
-            }`}
+              }`}
           >
             {isError ? <AlertCircle size={28} /> : <CheckCircle2 size={28} />}
           </span>
@@ -339,11 +340,10 @@ function ProfileInput({ field, value, error, disabled, onChange }) {
         aria-required={field.required || undefined}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
-        className={`h-12 w-full rounded-xl border bg-white px-4 text-sm text-[#2F4A4E] outline-none transition-all placeholder:text-[#9AABAD] focus:ring-4 disabled:cursor-not-allowed disabled:bg-[#F5F7F7] ${
-          error
+        className={`h-12 w-full rounded-xl border bg-white px-4 text-sm text-[#2F4A4E] outline-none transition-all placeholder:text-[#9AABAD] focus:ring-4 disabled:cursor-not-allowed disabled:bg-[#F5F7F7] ${error
             ? "border-[#D97770] focus:border-[#C0392B] focus:ring-[#D97770]/15"
             : "border-[#D5E4E2] focus:border-[#06424B] focus:ring-[#FFAB0B]/25"
-        }`}
+          }`}
       />
 
       {error && (
@@ -353,10 +353,10 @@ function ProfileInput({ field, value, error, disabled, onChange }) {
         >
           {error && typeof error === "object"
             ? t(error.key, {
-                ...(error.values || {}),
-                field: error.values?.field ? t(error.values.field) : undefined,
-                defaultValue: t("Please check this field."),
-              })
+              ...(error.values || {}),
+              field: error.values?.field ? t(error.values.field) : undefined,
+              defaultValue: t("Please check this field."),
+            })
             : error ? t("Please check this field.") : ""}
         </p>
       )}
@@ -648,14 +648,22 @@ function StudentSettings() {
 
   };
 
-  const scrollToSection = (id) =>
+  const scrollToSection = (id) => {
+    const prefersReducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
     document
       .getElementById(`section-${id}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      ?.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+  };
 
   const navItems = [
     ...groups.map(({ id, title, icon }) => ({ id, title, icon })),
     { id: "account", title: "Account Information", icon: LockKeyhole },
+    { id: "accessibility", title: "Accessibility", icon: Eye },
   ];
 
   const isFirstLoad = isLoading && !hasProfileData;
@@ -873,9 +881,8 @@ function StudentSettings() {
                   <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-[#D5E4E2] bg-white/95 p-3 shadow-[0_12px_35px_rgba(6,66,75,0.15)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:pl-5">
                     <p
                       role="status"
-                      className={`flex items-center gap-2 text-xs font-semibold ${
-                        isDirty ? "text-[#8A5F00]" : "text-[#6C8589]"
-                      }`}
+                      className={`flex items-center gap-2 text-xs font-semibold ${isDirty ? "text-[#8A5F00]" : "text-[#6C8589]"
+                        }`}
                     >
                       {isDirty ? (
                         <>
@@ -923,6 +930,17 @@ function StudentSettings() {
                     <LanguageSwitcher variant="sidebar" />
                   </div>
                 </div>
+              </SettingsSection>
+            </div>
+
+            <div className="mt-6">
+              <SettingsSection
+                id="accessibility"
+                title="Accessibility"
+                description="Adjust display and interaction preferences to make Skill Next easier to use."
+                icon={Eye}
+              >
+                <AccessibilitySettings />
               </SettingsSection>
             </div>
           </div>

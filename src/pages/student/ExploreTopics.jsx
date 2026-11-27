@@ -63,13 +63,13 @@ const getCategoryIcon = (name = "") => {
 const cardThemes = [
   {
     header: "bg-[#06424B]",
-    icon: "bg-white/10 text-[#FFAB0B]",
+    icon: "bg-[#FFAB0B] text-[#06424B] shadow-sm",
     category: "text-[#D5E7E5]",
     decoration: "border-white/[0.08]",
   },
   {
     header: "bg-[#52676B]",
-    icon: "bg-white/10 text-[#FFE0A0]",
+    icon: "bg-[#FFAB0B] text-[#06424B] shadow-sm",
     category: "text-[#E3ECEB]",
     decoration: "border-white/[0.08]",
   },
@@ -147,10 +147,10 @@ function CategoryCard({ category, index, onClick }) {
 
         <div className="relative flex items-center justify-between gap-3">
           <div className={`flex h-12 w-12 items-center justify-center rounded-[14px] border border-white/10 ${theme.icon} transition-transform duration-300 group-hover:scale-105`}>
-            <Icon size={24} strokeWidth={1.8} />
+            <Icon size={24} strokeWidth={2.1} aria-hidden="true" />
           </div>
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-[#FFAB0B]">
-            <ArrowRight size={16} />
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FFAB0B] text-[#06424B] shadow-sm">
+            <ArrowRight size={16} strokeWidth={2.2} aria-hidden="true" />
           </span>
         </div>
 
@@ -204,7 +204,7 @@ function CourseCard({ course, index, categoryName, categoryPath }) {
 
         <div className="relative flex items-center justify-between gap-3">
           <div className={`flex h-12 w-12 items-center justify-center rounded-[14px] border border-white/10 ${theme.icon}`}>
-            <BookOpen size={24} />
+            <BookOpen size={24} strokeWidth={2.1} aria-hidden="true" />
           </div>
 
           <span className="rounded-lg bg-[#FFAB0B] px-3 py-1.5 text-[10px] font-extrabold text-[#06424B]">
@@ -316,6 +316,28 @@ function ExploreTopics() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [, refreshDynamicTranslations] = useState(0);
+
+  // Course data is fetched from the API in its original form. When the
+  // background translation service fills the dynamic cache, re-render these
+  // cards so their fullName/shortName/summary values are read again in French.
+  useEffect(() => {
+    const handleDynamicTranslationsUpdated = () => {
+      refreshDynamicTranslations((current) => current + 1);
+    };
+
+    window.addEventListener(
+      "skillnext-dynamic-translations-updated",
+      handleDynamicTranslationsUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "skillnext-dynamic-translations-updated",
+        handleDynamicTranslationsUpdated,
+      );
+    };
+  }, []);
 
   // Ignore responses from an earlier category selection.
   const requestId = useRef(0);
@@ -512,11 +534,11 @@ function ExploreTopics() {
               <p className="mt-3 max-w-[570px] text-xs leading-6 text-white/70 sm:text-sm sm:leading-7">
                 {translateValue("Start with a category, discover its learning paths and choose the course you want to explore.")}</p>
               <div className="mt-5 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-2 text-[11px] font-semibold text-white">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-[#063B43] px-3 py-2 text-[11px] font-semibold text-white">
                   <BookOpen size={14} className="text-[#FFAB0B]" /> {translateValue("Structured Lessons")}</span>
-                <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-2 text-[11px] font-semibold text-white">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-[#063B43] px-3 py-2 text-[11px] font-semibold text-white">
                   <Code2 size={14} className="text-[#FFAB0B]" /> {translateValue("Practical Learning")}</span>
-                <span className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.08] px-3 py-2 text-[11px] font-semibold text-white">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-[#063B43] px-3 py-2 text-[11px] font-semibold text-white">
                   <GraduationCap size={14} className="text-[#FFAB0B]" /> {translateValue("Topic Quizzes & Final Assessment")}</span>
               </div>
             </div>

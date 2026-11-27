@@ -292,16 +292,18 @@ export default function LoginVisual() {
 
     return (
             <section
+                data-a11y-region="auth-visual"
                 className="hidden lg:flex lg:w-[56%] flex-col items-center gap-3 p-5 xl:p-7"
                 style={{
                     background: "linear-gradient(145deg, #EEF3F4 0%, #E8EFF0 100%)",
                 }}
             >
                 {/* Big logo, blended into the panel */}
-                <Logo className="shrink-0" style={{ width: "min(420px, 52vh)" }} />
+                <Logo className="auth-brand-logo shrink-0" style={{ width: "min(420px, 52vh)" }} />
 
                 {/* Stage */}
                 <div
+                    data-a11y-region="auth-illustration-stage"
                     className="relative flex-1 min-h-0 w-full rounded-[28px] overflow-hidden flex flex-col"
                     style={{
                         background: `linear-gradient(160deg, ${T.stageFrom} 0%, ${T.stageTo} 100%)`,
@@ -339,13 +341,14 @@ export default function LoginVisual() {
 
                         <div className="text-center pt-3 shrink-0">
                             <h1
+                                data-a11y-region="auth-headline"
                                 className="text-2xl xl:text-3xl font-bold tracking-tight"
                                 style={{ color: T.headline }}
                             >
                                 {t("Learn smart.", { defaultValue: "Learn smart." })}{" "}
                                 <span style={{ color: T.accent }}>{t("Grow next.", { defaultValue: "Grow next." })}</span>
                             </h1>
-                            <p className="mt-1.5 text-sm" style={{ color: T.sub }}>
+                            <p data-a11y-region="auth-subtitle" className="mt-1.5 text-sm" style={{ color: T.sub }}>
                                 {t("Your digital classroom for learning, teaching and achieving more.", { defaultValue: "Your digital classroom for learning, teaching and achieving more." })}</p>
                         </div>
                     </div>

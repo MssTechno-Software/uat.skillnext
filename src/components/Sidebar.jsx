@@ -13,7 +13,6 @@ import {
   Compass,
   FolderOpen,
   Brain,
-  ClipboardList,
   TrendingUp,
   Award,
   CalendarDays,
@@ -34,10 +33,10 @@ import {
 
 import { getUserRole, clearAuthSession } from "../services/authSession";
 import { clearCourseApiCache } from "../api/course.api";
+import { clearApiContentTranslationCache } from "../services/apiContentTranslation";
 import { useEnrolledCourses } from "../data/studentCourseEnrollment";
 import { useTeacherData } from "../data/teacherMockData";
 import StudentProfileMenu from "./student/StudentProfileMenu";
-import LanguageSwitcher from "./common/LanguageSwitcher";
 
 const EXPANDED_STORAGE_KEY = "skillnext_sidebar_expanded";
 const SCROLL_STORAGE_KEY = "skillnext_sidebar_scroll";
@@ -545,7 +544,8 @@ function Sidebar({ children }) {
     setMobileSidebar(false);
   };
 
- const handleLogout = () => {
+
+const handleLogout = async () => {
   closeMobileSidebar();
 
   try {
@@ -555,13 +555,22 @@ function Sidebar({ children }) {
     // Ignore storage errors.
   }
 
-  // Clear cached course and learning progress data first.
-  clearCourseApiCache();
+  try {
+    // Clear course API cache
+    clearCourseApiCache();
 
-  // Clear authentication session.
-  clearAuthSession();
+    // Clear Memory Cache and IndexedDB translations
+    await clearApiContentTranslationCache();
 
-  navigate("/login", { replace: true });
+  } catch (error) {
+    console.error("Translation cache cleanup failed:", error);
+  } finally {
+    // Clear authentication session
+    clearAuthSession();
+
+    // Navigate to login
+    navigate("/login", { replace: true });
+  }
 };
 
   // Course lessons opened from My Learning use the shared topic route:
@@ -617,6 +626,7 @@ function Sidebar({ children }) {
 
       {/* SIDEBAR */}
       <aside
+        data-a11y-region="sidebar"
         className={`
           fixed inset-y-0 left-0 z-50
           flex h-dvh flex-col
@@ -701,6 +711,7 @@ function Sidebar({ children }) {
 
         {/* NAVIGATION (scroll position is saved and restored) */}
         <nav
+          aria-label={translateValue("Main navigation")}
           ref={navRef}
           onScroll={handleNavScroll}
           onWheel={handleNavUserScroll}
@@ -843,10 +854,7 @@ function Sidebar({ children }) {
             pb-[7px] pt-[15px]
           "
         >
-          <div className="mb-3">
-            <LanguageSwitcher compact={!openSidebar} />
-          </div>
-
+      
           <NavLink
             to={supportPath}
             onClick={closeMobileSidebar}

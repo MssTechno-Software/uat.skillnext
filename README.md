@@ -78,9 +78,16 @@ function WelcomeMessage({ name }) {
 - Native browser `alert()` / `confirm()` strings should be passed through `i18n.t()` or the helpers in `src/i18n/dialogs.js`.
 - Code samples, editor contents, and learner-authored code are not translated.
 
-## Backend-authored learning content
+## Backend-authored learning content (dynamic French translation)
 
-Axios and Teacher API requests send `Accept-Language: en|fr`. Course caches are language-specific. The backend must return localized course, module, lesson, quiz, assessment, and assignment content or bilingual values. The frontend does not automatically machine-translate assessment questions and answers, because changing their wording without a reviewed translation could affect learning meaning and scoring.
+- Existing Axios and Teacher API request payloads and API response structures are not changed. The translation helper request is separate from the original learning API call.
+- All eligible learner-facing `/api/*` GET responses are captured centrally by the Axios response interceptor. Authentication, profile/personal data, users/students/teachers, admin routes, and the translation endpoint itself are excluded.
+- Assessment start/submit, course enrollment, module completion, and module restart result responses are also translated when they contain learner-facing messages/content. API request payloads are never translated.
+- When French is selected, `src/services/apiContentTranslation.js` recursively collects human-readable string fields from nested objects/arrays and sends them in batches to the authenticated backend route `POST /api/translation/translate`.
+- The response translator preserves response keys, IDs, machine status/type values, answer values, scores, dates, URLs, personal/profile subtrees, and code/editor fields. It also registers source text already loaded in English, so switching to French can preload and display translations on the current page without resetting quiz state or reloading the route; switching back to English uses the reverse in-memory map. Teacher authoring input values and submitted writes remain the original English source; only read-only catalog labels can use the display lookup cache.
+- English continues to display the original backend response. Translation failures safely fall back to original API content and do not fail the course/quiz request.
+- The supplied archive is the frontend project; the existing backend source was not included. Mount the secure FastAPI router and configure Google Cloud Translation as described in `backend-integration/README.md` before expecting API-authored content to appear in French.
+- Frontend environment variables: `VITE_DYNAMIC_CONTENT_TRANSLATION=true` and `VITE_TRANSLATION_API_PATH=/api/translation/translate`.
 
 ## Validation
 
@@ -88,3 +95,10 @@ Axios and Teacher API requests send `Accept-Language: en|fr`. Course caches are 
 npm run lint
 npm run build
 ```
+
+
+## Dynamic API Content Translation (English backend → French display)
+
+Skill Next APIs continue to return their existing English JSON. The frontend collects learner-facing text from eligible API responses and sends only those text values to the authenticated `/api/translation/translate` helper. French translations are cached as display lookups; the original API response objects are never mutated, so IDs, enums, filters, progress rules, scores, answers, code, and write payloads remain unchanged. Existing `t()` / `translateValue()` calls resolve dynamic strings, including after an in-page language switch.
+
+The frontend ZIP also contains `backend-integration/translation_router.py`. Mount that router once in the existing FastAPI backend with its current authentication dependency, enable Google Cloud Translation API, grant the Cloud Run service account `roles/cloudtranslate.user`, and set `GOOGLE_CLOUD_PROJECT`. Existing learning endpoints do not need to be changed. See `DYNAMIC_API_TRANSLATION.md` for the data-protection rules and setup steps.

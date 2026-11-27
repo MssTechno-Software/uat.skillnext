@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { changeAppLanguage } from "../../i18n";
 import { Languages, ChevronDown, Check } from "lucide-react";
@@ -15,6 +14,8 @@ export default function LanguageSwitcher({
 }) {
   const { i18n, t } = useTranslation("ui");
   const [open, setOpen] = useState(false);
+  const [isChangingLanguage, setIsChangingLanguage] = useState(false);
+  const [pendingLanguage, setPendingLanguage] = useState(null);
   const wrapperRef = useRef(null);
 
   const language = (
@@ -51,16 +52,27 @@ export default function LanguageSwitcher({
 
   const selectLanguage = async (code) => {
     setOpen(false);
-    if (code !== language) {
+
+    if (code === language || isChangingLanguage) return;
+
+    setPendingLanguage(code);
+    setIsChangingLanguage(true);
+
+    try {
+      // Activate the selected language immediately.
+      // API content translations are prepared in the background by
+      // the existing skillnext-language-changed listener in apiContentTranslation.js.
       await changeAppLanguage(code);
+    } catch (error) {
+      console.error("Could not change the application language.", error);
+    } finally {
+      setIsChangingLanguage(false);
+      setPendingLanguage(null);
     }
   };
 
   return (
-    <div
-      ref={wrapperRef}
-      className="relative w-full"
-    >
+    <div ref={wrapperRef} className="relative w-full">
       <div
         className={[
           "flex items-center gap-2 rounded-lg border px-2 py-1.5",
@@ -85,7 +97,9 @@ export default function LanguageSwitcher({
 
         <button
           type="button"
+          disabled={isChangingLanguage}
           onClick={() => setOpen((prev) => !prev)}
+          aria-label={t("Change language")}
           aria-expanded={open}
           aria-haspopup="listbox"
           className={[
@@ -130,6 +144,7 @@ export default function LanguageSwitcher({
                 key={item.code}
                 type="button"
                 role="option"
+                disabled={isChangingLanguage}
                 aria-selected={active}
                 onClick={() => selectLanguage(item.code)}
                 className={[
@@ -155,6 +170,27 @@ export default function LanguageSwitcher({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {isChangingLanguage && (
+        <div
+          className="fixed inset-0 z-[11000] flex items-center justify-center bg-[#F4F7F7]/95 p-6 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#DCE7E5] bg-white px-7 py-8 text-center shadow-xl">
+            <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#DCE7E5] border-t-[#06424B]" />
+            <p className="mt-4 text-sm font-bold text-[#06424B]">
+              {pendingLanguage === "fr"
+                ? "Switching to French…"
+                : "Switching language…"}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-[#718486]">
+              Please wait while the page updates.
+            </p>
+          </div>
         </div>
       )}
     </div>
